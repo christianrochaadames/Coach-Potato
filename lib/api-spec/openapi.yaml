@@ -3,13 +3,18 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: CineLog - Personal movie and TV show tracker
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: entries
+    description: Movie and TV show log entries
+  - name: stats
+    description: Viewing statistics
+
 paths:
   /healthz:
     get:
@@ -24,6 +29,177 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /entries:
+    get:
+      operationId: listEntries
+      tags: [entries]
+      summary: List all log entries
+      parameters:
+        - name: year
+          in: query
+          schema:
+            type: integer
+          description: Filter by year watched
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [movie, show]
+          description: Filter by type
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by title
+        - name: minRating
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+          description: Minimum rating filter
+      responses:
+        "200":
+          description: List of entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Entry"
+    post:
+      operationId: createEntry
+      tags: [entries]
+      summary: Log a new movie or show
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryInput"
+      responses:
+        "201":
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /entries/{id}:
+    get:
+      operationId: getEntry
+      tags: [entries]
+      summary: Get a single entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Entry found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateEntry
+      tags: [entries]
+      summary: Update an entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryUpdate"
+      responses:
+        "200":
+          description: Entry updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteEntry
+      tags: [entries]
+      summary: Delete an entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Entry deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [stats]
+      summary: Get viewing stats for a year
+      parameters:
+        - name: year
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Year to compute stats for
+      responses:
+        "200":
+          description: Year statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YearStats"
+
+  /years:
+    get:
+      operationId: listYears
+      tags: [entries]
+      summary: List all years that have entries
+      responses:
+        "200":
+          description: List of years with entry counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/YearSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +210,171 @@ components:
       required:
         - status
 
+    Entry:
+      type: object
+      required:
+        - id
+        - title
+        - type
+        - dateWatched
+        - year
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+          enum: [movie, show]
+        posterUrl:
+          type: ["string", "null"]
+        dateWatched:
+          type: string
+          format: date
+        year:
+          type: integer
+        rating:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 5
+        notes:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EntryInput:
+      type: object
+      required:
+        - title
+        - type
+        - dateWatched
+      properties:
+        title:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [movie, show]
+        posterUrl:
+          type: string
+        dateWatched:
+          type: string
+          format: date
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    EntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [movie, show]
+        posterUrl:
+          type: ["string", "null"]
+        dateWatched:
+          type: string
+          format: date
+        rating:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 5
+        notes:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+
+    YearStats:
+      type: object
+      required:
+        - year
+        - total
+        - movies
+        - shows
+        - averageRating
+        - byMonth
+        - byTag
+      properties:
+        year:
+          type: integer
+        total:
+          type: integer
+        movies:
+          type: integer
+        shows:
+          type: integer
+        averageRating:
+          type: ["number", "null"]
+        byMonth:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthCount"
+        byTag:
+          type: array
+          items:
+            $ref: "#/components/schemas/TagCount"
+
+    MonthCount:
+      type: object
+      required:
+        - month
+        - count
+      properties:
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        count:
+          type: integer
+
+    TagCount:
+      type: object
+      required:
+        - tag
+        - count
+      properties:
+        tag:
+          type: string
+        count:
+          type: integer
+
+    YearSummary:
+      type: object
+      required:
+        - year
+        - count
+      properties:
+        year:
+          type: integer
+        count:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
