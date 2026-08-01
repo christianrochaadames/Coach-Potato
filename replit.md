@@ -33,7 +33,7 @@ A personal movie and TV show tracker — log everything you watch, browse your y
 
 ## Architecture decisions
 
-- Single-user personal tracker — no auth/login, no multi-user isolation
+- Multi-user app — Clerk Auth (email + Google OAuth). Each user sees only their own data. Existing seed data auto-claimed by the first user to sign in.
 - Tags stored as JSONB array in Postgres (flexible, no normalization needed)
 - Year is denormalized column (derived from dateWatched) for fast filtering
 - Poster URL is optional — frontend generates gradient placeholder from title hash

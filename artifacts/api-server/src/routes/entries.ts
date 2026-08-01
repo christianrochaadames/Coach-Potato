@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db, entriesTable } from "@workspace/db";
-import { eq, and, like, gte, desc, isNotNull } from "drizzle-orm";
+import { eq, and, like, gte, desc } from "drizzle-orm";
 import { z } from "zod";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -61,15 +62,16 @@ function serializeEntry(entry: typeof entriesTable.$inferSelect) {
 }
 
 // GET /entries
-router.get("/entries", async (req, res) => {
+router.get("/entries", requireAuth, async (req, res) => {
   try {
+    const userId = req.userId;
     const year = req.query.year ? Number(req.query.year) : undefined;
     const type = req.query.type as string | undefined;
     const search = req.query.search as string | undefined;
     const minRating = req.query.minRating ? Number(req.query.minRating) : undefined;
     const status = req.query.status as string | undefined;
 
-    const conditions = [];
+    const conditions = [eq(entriesTable.userId, userId)];
     if (year) conditions.push(eq(entriesTable.year, year));
     if (type === "movie" || type === "show") conditions.push(eq(entriesTable.type, type));
     if (search) conditions.push(like(entriesTable.title, `%${search}%`));
@@ -81,7 +83,7 @@ router.get("/entries", async (req, res) => {
     const rows = await db
       .select()
       .from(entriesTable)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .where(and(...conditions))
       .orderBy(desc(entriesTable.createdAt));
 
     res.json(rows.map(serializeEntry));
@@ -92,7 +94,7 @@ router.get("/entries", async (req, res) => {
 });
 
 // POST /entries
-router.post("/entries", async (req, res) => {
+router.post("/entries", requireAuth, async (req, res) => {
   const parsed = entryInputSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -100,18 +102,8 @@ router.post("/entries", async (req, res) => {
   }
 
   const {
-    title,
-    type,
-    status,
-    posterUrl,
-    dateWatched,
-    rating,
-    notes,
-    synopsis,
-    tmdbId,
-    tags,
-    platform,
-    seasons,
+    title, type, status, posterUrl, dateWatched, rating,
+    notes, synopsis, tmdbId, tags, platform, seasons,
   } = parsed.data;
 
   const year = dateWatched ? Number(dateWatched.split("-")[0]) : null;
@@ -120,6 +112,7 @@ router.post("/entries", async (req, res) => {
     const [row] = await db
       .insert(entriesTable)
       .values({
+        userId: req.userId,
         title,
         type,
         status: status ?? "completed",
@@ -144,19 +137,16 @@ router.post("/entries", async (req, res) => {
 });
 
 // GET /entries/:id
-router.get("/entries/:id", async (req, res) => {
+router.get("/entries/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
-  if (isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   try {
-    const [row] = await db.select().from(entriesTable).where(eq(entriesTable.id, id));
-    if (!row) {
-      res.status(404).json({ error: "Entry not found" });
-      return;
-    }
+    const [row] = await db
+      .select()
+      .from(entriesTable)
+      .where(and(eq(entriesTable.id, id), eq(entriesTable.userId, req.userId)));
+    if (!row) { res.status(404).json({ error: "Entry not found" }); return; }
     res.json(serializeEntry(row));
   } catch (err) {
     req.log.error({ err }, "getEntry error");
@@ -165,18 +155,12 @@ router.get("/entries/:id", async (req, res) => {
 });
 
 // PUT /entries/:id
-router.put("/entries/:id", async (req, res) => {
+router.put("/entries/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
-  if (isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   const parsed = entryUpdateSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   try {
     const { dateWatched, ...rest } = parsed.data;
@@ -189,14 +173,10 @@ router.put("/entries/:id", async (req, res) => {
     const [row] = await db
       .update(entriesTable)
       .set(updateData)
-      .where(eq(entriesTable.id, id))
+      .where(and(eq(entriesTable.id, id), eq(entriesTable.userId, req.userId)))
       .returning();
 
-    if (!row) {
-      res.status(404).json({ error: "Entry not found" });
-      return;
-    }
-
+    if (!row) { res.status(404).json({ error: "Entry not found" }); return; }
     res.json(serializeEntry(row));
   } catch (err) {
     req.log.error({ err }, "updateEntry error");
@@ -205,19 +185,16 @@ router.put("/entries/:id", async (req, res) => {
 });
 
 // DELETE /entries/:id
-router.delete("/entries/:id", async (req, res) => {
+router.delete("/entries/:id", requireAuth, async (req, res) => {
   const id = Number(req.params.id);
-  if (isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
-  }
+  if (isNaN(id)) { res.status(400).json({ error: "Invalid id" }); return; }
 
   try {
-    const [row] = await db.delete(entriesTable).where(eq(entriesTable.id, id)).returning();
-    if (!row) {
-      res.status(404).json({ error: "Entry not found" });
-      return;
-    }
+    const [row] = await db
+      .delete(entriesTable)
+      .where(and(eq(entriesTable.id, id), eq(entriesTable.userId, req.userId)))
+      .returning();
+    if (!row) { res.status(404).json({ error: "Entry not found" }); return; }
     res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "deleteEntry error");

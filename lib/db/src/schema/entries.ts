@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, date, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, date, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -18,6 +18,7 @@ export const entriesTable = pgTable("entries", {
   synopsis: text("synopsis"),
   tmdbId: integer("tmdb_id"),
   platform: text("platform"),
+  userId: text("user_id").notNull().default("seed_data"),
   tags: jsonb("tags").$type<string[]>().default([]),
   seasons: jsonb("seasons").$type<Array<{
     number: number;

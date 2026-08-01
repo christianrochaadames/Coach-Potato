@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -36,7 +37,7 @@ function mapRec(item: Record<string, unknown>, mediaType: "movie" | "tv") {
 
 // GET /api/recommendations
 // Fetches personalised TMDB recommendations based on the user's recently watched entries
-router.get("/recommendations", async (req, res) => {
+router.get("/recommendations", requireAuth, async (req, res) => {
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured" });
@@ -45,24 +46,26 @@ router.get("/recommendations", async (req, res) => {
 
   try {
     // 1. Grab up to 8 recently-watched entries that have a TMDB id
-    const { rows: recentRows } = await pool.query<{ tmdb_id: number; type: string }>(
-      `SELECT DISTINCT ON (tmdb_id) tmdb_id, type
+    const { rows: recentRows } = await pool.query<{ tmdb_id: number; type: string; rating: number | null }>(
+      `SELECT DISTINCT ON (tmdb_id) tmdb_id, type, rating
        FROM entries
-       WHERE status = 'completed' AND tmdb_id IS NOT NULL
+       WHERE status = 'completed' AND tmdb_id IS NOT NULL AND user_id = $1
        ORDER BY tmdb_id, date_watched DESC NULLS LAST, created_at DESC
-       LIMIT 8`
+       LIMIT 8`,
+      [req.userId]
     );
 
     // 2. Collect all tmdb_ids already in the collection so we can filter them out
     const { rows: allRows } = await pool.query<{ tmdb_id: number }>(
-      `SELECT tmdb_id FROM entries WHERE tmdb_id IS NOT NULL`
+      `SELECT tmdb_id FROM entries WHERE tmdb_id IS NOT NULL AND user_id = $1`,
+      [req.userId]
     );
     const inCollection = new Set(allRows.map((r) => r.tmdb_id));
 
     // 3. Fetch TMDB recommendations for each seed entry in parallel.
-    //    Tag each result with the recency rank of the seed that produced it
-    //    (0 = most recently watched, higher = older) so we can weight results.
-    type TaggedRec = ReturnType<typeof mapRec> & { recencyRank: number };
+    //    Tag each result with the recency rank (0 = most recent) and the
+    //    seed's star rating (1-5, null = unrated) for weighted scoring.
+    type TaggedRec = ReturnType<typeof mapRec> & { recencyRank: number; seedRating: number | null };
     const allRecs: TaggedRec[] = [];
 
     await Promise.all(
@@ -77,7 +80,7 @@ router.get("/recommendations", async (req, res) => {
             if (!item.poster_path) continue;
             const id = item.id as number;
             if (inCollection.has(id)) continue;
-            allRecs.push({ ...mapRec(item, mediaType), recencyRank: idx });
+            allRecs.push({ ...mapRec(item, mediaType), recencyRank: idx, seedRating: row.rating });
           }
         } catch {
           // ignore individual failures
@@ -85,34 +88,43 @@ router.get("/recommendations", async (req, res) => {
       })
     );
 
-    // 4. Deduplicate: for each tmdbId keep the entry sourced from the most recent
-    //    seed (lowest recencyRank); also track how many seeds recommended it.
+    // 4. Deduplicate: keep the entry sourced from the highest-quality seed
+    //    (lowest effective score); track how many distinct seeds recommended it.
     const dedupMap = new Map<
       number,
-      { item: ReturnType<typeof mapRec>; bestRank: number; count: number }
+      { item: ReturnType<typeof mapRec>; bestSeedScore: number; count: number }
     >();
+
+    // Rating multiplier: 5★ → 0.6 (very strong signal), 1★ → 1.4 (weak signal)
+    // Unrated entries use 1.0 (neutral).
+    const ratingMultiplier = (r: number | null) => {
+      if (r === null) return 1.0;
+      return 1.6 - r * 0.2; // 5→0.6  4→0.8  3→1.0  2→1.2  1→1.4
+    };
+
     for (const rec of allRecs) {
+      const seedScore = rec.recencyRank * ratingMultiplier(rec.seedRating);
       const existing = dedupMap.get(rec.tmdbId);
       if (!existing) {
-        const { recencyRank: _, ...clean } = rec;
-        dedupMap.set(rec.tmdbId, { item: clean, bestRank: rec.recencyRank, count: 1 });
+        const { recencyRank: _r, seedRating: _s, ...clean } = rec;
+        dedupMap.set(rec.tmdbId, { item: clean, bestSeedScore: seedScore, count: 1 });
       } else {
         existing.count++;
-        if (rec.recencyRank < existing.bestRank) {
-          existing.bestRank = rec.recencyRank;
-          const { recencyRank: _, ...clean } = rec;
+        if (seedScore < existing.bestSeedScore) {
+          existing.bestSeedScore = seedScore;
+          const { recencyRank: _r, seedRating: _s, ...clean } = rec;
           existing.item = clean;
         }
       }
     }
 
-    // 5. Score: lower is better.
-    //    Recent seeds (low bestRank) score well; appearing across multiple seeds
-    //    gives a bonus (subtract log(count) * 2).
+    // 5. Final score: lower is better.
+    //    bestSeedScore already encodes recency + rating quality.
+    //    Subtract a bonus for items recommended by multiple seeds.
     const scored = Array.from(dedupMap.values())
-      .map(({ item, bestRank, count }) => ({
+      .map(({ item, bestSeedScore, count }) => ({
         item,
-        score: bestRank - Math.log(count) * 2,
+        score: bestSeedScore - Math.log(count) * 2,
       }))
       .sort((a, b) => a.score - b.score);
 

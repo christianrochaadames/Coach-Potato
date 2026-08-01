@@ -5,6 +5,7 @@ import statsRouter from "./stats";
 import yearsRouter from "./years";
 import tmdbRouter from "./tmdb";
 import recommendationsRouter from "./recommendations";
+import profileRouter from "./profile";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(statsRouter);
 router.use(yearsRouter);
 router.use(tmdbRouter);
 router.use(recommendationsRouter);
+router.use(profileRouter);
 
 export default router;
