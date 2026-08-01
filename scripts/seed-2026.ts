@@ -4,7 +4,7 @@
  *
  * Requires TMDB_API_KEY in environment.
  */
-import { db, entriesTable } from "@workspace/db";
+import { db, entriesTable } from "../lib/db/src/index.js";
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE = "https://api.themoviedb.org/3";
