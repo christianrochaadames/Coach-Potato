@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, entriesTable } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, isNotNull } from "drizzle-orm";
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.get("/stats", async (req, res) => {
     const rows = await db
       .select()
       .from(entriesTable)
-      .where(eq(entriesTable.year, year));
+      .where(and(eq(entriesTable.year, year), isNotNull(entriesTable.dateWatched)));
 
     const total = rows.length;
     const movies = rows.filter((r) => r.type === "movie").length;
@@ -28,11 +28,14 @@ router.get("/stats", async (req, res) => {
         ? rated.reduce((sum, r) => sum + (r.rating ?? 0), 0) / rated.length
         : null;
 
-    // By month
+    // By month — only rows with a valid dateWatched
     const monthMap = new Map<number, number>();
     for (const row of rows) {
+      if (!row.dateWatched) continue;
       const month = Number(row.dateWatched.split("-")[1]);
-      monthMap.set(month, (monthMap.get(month) ?? 0) + 1);
+      if (!isNaN(month)) {
+        monthMap.set(month, (monthMap.get(month) ?? 0) + 1);
+      }
     }
     const byMonth = Array.from({ length: 12 }, (_, i) => ({
       month: i + 1,

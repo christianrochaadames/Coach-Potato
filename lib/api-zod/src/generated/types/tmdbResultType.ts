@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type EntryType = typeof EntryType[keyof typeof EntryType];
+export type TmdbResultType = typeof TmdbResultType[keyof typeof TmdbResultType];
 
 
-export const EntryType = {
+export const TmdbResultType = {
   movie: 'movie',
   show: 'show',
 } as const;

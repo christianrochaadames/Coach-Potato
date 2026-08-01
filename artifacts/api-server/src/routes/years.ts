@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { db, entriesTable } from "@workspace/db";
-import { sql, desc } from "drizzle-orm";
+import { sql, desc, isNotNull } from "drizzle-orm";
 
 const router = Router();
 
-// GET /years — list all years with entry counts
+// GET /years — list all years with entry counts (only entries with a known year)
 router.get("/years", async (req, res) => {
   try {
     const rows = await db
@@ -13,6 +13,7 @@ router.get("/years", async (req, res) => {
         count: sql<number>`cast(count(*) as integer)`,
       })
       .from(entriesTable)
+      .where(isNotNull(entriesTable.year))
       .groupBy(entriesTable.year)
       .orderBy(desc(entriesTable.year));
 

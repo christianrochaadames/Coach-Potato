@@ -1,2 +1,26 @@
 export * from "./generated/api";
-export * from "./generated/types";
+// Re-export types that are NOT duplicated in api.ts
+export type {
+  Entry,
+  EntryInput,
+  EntryUpdate,
+  EntryStatus,
+  EntryInputStatus,
+  EntryUpdateStatus,
+  EntryType,
+  EntryInputType,
+  EntryUpdateType,
+  HealthStatus,
+  ErrorResponse,
+  ListEntriesParams,
+  ListEntriesStatus,
+  ListEntriesType,
+  GetStatsParams,
+  TmdbResult,
+  TmdbResultType,
+  TmdbSearchParams,
+  YearStats,
+  YearSummary,
+  MonthCount,
+  TagCount,
+} from "./generated/types";

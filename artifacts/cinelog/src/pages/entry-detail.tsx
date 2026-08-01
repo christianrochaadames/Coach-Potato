@@ -3,7 +3,7 @@ import { useParams, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Film, Tv, Edit2, Trash2, X, Check, Calendar } from 'lucide-react';
+import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft } from 'lucide-react';
 import {
   useGetEntry,
   useUpdateEntry,
@@ -13,10 +13,6 @@ import {
   getListYearsQueryKey,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { StarRating } from '@/components/star-rating';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -29,13 +25,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   type: z.enum(['movie', 'show']),
-  posterUrl: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  dateWatched: z.string().min(1, 'Date is required'),
+  posterUrl: z.string().optional().or(z.literal('')),
+  dateWatched: z.string().optional(),
   notes: z.string().optional(),
   tags: z.string().optional(),
 });
@@ -80,12 +75,12 @@ export default function EntryDetail() {
       form.reset({
         title: entry.title,
         type: entry.type,
-        posterUrl: entry.posterUrl || '',
-        dateWatched: entry.dateWatched,
-        notes: entry.notes || '',
-        tags: entry.tags?.join(', ') || '',
+        posterUrl: entry.posterUrl ?? '',
+        dateWatched: entry.dateWatched ?? '',
+        notes: entry.notes ?? '',
+        tags: entry.tags?.join(', ') ?? '',
       });
-      setRating(entry.rating || null);
+      setRating(entry.rating ?? null);
     }
   }, [entry, form]);
 
@@ -103,11 +98,11 @@ export default function EntryDetail() {
           title: data.title,
           type: data.type,
           posterUrl: data.posterUrl || null,
-          dateWatched: data.dateWatched,
+          dateWatched: data.dateWatched || null,
           rating: rating || null,
           notes: data.notes || null,
           tags,
-        },
+        } as any,
       },
       {
         onSuccess: () => {
@@ -158,13 +153,12 @@ export default function EntryDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[100dvh] bg-background">
-        <div className="container mx-auto px-6 py-12">
-          <div className="max-w-4xl mx-auto animate-pulse space-y-6">
-            <div className="h-96 bg-card rounded-lg" />
-            <div className="h-8 bg-card rounded w-1/3" />
-            <div className="h-4 bg-card rounded w-1/2" />
-          </div>
+      <div className="min-h-full px-5 pt-8" style={{ background: '#FFF3E8' }}>
+        <div className="max-w-lg mx-auto space-y-4 animate-pulse">
+          <div className="h-8 rounded-xl w-1/3" style={{ background: '#EFE4D2' }} />
+          <div className="aspect-[2/3] max-h-64 rounded-2xl" style={{ background: '#EFE4D2' }} />
+          <div className="h-6 rounded-xl w-1/2" style={{ background: '#EFE4D2' }} />
+          <div className="h-4 rounded-xl w-2/3" style={{ background: '#EFE4D2' }} />
         </div>
       </div>
     );
@@ -172,14 +166,16 @@ export default function EntryDetail() {
 
   if (!entry) {
     return (
-      <div className="min-h-[100dvh] bg-background">
-        <div className="container mx-auto px-6 py-12">
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <h3 className="text-xl font-semibold mb-2">Entry not found</h3>
-            <p className="text-muted-foreground mb-6">This entry does not exist</p>
-            <Button onClick={() => setLocation('/')}>Go Home</Button>
-          </div>
-        </div>
+      <div className="min-h-full flex flex-col items-center justify-center px-5 py-20 text-center" style={{ background: '#FFF3E8' }}>
+        <h3 className="text-xl font-bold mb-2" style={{ color: '#111111' }}>Entry not found</h3>
+        <p className="text-sm mb-6" style={{ color: '#7E7A73' }}>This entry does not exist</p>
+        <button
+          onClick={() => setLocation('/')}
+          className="px-6 py-3 rounded-full font-bold text-sm text-white"
+          style={{ background: '#116149' }}
+        >
+          Go Home
+        </button>
       </div>
     );
   }
@@ -187,214 +183,303 @@ export default function EntryDetail() {
   const selectedType = form.watch('type');
 
   return (
-    <div className="min-h-[100dvh] bg-background">
-      <div className="container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Header Actions */}
-          <div className="flex items-center justify-between mb-8">
-            <Button variant="outline" onClick={() => setLocation('/')} data-testid="button-back">
-              Back to Collection
-            </Button>
-            <div className="flex gap-2">
-              {!isEditing ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    className="gap-2"
-                    data-testid="button-edit"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="gap-2 text-destructive hover:text-destructive"
-                    data-testid="button-delete"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsEditing(false);
-                    form.reset();
-                    setRating(entry.rating || null);
-                  }}
-                  className="gap-2"
-                  data-testid="button-cancel-edit"
+    <div className="min-h-full" style={{ background: '#FFF3E8' }}>
+      {/* Header */}
+      <div className="px-5 pt-6 pb-3 flex items-center justify-between">
+        <button
+          onClick={() => setLocation('/')}
+          className="w-9 h-9 rounded-full flex items-center justify-center"
+          style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+          data-testid="button-back"
+        >
+          <ChevronLeft className="w-5 h-5" style={{ color: '#111111' }} />
+        </button>
+        <div className="flex gap-2">
+          {!isEditing ? (
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold"
+                style={{ background: '#ffffff', border: '1px solid #E2D9CE', color: '#116149' }}
+                data-testid="button-edit"
+              >
+                <Edit2 className="w-3.5 h-3.5" /> Edit
+              </button>
+              <button
+                onClick={() => setShowDeleteDialog(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold"
+                style={{ background: '#ffffff', border: '1px solid #E2D9CE', color: '#e53e3e' }}
+                data-testid="button-delete"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                form.reset();
+                setRating(entry.rating ?? null);
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }}
+              data-testid="button-cancel-edit"
+            >
+              <X className="w-3.5 h-3.5" /> Cancel
+            </button>
+          )}
+        </div>
+      </div>
+
+      {isEditing ? (
+        /* Edit Mode */
+        <form onSubmit={form.handleSubmit(onSubmit)} className="px-5 space-y-5 pb-10">
+          {/* Type */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Type</label>
+            <div className="grid grid-cols-2 gap-3">
+              {(['movie', 'show'] as const).map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => form.setValue('type', t)}
+                  className="py-4 rounded-2xl flex flex-col items-center gap-1.5 transition-all"
+                  style={
+                    selectedType === t
+                      ? { border: '2px solid #116149', background: 'rgba(17,97,73,0.08)' }
+                      : { border: '2px solid #E2D9CE', background: '#ffffff' }
+                  }
+                  data-testid={t === 'movie' ? 'button-edit-type-movie' : 'button-edit-type-show'}
                 >
-                  <X className="w-4 h-4" />
-                  Cancel
-                </Button>
-              )}
+                  {t === 'movie'
+                    ? <Film className="w-5 h-5" style={{ color: selectedType === 'movie' ? '#116149' : '#7E7A73' }} />
+                    : <Tv className="w-5 h-5" style={{ color: selectedType === 'show' ? '#116149' : '#7E7A73' }} />
+                  }
+                  <span className="text-xs font-bold" style={{ color: selectedType === t ? '#116149' : '#7E7A73' }}>
+                    {t === 'movie' ? 'Movie' : 'TV Show'}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {isEditing ? (
-            /* Edit Mode */
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Type Selector */}
-              <div className="space-y-3">
-                <Label>Type</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => form.setValue('type', 'movie')}
-                    className={cn(
-                      'relative p-6 rounded-lg border-2 transition-all duration-200',
-                      'flex flex-col items-center gap-3',
-                      selectedType === 'movie'
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary/50'
-                    )}
-                    data-testid="button-edit-type-movie"
-                  >
-                    <Film className={cn('w-8 h-8', selectedType === 'movie' ? 'text-primary' : 'text-muted-foreground')} />
-                    <span className={cn('font-medium', selectedType === 'movie' ? 'text-primary' : 'text-foreground')}>
-                      Movie
-                    </span>
-                  </button>
+          {/* Title */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Title *</label>
+            <input
+              {...form.register('title')}
+              className="w-full px-4 py-3.5 rounded-2xl font-semibold focus:outline-none"
+              style={{ border: '2px solid #E2D9CE', background: '#ffffff', color: '#111111' }}
+              onFocus={e => (e.target.style.borderColor = '#116149')}
+              onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
+              data-testid="input-edit-title"
+            />
+            {form.formState.errors.title && (
+              <p className="text-xs" style={{ color: '#e53e3e' }}>{form.formState.errors.title.message}</p>
+            )}
+          </div>
 
-                  <button
-                    type="button"
-                    onClick={() => form.setValue('type', 'show')}
-                    className={cn(
-                      'relative p-6 rounded-lg border-2 transition-all duration-200',
-                      'flex flex-col items-center gap-3',
-                      selectedType === 'show'
-                        ? 'border-primary bg-primary/10'
-                        : 'border-border hover:border-primary/50'
-                    )}
-                    data-testid="button-edit-type-show"
-                  >
-                    <Tv className={cn('w-8 h-8', selectedType === 'show' ? 'text-primary' : 'text-muted-foreground')} />
-                    <span className={cn('font-medium', selectedType === 'show' ? 'text-primary' : 'text-foreground')}>
-                      Show
-                    </span>
-                  </button>
+          {/* Date */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Date Watched</label>
+            <input
+              type="date"
+              {...form.register('dateWatched')}
+              className="w-full px-4 py-3.5 rounded-2xl font-semibold focus:outline-none"
+              style={{ border: '2px solid #E2D9CE', background: '#ffffff', color: '#111111' }}
+              onFocus={e => (e.target.style.borderColor = '#116149')}
+              onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
+              data-testid="input-edit-date"
+            />
+          </div>
+
+          {/* Rating */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Rating</label>
+            <StarRating rating={rating} onRatingChange={setRating} size="lg" />
+          </div>
+
+          {/* Poster URL */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Poster URL</label>
+            <input
+              type="url"
+              {...form.register('posterUrl')}
+              className="w-full px-4 py-3.5 rounded-2xl font-semibold focus:outline-none"
+              style={{ border: '2px solid #E2D9CE', background: '#ffffff', color: '#111111' }}
+              onFocus={e => (e.target.style.borderColor = '#116149')}
+              onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
+              data-testid="input-edit-poster"
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Notes</label>
+            <textarea
+              {...form.register('notes')}
+              rows={4}
+              className="w-full px-4 py-3 rounded-2xl font-medium focus:outline-none resize-none"
+              style={{ border: '2px solid #E2D9CE', background: '#ffffff', color: '#111111', fontFamily: 'Manrope, sans-serif' }}
+              onFocus={e => (e.target.style.borderColor = '#116149')}
+              onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
+              data-testid="input-edit-notes"
+            />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Tags</label>
+            <input
+              {...form.register('tags')}
+              placeholder="action, thriller"
+              className="w-full px-4 py-3.5 rounded-2xl font-semibold focus:outline-none"
+              style={{ border: '2px solid #E2D9CE', background: '#ffffff', color: '#111111' }}
+              onFocus={e => (e.target.style.borderColor = '#116149')}
+              onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
+              data-testid="input-edit-tags"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={updateEntry.isPending}
+            className="w-full py-4 rounded-full font-bold text-base text-white transition-opacity disabled:opacity-60"
+            style={{ background: '#116149' }}
+            data-testid="button-save"
+          >
+            {updateEntry.isPending ? 'Saving...' : 'Save Changes'}
+          </button>
+        </form>
+      ) : (
+        /* View Mode */
+        <div className="px-5 pb-10">
+          {/* Poster + Title hero */}
+          <div className="flex gap-4 mb-6">
+            <div
+              className="w-28 flex-shrink-0 aspect-[2/3] rounded-2xl overflow-hidden shadow-md"
+              style={{ background: '#EFE4D2' }}
+            >
+              {entry.posterUrl ? (
+                <img src={entry.posterUrl} alt={entry.title} className="w-full h-full object-cover" />
+              ) : (
+                <div
+                  className="w-full h-full flex flex-col items-center justify-center gap-2"
+                  style={{ background: '#EFE4D2' }}
+                >
+                  <span className="text-3xl font-bold" style={{ color: '#116149' }}>
+                    {entry.title[0]?.toUpperCase() ?? '?'}
+                  </span>
+                  {entry.type === 'movie'
+                    ? <Film className="w-5 h-5" style={{ color: '#7E7A73' }} />
+                    : <Tv className="w-5 h-5" style={{ color: '#7E7A73' }} />
+                  }
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className="space-y-3">
-                <Label htmlFor="title">Title *</Label>
-                <Input id="title" {...form.register('title')} data-testid="input-edit-title" />
-                {form.formState.errors.title && (
-                  <p className="text-sm text-destructive">{form.formState.errors.title.message}</p>
+            <div className="flex-1 min-w-0 pt-1">
+              {/* Type + Status badges */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={
+                    entry.type === 'movie'
+                      ? { background: '#9BD6FF', color: '#116149' }
+                      : { background: '#BDECC8', color: '#116149' }
+                  }
+                >
+                  {entry.type === 'movie' ? '🎬 Movie' : '📺 Show'}
+                </span>
+                {entry.status && (
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={
+                      entry.status === 'completed'
+                        ? { background: '#BDECC8', color: '#116149' }
+                        : entry.status === 'watching'
+                        ? { background: '#9BD6FF', color: '#116149' }
+                        : { background: '#EFE4D2', color: '#7E7A73' }
+                    }
+                  >
+                    {entry.status === 'completed' ? '✓ Watched' : entry.status === 'watching' ? '▶ Watching' : '🔖 Planned'}
+                  </span>
                 )}
               </div>
 
-              <div className="space-y-3">
-                <Label htmlFor="dateWatched">Date Watched *</Label>
-                <Input id="dateWatched" type="date" {...form.register('dateWatched')} data-testid="input-edit-date" />
-              </div>
+              <h1 className="text-xl font-bold leading-snug mb-2" style={{ color: '#111111' }} data-testid="text-entry-title">
+                {entry.title}
+              </h1>
 
-              <div className="space-y-3">
-                <Label>Rating</Label>
-                <StarRating rating={rating} onRatingChange={setRating} size="lg" />
-              </div>
+              {entry.rating && (
+                <StarRating rating={entry.rating} readonly size="md" />
+              )}
 
-              <div className="space-y-3">
-                <Label htmlFor="posterUrl">Poster URL</Label>
-                <Input id="posterUrl" type="url" {...form.register('posterUrl')} data-testid="input-edit-poster" />
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea id="notes" rows={4} {...form.register('notes')} data-testid="input-edit-notes" />
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="tags">Tags</Label>
-                <Input id="tags" {...form.register('tags')} data-testid="input-edit-tags" />
-              </div>
-
-              <Button type="submit" disabled={updateEntry.isPending} data-testid="button-save">
-                {updateEntry.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </form>
-          ) : (
-            /* View Mode */
-            <div className="grid md:grid-cols-[300px,1fr] gap-8">
-              {/* Poster */}
-              <div className="aspect-[2/3] rounded-lg overflow-hidden bg-card border border-border">
-                {entry.posterUrl ? (
-                  <img src={entry.posterUrl} alt={entry.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-muted to-muted/50">
-                    <div className="text-5xl font-display font-bold text-white/90">
-                      {entry.title[0]?.toUpperCase() || '?'}
-                    </div>
-                    <div className="text-muted-foreground">
-                      {entry.type === 'movie' ? <Film className="w-6 h-6" /> : <Tv className="w-6 h-6" />}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Details */}
-              <div className="space-y-6">
-                <div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    {entry.type === 'movie' ? <Film className="w-4 h-4" /> : <Tv className="w-4 h-4" />}
-                    <span className="uppercase tracking-wider">{entry.type}</span>
-                  </div>
-                  <h1 className="text-4xl font-display font-bold mb-4" data-testid="text-entry-title">
-                    {entry.title}
-                  </h1>
-                  {entry.rating && (
-                    <StarRating rating={entry.rating} readonly size="lg" />
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="w-4 h-4" />
-                  <span>
-                    Watched on {new Date(entry.dateWatched).toLocaleDateString('en-US', {
+              {entry.dateWatched && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <Calendar className="w-3.5 h-3.5" style={{ color: '#7E7A73' }} />
+                  <span className="text-xs" style={{ color: '#7E7A73' }}>
+                    {new Date(entry.dateWatched + 'T00:00:00').toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',
                       year: 'numeric',
                     })}
                   </span>
                 </div>
+              )}
+              {!entry.dateWatched && (
+                <p className="text-xs mt-2" style={{ color: '#7E7A73' }}>Not yet watched</p>
+              )}
+            </div>
+          </div>
 
-                {entry.notes && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Notes</h3>
-                    <p className="text-foreground leading-relaxed" data-testid="text-entry-notes">
-                      {entry.notes}
-                    </p>
-                  </div>
-                )}
+          {/* Synopsis */}
+          {entry.synopsis && (
+            <div
+              className="rounded-2xl p-4 mb-4"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Synopsis</p>
+              <p className="text-sm leading-relaxed" style={{ color: '#111111' }}>{entry.synopsis}</p>
+            </div>
+          )}
 
-                {entry.tags && entry.tags.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {entry.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="px-3 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary border border-primary/30"
-                          data-testid={`tag-${tag}`}
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* Notes */}
+          {entry.notes && (
+            <div
+              className="rounded-2xl p-4 mb-4"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Notes</p>
+              <p className="text-sm leading-relaxed" style={{ color: '#111111' }} data-testid="text-entry-notes">
+                {entry.notes}
+              </p>
+            </div>
+          )}
+
+          {/* Tags */}
+          {entry.tags && entry.tags.length > 0 && (
+            <div
+              className="rounded-2xl p-4 mb-4"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#7E7A73' }}>Tags</p>
+              <div className="flex flex-wrap gap-2">
+                {entry.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 rounded-full text-xs font-bold"
+                    style={{ background: '#EFE4D2', color: '#116149' }}
+                    data-testid={`tag-${tag}`}
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
           )}
         </div>
-      </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -402,7 +487,7 @@ export default function EntryDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Entry?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{entry.title}" from your collection. This action cannot be undone.
+              This will permanently delete &ldquo;{entry.title}&rdquo; from your collection. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

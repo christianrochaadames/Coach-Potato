@@ -1,52 +1,46 @@
-import { Film, Tv } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StarRating } from './star-rating';
-import type { Entry } from '@workspace/api-client-react';
+
+function getPosterColor(title: string): string {
+  const colors = ['#116149', '#9BD6FF', '#BDECC8', '#EFE4D2', '#FFD34D'];
+  let hash = 0;
+  for (let i = 0; i < title.length; i++) hash = title.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function textColorFor(bg: string): string {
+  return bg === '#FFD34D' || bg === '#9BD6FF' || bg === '#BDECC8' || bg === '#EFE4D2'
+    ? '#111111'
+    : '#ffffff';
+}
 
 interface PosterCardProps {
-  entry: Entry;
+  entry: {
+    id: number;
+    title: string;
+    type: string;
+    status?: string | null;
+    posterUrl?: string | null;
+    rating?: number | null;
+    year?: number | null;
+    dateWatched?: string | null;
+  };
   onClick?: () => void;
+  compact?: boolean;
   index?: number;
 }
 
-function generatePosterPlaceholder(title: string, type: 'movie' | 'show') {
-  const firstLetter = title[0]?.toUpperCase() || '?';
-  
-  // Generate a consistent hue based on title
-  const hash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const hue = hash % 360;
-  
-  return (
-    <div
-      className="w-full h-full flex flex-col items-center justify-center gap-3"
-      style={{
-        background: `linear-gradient(135deg, hsl(${hue}, 40%, 25%) 0%, hsl(${hue}, 30%, 15%) 100%)`,
-      }}
-    >
-      <div className="text-5xl font-display font-bold text-white/90">
-        {firstLetter}
-      </div>
-      <div className="text-muted-foreground">
-        {type === 'movie' ? <Film className="w-6 h-6" /> : <Tv className="w-6 h-6" />}
-      </div>
-    </div>
-  );
-}
+export function PosterCard({ entry, onClick, compact = false, index = 0 }: PosterCardProps) {
+  const bg = getPosterColor(entry.title);
+  const fg = textColorFor(bg);
 
-export function PosterCard({ entry, onClick, index = 0 }: PosterCardProps) {
   return (
     <div
-      className={cn(
-        'group cursor-pointer animate-stagger-in opacity-0',
-        'transition-all duration-300 hover:-translate-y-2'
-      )}
-      style={{
-        animationDelay: `${index * 40}ms`,
-      }}
       onClick={onClick}
+      className={cn('relative cursor-pointer select-none animate-stagger-in')}
+      style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
       data-testid={`poster-card-${entry.id}`}
     >
-      <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-card border border-border transition-all duration-300 group-hover:border-primary/50 group-hover:poster-glow">
+      <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm">
         {entry.posterUrl ? (
           <img
             src={entry.posterUrl}
@@ -55,35 +49,48 @@ export function PosterCard({ entry, onClick, index = 0 }: PosterCardProps) {
             loading="lazy"
           />
         ) : (
-          generatePosterPlaceholder(entry.title, entry.type)
-        )}
-        
-        {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {entry.type === 'movie' ? <Film className="w-3 h-3" /> : <Tv className="w-3 h-3" />}
-              <span className="uppercase tracking-wider">{entry.type}</span>
-            </div>
-            {entry.rating && (
-              <StarRating rating={entry.rating} readonly size="sm" />
-            )}
+          <div
+            className="w-full h-full flex flex-col items-center justify-center gap-1"
+            style={{ background: bg, color: fg }}
+          >
+            <span className="text-2xl font-bold">{entry.title[0]?.toUpperCase()}</span>
+            <span className="text-xs font-semibold opacity-60">
+              {entry.type === 'movie' ? '🎬' : '📺'}
+            </span>
           </div>
+        )}
+        {/* Status badge */}
+        {entry.status && entry.status !== 'completed' && (
+          <div
+            className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+            style={{
+              background: entry.status === 'watching' ? '#9BD6FF' : '#BDECC8',
+              color: '#116149',
+            }}
+          >
+            {entry.status === 'watching' ? '▶' : '🔖'}
+          </div>
+        )}
+        {/* Rating overlay */}
+        {entry.rating && (
+          <div
+            className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+            style={{ background: 'rgba(0,0,0,0.6)', color: '#FFD34D' }}
+          >
+            ★ {entry.rating}
+          </div>
+        )}
+      </div>
+      {!compact && (
+        <div className="mt-1.5">
+          <p className="text-xs font-bold truncate" style={{ color: '#111111' }} data-testid={`poster-title-${entry.id}`}>
+            {entry.title}
+          </p>
+          <p className="text-[10px]" style={{ color: '#7E7A73' }}>
+            {entry.year ?? ''}
+          </p>
         </div>
-      </div>
-      
-      <div className="mt-3 space-y-1">
-        <h3 className="font-medium text-sm line-clamp-2 group-hover:text-primary transition-colors" data-testid={`poster-title-${entry.id}`}>
-          {entry.title}
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          {new Date(entry.dateWatched).toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric',
-            year: 'numeric'
-          })}
-        </p>
-      </div>
+      )}
     </div>
   );
 }

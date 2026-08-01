@@ -1,220 +1,184 @@
 import { useState, useMemo } from 'react';
-import { Film, Tv, Star, TrendingUp } from 'lucide-react';
 import { useGetStats, useListYears } from '@workspace/api-client-react';
-import { YearSelector } from '@/components/year-selector';
-import { StarRating } from '@/components/star-rating';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import { SpudMascot } from '@/components/spud-mascot';
 
-const CHART_COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-];
+const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
 export default function Stats() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
-  const { data: yearSummaries, isLoading: yearsLoading } = useListYears();
-  const { data: stats, isLoading: statsLoading } = useGetStats({ year: selectedYear });
+  const { data: yearSummaries } = useListYears();
+  const { data: stats, isLoading } = useGetStats({ year: selectedYear });
 
   const years = useMemo(() => {
     if (!yearSummaries) return [currentYear];
-    const yearList = yearSummaries.map((ys) => ys.year).sort((a, b) => b - a);
-    return yearList.length > 0 ? yearList : [currentYear];
+    const list = yearSummaries
+      .filter(y => y.year != null)
+      .map(y => y.year as number)
+      .sort((a, b) => b - a);
+    return list.length > 0 ? list : [currentYear];
   }, [yearSummaries, currentYear]);
 
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  
-  const monthlyData = useMemo(() => {
-    if (!stats) return [];
-    return monthNames.map((name, index) => {
-      const monthData = stats.byMonth.find((m) => m.month === index + 1);
-      return {
-        month: name,
-        count: monthData?.count || 0,
-      };
-    });
-  }, [stats]);
+  const donutData = stats
+    ? [
+        { name: 'Movies', value: stats.movies, color: '#116149' },
+        { name: 'Shows', value: stats.shows, color: '#BDECC8' },
+      ].filter(d => d.value > 0)
+    : [];
 
-  const tagData = useMemo(() => {
-    if (!stats) return [];
-    return stats.byTag.slice(0, 8).map((tag) => ({
-      name: tag.tag,
-      value: tag.count,
-    }));
-  }, [stats]);
-
-  const isLoading = yearsLoading || statsLoading;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[100dvh] bg-background">
-        <div className="container mx-auto px-6 py-12">
-          <div className="animate-pulse space-y-8">
-            <div className="h-12 bg-card rounded w-1/3" />
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 bg-card rounded" />
-              ))}
-            </div>
-            <div className="h-96 bg-card rounded" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!stats) {
-    return (
-      <div className="min-h-[100dvh] bg-background">
-        <div className="container mx-auto px-6 py-12">
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-              <TrendingUp className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">No stats available</h3>
-            <p className="text-muted-foreground">
-              Start logging entries to see your viewing stats
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const barData = stats?.byMonth.map((m, i) => ({
+    name: MONTH_LABELS[i],
+    count: m.count,
+  })) ?? [];
 
   return (
-    <div className="min-h-[100dvh] bg-background">
-      <div className="container mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="mb-12 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-display font-bold mb-2">Viewing Stats</h1>
-            <p className="text-muted-foreground text-lg">Your year in cinema</p>
-          </div>
-          <YearSelector
-            years={years}
-            selectedYear={selectedYear}
-            onYearChange={setSelectedYear}
-          />
+    <div className="min-h-full pb-8" style={{ background: '#FFF3E8' }}>
+      <div className="px-5 pt-8 pb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold" style={{ color: '#111111' }}>Stats</h1>
+        <select
+          value={selectedYear}
+          onChange={e => setSelectedYear(Number(e.target.value))}
+          className="px-4 py-1.5 rounded-full font-bold text-sm focus:outline-none cursor-pointer"
+          style={{ border: '2px solid #116149', color: '#116149', background: '#ffffff' }}
+        >
+          {years.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+      </div>
+
+      {isLoading ? (
+        <div className="px-5 space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl animate-pulse" style={{ background: '#EFE4D2' }} />
+          ))}
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <div className="p-6 rounded-lg border border-border bg-card">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Film className="w-5 h-5 text-primary" />
-              </div>
-              <h3 className="text-sm font-medium text-muted-foreground">Total Watched</h3>
+      ) : stats ? (
+        <div className="px-5 space-y-4">
+          {/* Summary cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl p-5" style={{ background: '#116149' }}>
+              <p className="text-3xl font-bold text-white" data-testid="stat-total">{stats.total}</p>
+              <p className="text-sm font-semibold text-white opacity-80">Total Watched</p>
             </div>
-            <p className="text-3xl font-display font-bold" data-testid="stat-total">
-              {stats.total}
-            </p>
+            <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
+              <p className="text-3xl font-bold" style={{ color: '#FFD34D' }} data-testid="stat-avg-rating">
+                {stats.averageRating != null ? stats.averageRating.toFixed(1) : '—'}
+              </p>
+              <p className="text-sm font-semibold" style={{ color: '#7E7A73' }}>Avg Rating ★</p>
+            </div>
+            <div className="rounded-2xl p-5" style={{ background: '#BDECC8' }}>
+              <p className="text-3xl font-bold" style={{ color: '#116149' }} data-testid="stat-movies">{stats.movies}</p>
+              <p className="text-sm font-semibold" style={{ color: '#116149' }}>Movies 🎬</p>
+            </div>
+            <div className="rounded-2xl p-5" style={{ background: '#9BD6FF' }}>
+              <p className="text-3xl font-bold" style={{ color: '#116149' }} data-testid="stat-shows">{stats.shows}</p>
+              <p className="text-sm font-semibold" style={{ color: '#116149' }}>Shows 📺</p>
+            </div>
           </div>
 
-          <div className="p-6 rounded-lg border border-border bg-card">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-2/20 flex items-center justify-center">
-                <Film className="w-5 h-5 text-[hsl(var(--chart-2))]" />
+          {/* Donut chart */}
+          {donutData.length > 0 && (
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="font-bold mb-4" style={{ color: '#111111' }}>Movies vs Shows</p>
+              <div className="flex items-center gap-6">
+                <ResponsiveContainer width={120} height={120}>
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={36}
+                      outerRadius={56}
+                      dataKey="value"
+                      paddingAngle={4}
+                    >
+                      {donutData.map(entry => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-3">
+                  {donutData.map(d => (
+                    <div key={d.name} className="flex items-center gap-2.5">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: d.color }} />
+                      <span className="font-semibold text-sm" style={{ color: '#111111' }}>{d.name}</span>
+                      <span className="text-sm" style={{ color: '#7E7A73' }}>{d.value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <h3 className="text-sm font-medium text-muted-foreground">Movies</h3>
             </div>
-            <p className="text-3xl font-display font-bold" data-testid="stat-movies">
-              {stats.movies}
-            </p>
-          </div>
+          )}
 
-          <div className="p-6 rounded-lg border border-border bg-card">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-3/20 flex items-center justify-center">
-                <Tv className="w-5 h-5 text-[hsl(var(--chart-3))]" />
-              </div>
-              <h3 className="text-sm font-medium text-muted-foreground">Shows</h3>
-            </div>
-            <p className="text-3xl font-display font-bold" data-testid="stat-shows">
-              {stats.shows}
-            </p>
-          </div>
-
-          <div className="p-6 rounded-lg border border-border bg-card">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                <Star className="w-5 h-5 text-primary fill-primary" />
-              </div>
-              <h3 className="text-sm font-medium text-muted-foreground">Avg Rating</h3>
-            </div>
-            {stats.averageRating ? (
-              <div className="flex items-center gap-3">
-                <p className="text-3xl font-display font-bold" data-testid="stat-avg-rating">
-                  {stats.averageRating.toFixed(1)}
-                </p>
-                <StarRating rating={Math.round(stats.averageRating)} readonly size="sm" />
-              </div>
-            ) : (
-              <p className="text-3xl font-display font-bold text-muted-foreground">—</p>
-            )}
-          </div>
-        </div>
-
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Monthly Chart */}
-          <div className="lg:col-span-2 p-6 rounded-lg border border-border bg-card">
-            <h3 className="text-lg font-semibold mb-6">Monthly Activity</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          {/* Monthly bar chart */}
+          <div
+            className="rounded-2xl p-5"
+            style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+          >
+            <p className="font-bold mb-4" style={{ color: '#111111' }}>Monthly Activity</p>
+            <ResponsiveContainer width="100%" height={140}>
+              <BarChart data={barData} barSize={16} barCategoryGap="25%">
                 <XAxis
-                  dataKey="month"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#7E7A73', fontFamily: 'Manrope' }}
                 />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
+                <YAxis hide />
                 <Tooltip
+                  cursor={{ fill: '#EFE4D2' }}
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    color: 'hsl(var(--popover-foreground))',
+                    borderRadius: '10px',
+                    border: 'none',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    fontFamily: 'Manrope',
+                    fontWeight: 600,
                   }}
                 />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="#116149" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Tag Breakdown */}
-          <div className="p-6 rounded-lg border border-border bg-card">
-            <h3 className="text-lg font-semibold mb-6">Top Tags</h3>
-            {tagData.length > 0 ? (
-              <div className="space-y-4">
-                {tagData.map((tag, index) => (
-                  <div key={tag.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                      />
-                      <span className="text-sm font-medium capitalize">{tag.name}</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">{tag.value}</span>
+          {/* Top Tags */}
+          {stats.byTag.length > 0 && (
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="font-bold mb-3" style={{ color: '#111111' }}>Top Tags</p>
+              <div className="space-y-2">
+                {stats.byTag.slice(0, 6).map(({ tag, count }) => (
+                  <div key={tag} className="flex items-center justify-between">
+                    <span
+                      className="text-sm font-semibold px-3 py-1 rounded-full"
+                      style={{ background: '#EFE4D2', color: '#111111' }}
+                    >
+                      {tag}
+                    </span>
+                    <span className="text-sm font-bold" style={{ color: '#116149' }}>{count}</span>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No tags yet. Add tags to your entries to see them here.
-              </p>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        <div className="flex flex-col items-center py-16 gap-4 px-5">
+          <SpudMascot pose="sleepy" size={96} />
+          <p className="text-sm text-center font-medium" style={{ color: '#7E7A73' }}>
+            No data for {selectedYear} yet
+          </p>
+        </div>
+      )}
     </div>
   );
 }

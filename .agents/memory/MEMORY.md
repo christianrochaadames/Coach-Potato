@@ -1,0 +1,6 @@
+- [Brand system](brand-system.md) — CouchPotato brand: potato-green #116149, couch-blue #9BD6FF, warm-cream #FFF3E8, Manrope + Baloo 2 fonts, Spud SVG mascot.
+- [DB schema additions](db-schema.md) — entries table has status (watching/plan_to_watch/completed), synopsis, tmdbId, nullable dateWatched/year added via drizzle push-force.
+- [Zod codegen quirk](zod-codegen.md) — Orval generates zod.int() (v4 syntax) but workspace uses Zod v3; always run sed fix after codegen. Also: api-zod/src/index.ts must export types selectively to avoid TmdbPopularResponse/TmdbSearchResponse name collision.
+- [TMDB proxy](tmdb-proxy.md) — /api/tmdb/search, /api/tmdb/trending, /api/tmdb/popular proxy routes in api-server. Requires TMDB_API_KEY env secret. Returns 503 if key missing.
+- [App structure](app-structure.md) — Bottom nav (4 tabs: Home/Search/Watchlist/Stats). Routes: /, /my-shows, /search, /watchlist, /stats, /profile, /entry/:id, /add. No top navbar.
+- [Seed script](seed-script.md) — scripts/seed-2026.ts seeds 63 titles via TMDB; run after TMDB_API_KEY is set.

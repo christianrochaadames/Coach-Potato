@@ -6,11 +6,17 @@ export const entriesTable = pgTable("entries", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   type: text("type", { enum: ["movie", "show"] }).notNull(),
+  status: text("status", { enum: ["watching", "plan_to_watch", "completed"] })
+    .notNull()
+    .default("completed"),
   posterUrl: text("poster_url"),
-  dateWatched: date("date_watched").notNull(),
-  year: integer("year").notNull(),
+  // nullable — watchlist entries may not have a watched date yet
+  dateWatched: date("date_watched"),
+  year: integer("year"),
   rating: integer("rating"),
   notes: text("notes"),
+  synopsis: text("synopsis"),
+  tmdbId: integer("tmdb_id"),
   tags: jsonb("tags").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

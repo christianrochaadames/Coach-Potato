@@ -3,7 +3,7 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: CineLog - Personal movie and TV show tracker
+  description: CouchPotato - Personal movie and TV show tracker
 servers:
   - url: /api
     description: Base API path
@@ -14,6 +14,8 @@ tags:
     description: Movie and TV show log entries
   - name: stats
     description: Viewing statistics
+  - name: tmdb
+    description: TMDB proxy for search and discovery
 
 paths:
   /healthz:
@@ -59,6 +61,12 @@ paths:
             minimum: 1
             maximum: 5
           description: Minimum rating filter
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [watching, plan_to_watch, completed]
+          description: Filter by watch status
       responses:
         "200":
           description: List of entries
@@ -200,6 +208,70 @@ paths:
                 items:
                   $ref: "#/components/schemas/YearSummary"
 
+  /tmdb/search:
+    get:
+      operationId: tmdbSearch
+      tags: [tmdb]
+      summary: Search TMDB for movies and TV shows
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TmdbSearchResponse"
+        "503":
+          description: TMDB API key not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tmdb/trending:
+    get:
+      operationId: tmdbTrending
+      tags: [tmdb]
+      summary: Get trending movies and shows from TMDB
+      responses:
+        "200":
+          description: Trending results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TmdbSearchResponse"
+        "503":
+          description: TMDB API key not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tmdb/popular:
+    get:
+      operationId: tmdbPopular
+      tags: [tmdb]
+      summary: Get popular movies and shows from TMDB
+      responses:
+        "200":
+          description: Popular results split by type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TmdbPopularResponse"
+        "503":
+          description: TMDB API key not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -216,8 +288,9 @@ components:
         - id
         - title
         - type
-        - dateWatched
+        - status
         - year
+        - tags
         - createdAt
         - updatedAt
       properties:
@@ -228,19 +301,27 @@ components:
         type:
           type: string
           enum: [movie, show]
+        status:
+          type: string
+          enum: [watching, plan_to_watch, completed]
+          default: completed
         posterUrl:
           type: ["string", "null"]
         dateWatched:
-          type: string
+          type: ["string", "null"]
           format: date
         year:
-          type: integer
+          type: ["integer", "null"]
         rating:
           type: ["integer", "null"]
           minimum: 1
           maximum: 5
         notes:
           type: ["string", "null"]
+        synopsis:
+          type: ["string", "null"]
+        tmdbId:
+          type: ["integer", "null"]
         tags:
           type: array
           items:
@@ -257,7 +338,6 @@ components:
       required:
         - title
         - type
-        - dateWatched
       properties:
         title:
           type: string
@@ -265,6 +345,10 @@ components:
         type:
           type: string
           enum: [movie, show]
+        status:
+          type: string
+          enum: [watching, plan_to_watch, completed]
+          default: completed
         posterUrl:
           type: string
         dateWatched:
@@ -276,6 +360,10 @@ components:
           maximum: 5
         notes:
           type: string
+        synopsis:
+          type: string
+        tmdbId:
+          type: integer
         tags:
           type: array
           items:
@@ -290,10 +378,13 @@ components:
         type:
           type: string
           enum: [movie, show]
+        status:
+          type: string
+          enum: [watching, plan_to_watch, completed]
         posterUrl:
           type: ["string", "null"]
         dateWatched:
-          type: string
+          type: ["string", "null"]
           format: date
         rating:
           type: ["integer", "null"]
@@ -301,10 +392,60 @@ components:
           maximum: 5
         notes:
           type: ["string", "null"]
+        synopsis:
+          type: ["string", "null"]
+        tmdbId:
+          type: ["integer", "null"]
         tags:
           type: array
           items:
             type: string
+
+    TmdbResult:
+      type: object
+      required:
+        - tmdbId
+        - title
+        - type
+      properties:
+        tmdbId:
+          type: integer
+        title:
+          type: string
+        type:
+          type: string
+          enum: [movie, show]
+        year:
+          type: ["integer", "null"]
+        posterUrl:
+          type: ["string", "null"]
+        overview:
+          type: ["string", "null"]
+
+    TmdbSearchResponse:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/TmdbResult"
+
+    TmdbPopularResponse:
+      type: object
+      required:
+        - movies
+        - shows
+      properties:
+        movies:
+          type: array
+          items:
+            $ref: "#/components/schemas/TmdbResult"
+        shows:
+          type: array
+          items:
+            $ref: "#/components/schemas/TmdbResult"
 
     YearStats:
       type: object
@@ -367,7 +508,7 @@ components:
         - count
       properties:
         year:
-          type: integer
+          type: ["integer", "null"]
         count:
           type: integer
 

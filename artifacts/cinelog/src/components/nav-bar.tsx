@@ -16,11 +16,16 @@ export function NavBar() {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Film className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <ellipse cx="16" cy="18" rx="13" ry="11" fill="#C4D82E"/>
+              <ellipse cx="11" cy="10" rx="5" ry="4" fill="#C4D82E"/>
+              <ellipse cx="21" cy="9" rx="4" ry="3.5" fill="#C4D82E"/>
+              <circle cx="13" cy="17" r="1.5" fill="#1A1A2E"/>
+              <circle cx="19" cy="17" r="1.5" fill="#1A1A2E"/>
+              <path d="M13 21 Q16 23.5 19 21" stroke="#1A1A2E" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+            </svg>
             <h1 className="text-xl font-display font-bold tracking-tight group-hover:text-primary transition-colors">
-              CineLog
+              CouchPotato
             </h1>
           </Link>
 
