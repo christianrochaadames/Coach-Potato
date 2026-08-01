@@ -59,12 +59,14 @@ router.get("/recommendations", async (req, res) => {
     );
     const inCollection = new Set(allRows.map((r) => r.tmdb_id));
 
-    // 3. Fetch TMDB recommendations for each seed entry in parallel
-    const seen = new Set<number>();
-    const results: ReturnType<typeof mapRec>[] = [];
+    // 3. Fetch TMDB recommendations for each seed entry in parallel.
+    //    Tag each result with the recency rank of the seed that produced it
+    //    (0 = most recently watched, higher = older) so we can weight results.
+    type TaggedRec = ReturnType<typeof mapRec> & { recencyRank: number };
+    const allRecs: TaggedRec[] = [];
 
     await Promise.all(
-      recentRows.slice(0, 6).map(async (row) => {
+      recentRows.map(async (row, idx) => {
         const mediaType = row.type === "movie" ? "movie" : "tv";
         try {
           const url = `${TMDB_BASE}/${mediaType}/${row.tmdb_id}/recommendations?api_key=${apiKey}&language=en-US&page=1`;
@@ -72,11 +74,10 @@ router.get("/recommendations", async (req, res) => {
           if (!r.ok) return;
           const data = (await r.json()) as { results?: Record<string, unknown>[] };
           for (const item of data.results ?? []) {
+            if (!item.poster_path) continue;
             const id = item.id as number;
-            if (!item.poster_path) continue; // skip posters we can't show
-            if (seen.has(id) || inCollection.has(id)) continue;
-            seen.add(id);
-            results.push(mapRec(item, mediaType));
+            if (inCollection.has(id)) continue;
+            allRecs.push({ ...mapRec(item, mediaType), recencyRank: idx });
           }
         } catch {
           // ignore individual failures
@@ -84,7 +85,38 @@ router.get("/recommendations", async (req, res) => {
       })
     );
 
-    res.json({ results: results.slice(0, 12) });
+    // 4. Deduplicate: for each tmdbId keep the entry sourced from the most recent
+    //    seed (lowest recencyRank); also track how many seeds recommended it.
+    const dedupMap = new Map<
+      number,
+      { item: ReturnType<typeof mapRec>; bestRank: number; count: number }
+    >();
+    for (const rec of allRecs) {
+      const existing = dedupMap.get(rec.tmdbId);
+      if (!existing) {
+        const { recencyRank: _, ...clean } = rec;
+        dedupMap.set(rec.tmdbId, { item: clean, bestRank: rec.recencyRank, count: 1 });
+      } else {
+        existing.count++;
+        if (rec.recencyRank < existing.bestRank) {
+          existing.bestRank = rec.recencyRank;
+          const { recencyRank: _, ...clean } = rec;
+          existing.item = clean;
+        }
+      }
+    }
+
+    // 5. Score: lower is better.
+    //    Recent seeds (low bestRank) score well; appearing across multiple seeds
+    //    gives a bonus (subtract log(count) * 2).
+    const scored = Array.from(dedupMap.values())
+      .map(({ item, bestRank, count }) => ({
+        item,
+        score: bestRank - Math.log(count) * 2,
+      }))
+      .sort((a, b) => a.score - b.score);
+
+    res.json({ results: scored.slice(0, 12).map((s) => s.item) });
   } catch (err) {
     req.log.error({ err }, "recommendations error");
     res.status(500).json({ error: "Internal server error" });

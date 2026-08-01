@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Plus, Bookmark } from 'lucide-react';
-import { useListEntries } from '@workspace/api-client-react';
+import { Plus, Bookmark, X } from 'lucide-react';
+import {
+  useListEntries,
+  useCreateEntry,
+  getListEntriesQueryKey,
+  getListYearsQueryKey,
+} from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
 import { CouchPotatoLogo } from '@/components/couch-potato-logo';
 import { SpudMascot } from '@/components/spud-mascot';
 import { PosterCard } from '@/components/poster-card';
@@ -65,10 +72,15 @@ function YearPill({ year }: { year: number }) {
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const [addingRec, setAddingRec] = useState<RecItem | null>(null);
 
   const { data: watching } = useListEntries({ status: 'watching' } as any);
   const { data: watchlist } = useListEntries({ status: 'plan_to_watch' } as any);
   const { data: completed, isLoading } = useListEntries({ status: 'completed' } as any);
+
+  const createEntry = useCreateEntry();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const watchedCount  = completed?.length ?? 0;
   const watchingCount = watching?.length ?? 0;
@@ -76,6 +88,33 @@ export default function Home() {
 
   const yearGroups = groupByYear(completed ?? []);
   const { results: recs, loading: recsLoading } = useRecommendations();
+
+  const addRec = (rec: RecItem, status: 'watching' | 'plan_to_watch' | 'completed') => {
+    const today = new Date().toISOString().split('T')[0];
+    createEntry.mutate(
+      {
+        data: {
+          title: rec.title,
+          type: rec.type,
+          status,
+          posterUrl: rec.posterUrl ?? undefined,
+          tmdbId: rec.tmdbId,
+          year: rec.year ?? undefined,
+          dateWatched: status === 'completed' ? today : undefined,
+        } as any,
+      },
+      {
+        onSuccess: () => {
+          const label = status === 'completed' ? '✓ Logged!' : status === 'watching' ? '▶ Now watching' : '🔖 Added to watchlist';
+          toast({ title: label, description: rec.title });
+          queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
+          setAddingRec(null);
+        },
+        onError: () => toast({ title: 'Error', description: 'Could not add entry', variant: 'destructive' }),
+      }
+    );
+  };
 
   return (
     <div className="min-h-full pb-24" style={{ background: '#FFF3E8' }}>
@@ -167,13 +206,13 @@ export default function Home() {
       {/* ── You Might Like ── */}
       {!recsLoading && recs.length > 0 && (
         <section className="mb-6">
-          <div className="px-5 mb-3 flex items-center gap-2">
-            <h2 className="text-base font-bold" style={{ color: '#111111' }}>Picked for you</h2>
+          <div className="px-5 mb-3">
+            <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
             <span
-              className="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
+              className="inline-block px-4 py-1 rounded-full text-sm font-bold"
               style={{ background: '#6B46C1', color: '#ffffff' }}
             >
-              Based on what you've watched
+              Picked for you
             </span>
           </div>
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
@@ -181,7 +220,7 @@ export default function Home() {
               <div
                 key={rec.tmdbId}
                 className="flex-shrink-0 w-28 cursor-pointer active:opacity-70 transition-opacity"
-                onClick={() => setLocation('/search')}
+                onClick={() => setAddingRec(rec)}
               >
                 <div
                   className="aspect-[2/3] rounded-xl overflow-hidden mb-1.5"
@@ -277,6 +316,90 @@ export default function Home() {
       >
         <Plus className="w-7 h-7 text-white" />
       </button>
+
+      {/* ── Rec quick-add sheet ── */}
+      {addingRec && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div
+            className="absolute inset-0"
+            style={{ background: 'rgba(0,0,0,0.45)' }}
+            onClick={() => setAddingRec(null)}
+          />
+          <div
+            className="relative rounded-t-3xl p-5 flex flex-col gap-4"
+            style={{ background: '#FFF3E8' }}
+          >
+            {/* Header */}
+            <div className="flex items-start gap-3">
+              <div
+                className="w-14 h-20 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
+                style={{ background: '#EFE4D2' }}
+              >
+                {addingRec.posterUrl ? (
+                  <img src={addingRec.posterUrl} alt={addingRec.title} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-bold" style={{ color: '#116149' }}>
+                    {addingRec.title[0]?.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-lg leading-tight" style={{ color: '#111111' }}>{addingRec.title}</p>
+                <p className="text-sm mt-0.5" style={{ color: '#7E7A73' }}>
+                  {addingRec.year} · {addingRec.type === 'movie' ? 'Movie' : 'TV Show'}
+                </p>
+              </div>
+              <button onClick={() => setAddingRec(null)} className="p-1 flex-shrink-0">
+                <X className="w-5 h-5" style={{ color: '#7E7A73' }} />
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => addRec(addingRec, 'watching')}
+                disabled={createEntry.isPending}
+                className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50"
+                style={{ background: '#116149', color: '#ffffff' }}
+              >
+                Currently Watching
+              </button>
+              <button
+                onClick={() => addRec(addingRec, 'plan_to_watch')}
+                disabled={createEntry.isPending}
+                className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50"
+                style={{ background: '#EFE4D2', color: '#111111' }}
+              >
+                Add to Watchlist
+              </button>
+              <button
+                onClick={() => addRec(addingRec, 'completed')}
+                disabled={createEntry.isPending}
+                className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50"
+                style={{ background: '#4A78FF', color: '#ffffff' }}
+              >
+                Mark as Watched
+              </button>
+              <button
+                onClick={() => {
+                  const p = new URLSearchParams({
+                    title: addingRec.title,
+                    type: addingRec.type,
+                    tmdbId: String(addingRec.tmdbId),
+                    ...(addingRec.posterUrl ? { posterUrl: addingRec.posterUrl } : {}),
+                  });
+                  setAddingRec(null);
+                  setLocation(`/add?${p.toString()}`);
+                }}
+                className="text-center text-sm font-semibold py-1"
+                style={{ color: '#116149' }}
+              >
+                Log with full details →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
