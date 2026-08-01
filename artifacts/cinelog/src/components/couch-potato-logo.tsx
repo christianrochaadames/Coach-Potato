@@ -7,7 +7,7 @@ interface LogoProps {
   className?: string;
 }
 
-const heights = { sm: 36, md: 52, lg: 80 };
+const heights = { sm: 36, md: 64, lg: 90 };
 
 export function CouchPotatoLogo({ size = 'md', onDark = false, className }: LogoProps) {
   const h = heights[size];

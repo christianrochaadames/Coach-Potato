@@ -11,16 +11,15 @@ export default function Home() {
   const { data: watching } = useListEntries({ status: 'watching' } as any);
   const { data: recent, isLoading: recentLoading } = useListEntries({ status: 'completed' } as any);
 
-  const recentSlice = recent?.slice(0, 12) ?? [];
   const completedCount = recent?.length ?? 0;
 
   return (
     <div className="min-h-full" style={{ background: '#FFF3E8' }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-3 flex items-center justify-between">
-        <CouchPotatoLogo size="md" />
-        <button onClick={() => setLocation('/profile')}>
-          <SpudMascot pose="relaxed" size={68} />
+        <CouchPotatoLogo size="lg" />
+        <button onClick={() => setLocation('/profile')} className="flex-shrink-0">
+          <SpudMascot pose="relaxed" size={72} round={false} />
         </button>
       </div>
 
@@ -37,15 +36,8 @@ export default function Home() {
       {/* Continue Watching section */}
       {watching && watching.length > 0 && (
         <section className="mb-5">
-          <div className="px-5 mb-3 flex items-center justify-between">
+          <div className="px-5 mb-3">
             <h2 className="text-base font-bold" style={{ color: '#111111' }}>Continue Watching</h2>
-            <button
-              onClick={() => setLocation('/my-shows')}
-              className="text-sm font-bold"
-              style={{ color: '#116149' }}
-            >
-              See all
-            </button>
           </div>
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
             {watching.map((entry, i) => (
@@ -61,32 +53,22 @@ export default function Home() {
         </section>
       )}
 
-      {/* Recently Watched */}
+      {/* All Watched — full scrollable grid, no cap */}
       <section className="px-5 mb-10">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3">
           <h2 className="text-base font-bold" style={{ color: '#111111' }}>Recently Watched</h2>
-          <button
-            onClick={() => setLocation('/my-shows')}
-            className="text-sm font-bold"
-            style={{ color: '#116149' }}
-          >
-            See all
-          </button>
         </div>
 
         {recentLoading ? (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {[...Array(9)].map((_, i) => (
+            {[...Array(12)].map((_, i) => (
               <div key={i} className="aspect-[2/3] rounded-xl animate-pulse" style={{ background: '#EFE4D2' }} />
             ))}
           </div>
-        ) : recentSlice.length === 0 ? (
+        ) : !recent || recent.length === 0 ? (
           <div className="flex flex-col items-center py-12 gap-4" data-testid="empty-state">
-            <SpudMascot pose="sleepy" size={96} />
-            <p
-              className="text-center font-medium text-sm"
-              style={{ color: '#7E7A73' }}
-            >
+            <SpudMascot pose="sleepy" size={96} round={false} />
+            <p className="text-center font-medium text-sm" style={{ color: '#7E7A73' }}>
               Nothing logged yet.{'\n'}Start tracking what you watch!
             </p>
             <button
@@ -100,7 +82,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {recentSlice.map((entry, i) => (
+            {recent.map((entry, i) => (
               <PosterCard
                 key={entry.id}
                 entry={entry}
