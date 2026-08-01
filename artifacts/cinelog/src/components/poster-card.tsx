@@ -89,16 +89,13 @@ export function PosterCard({ entry, onClick, compact = false, index = 0 }: Poste
           </div>
         )}
 
-        {/* Status badge */}
-        {entry.status && entry.status !== 'completed' && (
+        {/* Status badge — only show on watchlist items, not on currently-watching strip */}
+        {entry.status === 'plan_to_watch' && (
           <div
             className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-            style={{
-              background: entry.status === 'watching' ? '#9BD6FF' : '#BDECC8',
-              color: '#116149',
-            }}
+            style={{ background: '#BDECC8', color: '#116149' }}
           >
-            {entry.status === 'watching' ? '▶' : '🔖'}
+            🔖
           </div>
         )}
       </div>

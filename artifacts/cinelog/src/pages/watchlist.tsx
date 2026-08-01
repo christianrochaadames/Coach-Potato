@@ -111,7 +111,7 @@ export default function Watchlist() {
                     className="text-xs font-bold px-3 py-1.5 rounded-full text-white"
                     style={{ background: '#116149' }}
                   >
-                    ✓ Done
+                    ✓ Seen it
                   </button>
                 </div>
               </div>

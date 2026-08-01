@@ -30,6 +30,7 @@ import {
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   type: z.enum(['movie', 'show']),
+  status: z.enum(['watching', 'plan_to_watch', 'completed']),
   posterUrl: z.string().optional().or(z.literal('')),
   dateWatched: z.string().optional(),
   notes: z.string().optional(),
@@ -64,6 +65,7 @@ export default function EntryDetail() {
     defaultValues: {
       title: '',
       type: 'movie',
+      status: 'completed',
       posterUrl: '',
       dateWatched: '',
       notes: '',
@@ -78,6 +80,7 @@ export default function EntryDetail() {
       form.reset({
         title: entry.title,
         type: entry.type,
+        status: (entry.status ?? 'completed') as 'watching' | 'plan_to_watch' | 'completed',
         posterUrl: entry.posterUrl ?? '',
         dateWatched: entry.dateWatched ?? '',
         notes: entry.notes ?? '',
@@ -101,6 +104,7 @@ export default function EntryDetail() {
         data: {
           title: data.title,
           type: data.type,
+          status: data.status,
           posterUrl: data.posterUrl || null,
           dateWatched: data.dateWatched || null,
           rating: rating || null,
@@ -239,6 +243,32 @@ export default function EntryDetail() {
       {isEditing ? (
         /* Edit Mode */
         <form onSubmit={form.handleSubmit(onSubmit)} className="px-5 space-y-5 pb-10">
+          {/* Status */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>Status</label>
+            <div className="flex gap-2">
+              {([
+                { key: 'completed', label: '✓ Seen it', activeBg: '#116149', activeColor: '#ffffff' },
+                { key: 'watching', label: '▶ Watching', activeBg: '#9BD6FF', activeColor: '#116149' },
+                { key: 'plan_to_watch', label: '🔖 Wishlist', activeBg: '#BDECC8', activeColor: '#116149' },
+              ] as const).map(({ key, label, activeBg, activeColor }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => form.setValue('status', key)}
+                  className="flex-1 py-2 rounded-full text-xs font-bold transition-all"
+                  style={
+                    form.watch('status') === key
+                      ? { background: activeBg, color: activeColor }
+                      : { background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Type */}
           <div className="space-y-2">
             <label className="text-sm font-bold" style={{ color: '#111111' }}>Type</label>
