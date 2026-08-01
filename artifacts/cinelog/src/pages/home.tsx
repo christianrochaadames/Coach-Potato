@@ -43,7 +43,7 @@ function groupByYear(entries: { year?: number | null; dateWatched?: string | nul
   return [...map.entries()].sort(([a], [b]) => b - a);
 }
 
-type RecItem = { tmdbId: number; title: string; type: 'movie' | 'show'; year: number | null; posterUrl: string | null };
+type RecItem = { tmdbId: number; title: string; type: 'movie' | 'show'; year: number | null; posterUrl: string | null; overview?: string | null };
 
 function useRecommendations() {
   const [results, setResults] = useState<RecItem[]>([]);
@@ -209,7 +209,7 @@ export default function Home() {
           <div className="px-5 mb-3">
             <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
             <span
-              className="inline-block px-4 py-1 rounded-full text-sm font-bold"
+              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
               style={{ background: '#6B46C1', color: '#ffffff' }}
             >
               Picked for you
@@ -317,41 +317,40 @@ export default function Home() {
         <Plus className="w-7 h-7 text-white" />
       </button>
 
-      {/* ── Rec quick-add sheet ── */}
+      {/* ── Rec quick-add sheet — matches Search sheet exactly ── */}
       {addingRec && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={() => setAddingRec(null)}
+        >
           <div
-            className="absolute inset-0"
-            style={{ background: 'rgba(0,0,0,0.45)' }}
-            onClick={() => setAddingRec(null)}
-          />
-          <div
-            className="relative rounded-t-3xl p-5 flex flex-col gap-4"
-            style={{ background: '#FFF3E8' }}
+            className="w-full rounded-t-3xl p-6 space-y-5"
+            style={{ background: '#ffffff' }}
+            onClick={e => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="flex items-start gap-3">
-              <div
-                className="w-14 h-20 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
-                style={{ background: '#EFE4D2' }}
-              >
-                {addingRec.posterUrl ? (
-                  <img src={addingRec.posterUrl} alt={addingRec.title} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-bold" style={{ color: '#116149' }}>
-                    {addingRec.title[0]?.toUpperCase()}
-                  </span>
+            {/* Header — poster + title + overview */}
+            <div className="flex gap-4 items-start">
+              {addingRec.posterUrl && (
+                <img
+                  src={addingRec.posterUrl}
+                  alt={addingRec.title}
+                  className="w-20 h-28 object-cover rounded-2xl flex-shrink-0"
+                />
+              )}
+              <div className="flex-1">
+                <p className="font-bold text-lg leading-snug" style={{ color: '#111111' }}>
+                  {addingRec.title}
+                </p>
+                <p className="text-sm mt-0.5" style={{ color: '#7E7A73' }}>
+                  {addingRec.year ?? '—'} · {addingRec.type === 'movie' ? 'Movie' : 'TV Show'}
+                </p>
+                {addingRec.overview && (
+                  <p className="text-xs mt-2 line-clamp-3" style={{ color: '#7E7A73' }}>
+                    {addingRec.overview}
+                  </p>
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-lg leading-tight" style={{ color: '#111111' }}>{addingRec.title}</p>
-                <p className="text-sm mt-0.5" style={{ color: '#7E7A73' }}>
-                  {addingRec.year} · {addingRec.type === 'movie' ? 'Movie' : 'TV Show'}
-                </p>
-              </div>
-              <button onClick={() => setAddingRec(null)} className="p-1 flex-shrink-0">
-                <X className="w-5 h-5" style={{ color: '#7E7A73' }} />
-              </button>
             </div>
 
             {/* Actions */}
@@ -359,44 +358,48 @@ export default function Home() {
               <button
                 onClick={() => addRec(addingRec, 'watching')}
                 disabled={createEntry.isPending}
-                className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50"
-                style={{ background: '#116149', color: '#ffffff' }}
+                className="w-full py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
+                style={{ background: '#116149' }}
               >
-                Currently Watching
+                ▶ Currently Watching
               </button>
-              <button
-                onClick={() => addRec(addingRec, 'plan_to_watch')}
-                disabled={createEntry.isPending}
-                className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50"
-                style={{ background: '#EFE4D2', color: '#111111' }}
-              >
-                Add to Watchlist
-              </button>
-              <button
-                onClick={() => addRec(addingRec, 'completed')}
-                disabled={createEntry.isPending}
-                className="w-full py-4 rounded-2xl font-bold text-sm disabled:opacity-50"
-                style={{ background: '#4A78FF', color: '#ffffff' }}
-              >
-                Mark as Watched
-              </button>
-              <button
-                onClick={() => {
-                  const p = new URLSearchParams({
-                    title: addingRec.title,
-                    type: addingRec.type,
-                    tmdbId: String(addingRec.tmdbId),
-                    ...(addingRec.posterUrl ? { posterUrl: addingRec.posterUrl } : {}),
-                  });
-                  setAddingRec(null);
-                  setLocation(`/add?${p.toString()}`);
-                }}
-                className="text-center text-sm font-semibold py-1"
-                style={{ color: '#116149' }}
-              >
-                Log with full details →
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => addRec(addingRec, 'plan_to_watch')}
+                  disabled={createEntry.isPending}
+                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                >
+                  🔖 Watchlist
+                </button>
+                <button
+                  onClick={() => addRec(addingRec, 'completed')}
+                  disabled={createEntry.isPending}
+                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                >
+                  ✓ Mark Watched
+                </button>
+              </div>
             </div>
+            <button
+              onClick={() => {
+                const p = new URLSearchParams({
+                  tmdbId: String(addingRec.tmdbId),
+                  title: addingRec.title,
+                  type: addingRec.type,
+                  year: String(addingRec.year ?? ''),
+                  poster: addingRec.posterUrl ?? '',
+                  overview: addingRec.overview ?? '',
+                });
+                setAddingRec(null);
+                setLocation(`/add?${p.toString()}`);
+              }}
+              className="w-full text-center text-sm font-semibold"
+              style={{ color: '#7E7A73' }}
+            >
+              Log with full details →
+            </button>
           </div>
         </div>
       )}
