@@ -107,31 +107,34 @@ export default function Home() {
           <div className="px-5 mb-3">
             <h2 className="text-base font-bold" style={{ color: '#111111' }}>Currently Watching</h2>
           </div>
-          {groupByPlatform(watching!).map(([platform, items]) => (
-            <div key={platform || '__none__'} className="mb-4">
-              {platform && (
-                <div className="px-5 mb-2">
-                  <span
-                    className="inline-block px-4 py-1 rounded-full text-sm font-bold"
-                    style={{ background: '#4A78FF', color: '#ffffff' }}
-                  >
-                    {platform}
-                  </span>
+          <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
+            {watching!.map((entry: any, i: number) => (
+              <div key={entry.id} className="flex-shrink-0 w-28">
+                {/* Platform pill sits above the poster */}
+                <div className="mb-1.5 h-6 flex items-center">
+                  {entry.platform ? (
+                    <span
+                      className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold truncate max-w-full"
+                      style={{ background: '#4A78FF', color: '#ffffff' }}
+                    >
+                      {entry.platform}
+                    </span>
+                  ) : (
+                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                      style={{ background: '#EFE4D2', color: '#7E7A73' }}
+                    >
+                      + Add platform
+                    </span>
+                  )}
                 </div>
-              )}
-              <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
-                {items.map((entry: any, i: number) => (
-                  <div key={entry.id} className="flex-shrink-0 w-28">
-                    <PosterCard
-                      entry={entry}
-                      index={i}
-                      onClick={() => setLocation(`/entry/${entry.id}`)}
-                    />
-                  </div>
-                ))}
+                <PosterCard
+                  entry={entry}
+                  index={i}
+                  onClick={() => setLocation(`/entry/${entry.id}`)}
+                />
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
       ) : (
         <div className="mx-5 mb-6 rounded-2xl px-4 py-3 flex items-center gap-3"
