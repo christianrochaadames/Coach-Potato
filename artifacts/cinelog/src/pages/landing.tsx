@@ -8,8 +8,8 @@ export default function Landing() {
       className="min-h-[100dvh] flex flex-col"
       style={{ background: "#FFF3E8", overflow: "hidden" }}
     >
-      {/* ── Logo — tilted, app-icon style ── */}
-      <div className="pt-10 flex justify-center">
+      {/* ── Logo — left-aligned, tilted counter-clockwise ── */}
+      <div className="pt-10 pl-6 flex justify-start">
         <img
           src="/logo.jpeg"
           alt="Couch Potato"
@@ -19,7 +19,7 @@ export default function Landing() {
             width: "auto",
             objectFit: "contain",
             mixBlendMode: "multiply",
-            transform: "rotate(12deg)",
+            transform: "rotate(-12deg)",
             transformOrigin: "center center",
           }}
         />
@@ -28,16 +28,16 @@ export default function Landing() {
       {/* ── Hero: text left / Spud right ── */}
       <div className="relative flex-1 mt-10" style={{ minHeight: 380 }}>
 
-        {/* Spud — large, right-anchored, bleeds off edge */}
+        {/* Spud — smaller, tucked into bottom-right corner */}
         <img
           src="/spud.png"
           alt="Spud"
           draggable={false}
           style={{
             position: "absolute",
-            right: -40,
+            right: 0,
             bottom: 0,
-            width: 400,
+            width: 220,
             objectFit: "contain",
             pointerEvents: "none",
             userSelect: "none",
@@ -47,23 +47,23 @@ export default function Landing() {
         {/* Text — left-aligned, all dark green, even spacing */}
         <div
           className="relative flex flex-col px-6"
-          style={{ gap: 22, zIndex: 1, maxWidth: "58%" }}
+          style={{ gap: 22, zIndex: 1, maxWidth: "65%" }}
         >
           <p
-            className="font-bold leading-snug"
-            style={{ color: "#116149", fontSize: 22 }}
+            className="leading-snug"
+            style={{ color: "#116149", fontSize: 22, fontWeight: 500 }}
           >
             Everything you're watching
           </p>
           <p
-            className="font-bold leading-snug"
-            style={{ color: "#116149", fontSize: 22 }}
+            className="leading-snug"
+            style={{ color: "#116149", fontSize: 22, fontWeight: 500 }}
           >
             What you've already seen
           </p>
           <p
-            className="font-bold leading-snug"
-            style={{ color: "#116149", fontSize: 22 }}
+            className="leading-snug"
+            style={{ color: "#116149", fontSize: 22, fontWeight: 500 }}
           >
             What you'll watch next
           </p>
@@ -83,8 +83,8 @@ export default function Landing() {
           className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
           style={{
             border: "2px solid #116149",
-            color: "#116149",
-            background: "transparent",
+            color: "#ffffff",
+            background: "#116149",
           }}
         >
           Get started free
