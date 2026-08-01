@@ -5,6 +5,13 @@ import { z } from "zod";
 
 const router = Router();
 
+const seasonSchema = z.object({
+  number: z.number().int().min(1),
+  status: z.enum(["watched", "watching"]),
+  dateWatched: z.string().nullable().optional(),
+  rating: z.number().int().min(1).max(5).nullable().optional(),
+});
+
 const entryInputSchema = z.object({
   title: z.string().min(1),
   type: z.enum(["movie", "show"]),
@@ -17,6 +24,7 @@ const entryInputSchema = z.object({
   tmdbId: z.number().int().optional(),
   tags: z.array(z.string()).optional(),
   platform: z.string().optional(),
+  seasons: z.array(seasonSchema).optional(),
 });
 
 const entryUpdateSchema = z.object({
@@ -31,6 +39,7 @@ const entryUpdateSchema = z.object({
   tmdbId: z.number().int().nullable().optional(),
   tags: z.array(z.string()).optional(),
   platform: z.string().nullable().optional(),
+  seasons: z.array(seasonSchema).optional(),
 });
 
 function serializeEntry(entry: typeof entriesTable.$inferSelect) {
@@ -45,6 +54,7 @@ function serializeEntry(entry: typeof entriesTable.$inferSelect) {
     tmdbId: entry.tmdbId ?? null,
     tags: (entry.tags as string[]) ?? [],
     platform: (entry as any).platform ?? null,
+    seasons: (entry as any).seasons ?? [],
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
   };
@@ -101,6 +111,7 @@ router.post("/entries", async (req, res) => {
     tmdbId,
     tags,
     platform,
+    seasons,
   } = parsed.data;
 
   const year = dateWatched ? Number(dateWatched.split("-")[0]) : null;
@@ -121,6 +132,7 @@ router.post("/entries", async (req, res) => {
         tmdbId: tmdbId ?? null,
         tags: tags ?? [],
         platform: platform ?? null,
+        seasons: seasons ?? [],
       } as any)
       .returning();
 

@@ -48,6 +48,7 @@ export default function EntryDetail() {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
+  const [seasonCount, setSeasonCount] = useState<number | null>(null);
 
   const entryId = params.id ? Number(params.id) : undefined;
   const { data: entry, isLoading } = useGetEntry(entryId!, {
@@ -90,6 +91,29 @@ export default function EntryDetail() {
       setRating(entry.rating ?? null);
     }
   }, [entry, form]);
+
+  // Fetch season count from TMDB for shows
+  useEffect(() => {
+    if (!entry || entry.type !== 'show' || !entry.tmdbId) { setSeasonCount(null); return; }
+    fetch(`/api/tmdb/show/${entry.tmdbId}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d) => setSeasonCount(d.numberOfSeasons ?? null))
+      .catch(() => {});
+  }, [entry?.tmdbId, entry?.type]);
+
+  const toggleSeason = (num: number) => {
+    if (!entryId || !entry) return;
+    const seasons = ((entry as any).seasons ?? []) as Array<{ number: number; status: string; dateWatched?: string | null }>;
+    const isWatched = seasons.some((s) => s.number === num && s.status === 'watched');
+    const today = new Date().toISOString().split('T')[0];
+    const updated = isWatched
+      ? seasons.filter((s) => s.number !== num)
+      : [...seasons.filter((s) => s.number !== num), { number: num, status: 'watched', dateWatched: today }];
+    updateEntry.mutate(
+      { id: entryId, data: { seasons: updated } as any },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) }) }
+    );
+  };
 
   const onSubmit = (data: FormData) => {
     if (!entryId) return;
@@ -514,6 +538,47 @@ export default function EntryDetail() {
               </div>
             </div>
           )}
+
+          {/* Season tracker — shows only */}
+          {entry.type === 'show' && (() => {
+            const seasons = ((entry as any).seasons ?? []) as Array<{ number: number; status: string }>;
+            const totalSeasons = Math.max(seasonCount ?? 0, ...seasons.map((s) => s.number), seasonCount ? 0 : 1);
+            const watchedNums = new Set(seasons.filter((s) => s.status === 'watched').map((s) => s.number));
+            const pills = Array.from({ length: Math.max(totalSeasons, 1) }, (_, i) => i + 1);
+            return (
+              <div className="rounded-2xl p-4 mb-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Seasons</p>
+                  <p className="text-xs font-bold" style={{ color: '#116149' }}>
+                    {watchedNums.size}/{totalSeasons} watched
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {pills.map((num) => {
+                    const isWatched = watchedNums.has(num);
+                    return (
+                      <button
+                        key={num}
+                        onClick={() => toggleSeason(num)}
+                        disabled={updateEntry.isPending}
+                        className="w-10 h-10 rounded-full font-bold text-xs transition-all active:scale-90 disabled:opacity-50"
+                        style={isWatched
+                          ? { background: '#116149', color: '#ffffff' }
+                          : { background: '#EFE4D2', color: '#7E7A73' }
+                        }
+                        title={isWatched ? `Season ${num} — tap to unmark` : `Season ${num} — tap to mark watched`}
+                      >
+                        S{num}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] mt-3" style={{ color: '#7E7A73' }}>
+                  Tap a pill to mark watched · tap again to unmark
+                </p>
+              </div>
+            );
+          })()}
 
           {/* Synopsis */}
           {entry.synopsis && (

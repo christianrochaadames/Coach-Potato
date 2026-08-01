@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Plus, Bookmark } from 'lucide-react';
 import { useListEntries } from '@workspace/api-client-react';
@@ -35,6 +36,20 @@ function groupByYear(entries: { year?: number | null; dateWatched?: string | nul
   return [...map.entries()].sort(([a], [b]) => b - a);
 }
 
+type RecItem = { tmdbId: number; title: string; type: 'movie' | 'show'; year: number | null; posterUrl: string | null };
+
+function useRecommendations() {
+  const [results, setResults] = useState<RecItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch('/api/recommendations')
+      .then((r) => (r.ok ? r.json() : { results: [] }))
+      .then((d) => { setResults(d.results ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+  return { results, loading };
+}
+
 function YearPill({ year }: { year: number }) {
   return (
     <div className="mb-3 mt-1">
@@ -60,6 +75,7 @@ export default function Home() {
   const queueCount    = watchlist?.length ?? 0;
 
   const yearGroups = groupByYear(completed ?? []);
+  const { results: recs, loading: recsLoading } = useRecommendations();
 
   return (
     <div className="min-h-full pb-24" style={{ background: '#FFF3E8' }}>
@@ -148,6 +164,47 @@ export default function Home() {
         </div>
       )}
 
+      {/* ── You Might Like ── */}
+      {!recsLoading && recs.length > 0 && (
+        <section className="mb-6">
+          <div className="px-5 mb-3 flex items-center gap-2">
+            <h2 className="text-base font-bold" style={{ color: '#111111' }}>You Might Like</h2>
+            <span
+              className="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
+              style={{ background: '#FFD34D', color: '#111111' }}
+            >
+              For you
+            </span>
+          </div>
+          <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
+            {recs.map((rec) => (
+              <div
+                key={rec.tmdbId}
+                className="flex-shrink-0 w-28 cursor-pointer active:opacity-70 transition-opacity"
+                onClick={() => setLocation('/search')}
+              >
+                <div
+                  className="aspect-[2/3] rounded-xl overflow-hidden mb-1.5"
+                  style={{ background: '#EFE4D2' }}
+                >
+                  {rec.posterUrl ? (
+                    <img src={rec.posterUrl} alt={rec.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-2xl font-bold" style={{ color: '#116149' }}>
+                      {rec.title[0]?.toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs font-semibold truncate" style={{ color: '#111111' }}>{rec.title}</p>
+                <p className="text-[10px]" style={{ color: '#7E7A73' }}>
+                  {rec.year} · {rec.type === 'movie' ? 'Film' : 'Show'}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ── Watched — grouped by year ── */}
       <section className="px-5 mb-10">
         <div className="mb-4">
@@ -213,7 +270,7 @@ export default function Home() {
 
       {/* ── FAB ── */}
       <button
-        onClick={() => setLocation('/add')}
+        onClick={() => setLocation('/search')}
         className="fixed bottom-20 right-5 w-14 h-14 rounded-full flex items-center justify-center shadow-lg z-40 active:scale-95 transition-transform"
         style={{ background: '#FF4BAE' }}
         aria-label="Log new entry"

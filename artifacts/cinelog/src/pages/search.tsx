@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { Search as SearchIcon, X, Film, Tv } from 'lucide-react';
 import {
   useCreateEntry,
+  useListEntries,
   getListEntriesQueryKey,
   getListYearsQueryKey,
 } from '@workspace/api-client-react';
@@ -69,6 +70,19 @@ export default function SearchPage() {
   const createEntry = useCreateEntry();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  // Build a set of tmdbIds already in the user's collection for duplicate detection
+  const { data: allEntries } = useListEntries({} as any);
+  const inCollection = useMemo(() => {
+    const s = new Set<number>();
+    for (const e of allEntries ?? []) {
+      if (e.tmdbId) s.add(e.tmdbId);
+    }
+    return s;
+  }, [allEntries]);
+
+  const getCollectionEntry = (tmdbId: number) =>
+    (allEntries ?? []).find((e) => e.tmdbId === tmdbId);
 
   const noKey = searchNoKey || popularNoKey;
 
@@ -147,11 +161,16 @@ export default function SearchPage() {
     );
   };
 
-  const renderItem = (item: TmdbItem, i: number) => (
+  const renderItem = (item: TmdbItem, i: number) => {
+    const alreadyAdded = inCollection.has(item.tmdbId);
+    return (
     <div
       key={item.tmdbId}
       className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer active:opacity-70 transition-opacity"
-      style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+      style={{
+        background: alreadyAdded ? '#F4FBF7' : '#ffffff',
+        border: alreadyAdded ? '1.5px solid #BDECC8' : '1px solid #E2D9CE',
+      }}
       onClick={() => setAddingItem(item)}
     >
       <div
@@ -167,9 +186,14 @@ export default function SearchPage() {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-sm truncate" style={{ color: '#111111' }}>{item.title}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="font-bold text-sm truncate" style={{ color: '#111111' }}>{item.title}</p>
+          {alreadyAdded && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: '#BDECC8', color: '#116149' }}>✓</span>
+          )}
+        </div>
         <p className="text-xs" style={{ color: '#7E7A73' }}>
-          {item.year ?? '—'} · {item.type === 'movie' ? 'Movie' : 'TV Show'}
+          {item.year ?? '—'} · {item.type === 'movie' ? 'Movie' : 'TV Show'}{alreadyAdded ? ' · In your collection' : ''}
         </p>
       </div>
       <span
@@ -184,6 +208,7 @@ export default function SearchPage() {
       </span>
     </div>
   );
+  };
 
   return (
     <div className="min-h-full" style={{ background: '#FFF3E8' }}>
@@ -294,6 +319,28 @@ export default function SearchPage() {
                 )}
               </div>
             </div>
+            {/* Duplicate warning */}
+            {inCollection.has(addingItem.tmdbId) && (
+              <div
+                className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                style={{ background: '#FFFBEB', border: '1.5px solid #FFD34D' }}
+              >
+                <span className="text-lg flex-shrink-0">⚠️</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold" style={{ color: '#111111' }}>Already in your collection</p>
+                  <button
+                    className="text-xs font-semibold underline mt-0.5"
+                    style={{ color: '#116149' }}
+                    onClick={() => {
+                      const match = getCollectionEntry(addingItem.tmdbId);
+                      if (match) { setAddingItem(null); setLocation(`/entry/${match.id}`); }
+                    }}
+                  >
+                    View it in your collection →
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Actions */}
             <div className="flex flex-col gap-3">
               <button

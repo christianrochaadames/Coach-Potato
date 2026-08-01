@@ -19,6 +19,12 @@ export const entriesTable = pgTable("entries", {
   tmdbId: integer("tmdb_id"),
   platform: text("platform"),
   tags: jsonb("tags").$type<string[]>().default([]),
+  seasons: jsonb("seasons").$type<Array<{
+    number: number;
+    status: 'watched' | 'watching';
+    dateWatched?: string | null;
+    rating?: number | null;
+  }>>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

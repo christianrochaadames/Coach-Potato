@@ -150,4 +150,37 @@ router.get("/tmdb/popular", async (req, res) => {
   }
 });
 
+// GET /tmdb/show/:id — season count for TV shows
+router.get("/tmdb/show/:id", async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    res.status(503).json({ error: "TMDB_API_KEY not configured" });
+    return;
+  }
+  const tmdbId = Number(req.params.id);
+  if (isNaN(tmdbId)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    const url = `${TMDB_BASE}/tv/${tmdbId}?api_key=${apiKey}&language=en-US`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      res.status(502).json({ error: "TMDB request failed" });
+      return;
+    }
+    const data = (await response.json()) as {
+      number_of_seasons?: number;
+      name?: string;
+    };
+    res.json({
+      numberOfSeasons: data.number_of_seasons ?? null,
+      name: data.name ?? null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "tmdb show error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
