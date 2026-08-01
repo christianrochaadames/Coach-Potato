@@ -102,7 +102,7 @@ export default function Watchlist() {
                   <button
                     onClick={() => startWatching(entry.id, entry.title)}
                     className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full text-white"
-                    style={{ background: '#FF4BAE' }}
+                    style={{ background: '#4A78FF' }}
                   >
                     <Play className="w-3 h-3" /> Watch
                   </button>

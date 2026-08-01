@@ -8,10 +8,11 @@ import { SpudMascot } from '@/components/spud-mascot';
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
-// Rotating palette for genre bars
+// Genre bar palette — brand-rooted but balanced, no rainbow
 const GENRE_COLORS = [
-  '#116149', '#9BD6FF', '#FF4BAE', '#FFD34D', '#BDECC8',
-  '#4A78FF', '#6B46C1', '#FFB4D6', '#E6F2FF', '#7E7A73',
+  '#4A78FF', '#FF4BAE', '#FFD34D', '#FF8B4D', '#9BD6FF',
+  '#6B46C1', '#4A78FF', '#FF4BAE', '#FFD34D', '#FF8B4D',
+  '#9BD6FF', '#6B46C1',
 ];
 
 export default function Stats() {
@@ -36,8 +37,8 @@ export default function Stats() {
 
   const donutData = stats
     ? [
-        { name: 'Movies', value: stats.movies, color: '#116149' },
-        { name: 'Shows', value: stats.shows, color: '#BDECC8' },
+        { name: '🎬 Movies', value: stats.movies, color: '#4A78FF' },
+        { name: '📺 Shows', value: stats.shows, color: '#FF4BAE' },
       ].filter(d => d.value > 0)
     : [];
 
@@ -88,7 +89,7 @@ export default function Stats() {
         </div>
       ) : stats ? (
         <div className="px-5 space-y-4">
-          {/* Summary cards */}
+          {/* Summary cards — 2 cards only, movie/show detail lives in the donut */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl p-5" style={{ background: '#116149' }}>
               <p className="text-3xl font-bold text-white" data-testid="stat-total">{stats.total}</p>
@@ -99,14 +100,6 @@ export default function Stats() {
                 {stats.averageRating != null ? stats.averageRating.toFixed(1) : '—'}
               </p>
               <p className="text-sm font-semibold" style={{ color: '#7E7A73' }}>Avg Rating ★</p>
-            </div>
-            <div className="rounded-2xl p-5" style={{ background: '#BDECC8' }}>
-              <p className="text-3xl font-bold" style={{ color: '#116149' }} data-testid="stat-movies">{stats.movies}</p>
-              <p className="text-sm font-semibold" style={{ color: '#116149' }}>Movies 🎬</p>
-            </div>
-            <div className="rounded-2xl p-5" style={{ background: '#9BD6FF' }}>
-              <p className="text-3xl font-bold" style={{ color: '#116149' }} data-testid="stat-shows">{stats.shows}</p>
-              <p className="text-sm font-semibold" style={{ color: '#116149' }}>Shows 📺</p>
             </div>
           </div>
 
