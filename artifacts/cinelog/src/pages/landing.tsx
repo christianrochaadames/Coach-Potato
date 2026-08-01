@@ -4,100 +4,103 @@ export default function Landing() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center" style={{ background: "#FFF3E8" }}>
-
-      {/* ── Logo ── */}
-      <div className="pt-10 pb-2 flex justify-center">
+    <div
+      className="min-h-[100dvh] flex flex-col"
+      style={{ background: "#FFF3E8", overflow: "hidden" }}
+    >
+      {/* ── Logo — tilted, app-icon style ── */}
+      <div className="pt-10 flex justify-center">
         <img
           src="/logo.jpeg"
           alt="Couch Potato"
           draggable={false}
           style={{
-            height: 120,
+            height: 110,
             width: "auto",
             objectFit: "contain",
             mixBlendMode: "multiply",
+            transform: "rotate(12deg)",
+            transformOrigin: "center center",
           }}
         />
       </div>
 
-      {/* ── Mascot ── */}
-      <img
-        src="/spud.png"
-        alt="Spud"
-        draggable={false}
-        style={{ width: 130, height: 130, objectFit: "contain" }}
-      />
+      {/* ── Hero: text left / Spud right ── */}
+      <div className="relative flex-1 mt-10" style={{ minHeight: 380 }}>
 
-      {/* ── Staggered text boxes ── */}
-      <div className="w-full px-5 mt-6 flex flex-col gap-4">
+        {/* Spud — large, right-anchored, bleeds off edge */}
+        <img
+          src="/spud.png"
+          alt="Spud"
+          draggable={false}
+          style={{
+            position: "absolute",
+            right: -40,
+            bottom: 0,
+            width: 400,
+            objectFit: "contain",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        />
 
-        {/* Left — purple */}
-        <div className="flex justify-start">
-          <div
-            className="rounded-2xl px-6 py-4"
-            style={{ background: "#6B46C1", maxWidth: "68%" }}
+        {/* Text — left-aligned, all dark green, even spacing */}
+        <div
+          className="relative flex flex-col px-6"
+          style={{ gap: 22, zIndex: 1, maxWidth: "58%" }}
+        >
+          <p
+            className="font-bold leading-snug"
+            style={{ color: "#116149", fontSize: 22 }}
           >
-            <p className="text-white font-bold text-lg leading-snug">
-              Everything you're watching
-            </p>
-          </div>
-        </div>
-
-        {/* Right — hot pink */}
-        <div className="flex justify-end">
-          <div
-            className="rounded-2xl px-6 py-4"
-            style={{ background: "#FF4BAE", maxWidth: "68%" }}
+            Everything you're watching
+          </p>
+          <p
+            className="font-bold leading-snug"
+            style={{ color: "#116149", fontSize: 22 }}
           >
-            <p className="text-white font-bold text-lg leading-snug">
-              What you've already seen
-            </p>
-          </div>
-        </div>
-
-        {/* Left — bright blue */}
-        <div className="flex justify-start">
-          <div
-            className="rounded-2xl px-6 py-4"
-            style={{ background: "#4A78FF", maxWidth: "68%" }}
+            What you've already seen
+          </p>
+          <p
+            className="font-bold leading-snug"
+            style={{ color: "#116149", fontSize: 22 }}
           >
-            <p className="text-white font-bold text-lg leading-snug">
-              What you'll watch next
-            </p>
-          </div>
+            What you'll watch next
+          </p>
+          <p
+            className="font-bold leading-snug"
+            style={{ color: "#116149", fontSize: 22 }}
+          >
+            All in one place.
+          </p>
         </div>
       </div>
 
-      {/* ── "All in one place" ── */}
-      <div className="mt-7 px-6 text-center">
-        <p className="text-4xl font-bold leading-tight">
-          <span style={{ color: "#116149" }}>All </span>
-          <span style={{ color: "#6B46C1" }}>in </span>
-          <span style={{ color: "#FF4BAE" }}>one </span>
-          <span style={{ color: "#4A78FF" }}>place.</span>
-        </p>
-      </div>
-
-      {/* ── CTAs ── */}
-      <div className="w-full px-6 mt-10 flex flex-col items-center gap-4">
+      {/* ── CTAs — both pill boxes, smaller, at bottom ── */}
+      <div className="w-full px-6 pb-12 pt-6 flex flex-col gap-3">
         <button
           onClick={() => setLocation("/sign-up")}
-          className="w-full py-4 rounded-full font-bold text-base border-2 active:opacity-80 transition-opacity"
-          style={{ borderColor: "#116149", color: "#116149", background: "transparent" }}
+          className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
+          style={{
+            border: "2px solid #116149",
+            color: "#116149",
+            background: "transparent",
+          }}
         >
           Get started free
         </button>
         <button
           onClick={() => setLocation("/sign-in")}
-          className="text-sm font-semibold active:opacity-60"
-          style={{ color: "#7E7A73" }}
+          className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
+          style={{
+            border: "2px solid #116149",
+            color: "#116149",
+            background: "transparent",
+          }}
         >
           Sign in
         </button>
       </div>
-
-      <div className="pb-10" />
     </div>
   );
 }
