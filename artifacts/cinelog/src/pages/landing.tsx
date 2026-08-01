@@ -1,56 +1,103 @@
 import { useLocation } from "wouter";
-import { CouchPotatoLogo } from "@/components/couch-potato-logo";
-import { SpudMascot } from "@/components/spud-mascot";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-[100dvh] flex flex-col" style={{ background: "#FFF3E8" }}>
-      {/* Nav */}
-      <div className="px-5 pt-8 flex items-center justify-between">
-        <CouchPotatoLogo size="lg" />
+    <div className="min-h-[100dvh] flex flex-col items-center" style={{ background: "#FFF3E8" }}>
+
+      {/* ── Logo ── */}
+      <div className="pt-10 pb-2 flex justify-center">
+        <img
+          src="/logo.jpeg"
+          alt="Couch Potato"
+          draggable={false}
+          style={{
+            height: 120,
+            width: "auto",
+            objectFit: "contain",
+            mixBlendMode: "multiply",
+          }}
+        />
+      </div>
+
+      {/* ── Mascot ── */}
+      <img
+        src="/spud.png"
+        alt="Spud"
+        draggable={false}
+        style={{ width: 130, height: 130, objectFit: "contain" }}
+      />
+
+      {/* ── Staggered text boxes ── */}
+      <div className="w-full px-5 mt-6 flex flex-col gap-4">
+
+        {/* Left — purple */}
+        <div className="flex justify-start">
+          <div
+            className="rounded-2xl px-6 py-4"
+            style={{ background: "#6B46C1", maxWidth: "68%" }}
+          >
+            <p className="text-white font-bold text-lg leading-snug">
+              Everything you're watching
+            </p>
+          </div>
+        </div>
+
+        {/* Right — hot pink */}
+        <div className="flex justify-end">
+          <div
+            className="rounded-2xl px-6 py-4"
+            style={{ background: "#FF4BAE", maxWidth: "68%" }}
+          >
+            <p className="text-white font-bold text-lg leading-snug">
+              What you've already seen
+            </p>
+          </div>
+        </div>
+
+        {/* Left — bright blue */}
+        <div className="flex justify-start">
+          <div
+            className="rounded-2xl px-6 py-4"
+            style={{ background: "#4A78FF", maxWidth: "68%" }}
+          >
+            <p className="text-white font-bold text-lg leading-snug">
+              What you'll watch next
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── "All in one place" ── */}
+      <div className="mt-7 px-6 text-center">
+        <p className="text-4xl font-bold leading-tight">
+          <span style={{ color: "#116149" }}>All </span>
+          <span style={{ color: "#6B46C1" }}>in </span>
+          <span style={{ color: "#FF4BAE" }}>one </span>
+          <span style={{ color: "#4A78FF" }}>place.</span>
+        </p>
+      </div>
+
+      {/* ── CTAs ── */}
+      <div className="w-full px-6 mt-10 flex flex-col items-center gap-4">
+        <button
+          onClick={() => setLocation("/sign-up")}
+          className="w-full py-4 rounded-full font-bold text-base border-2 active:opacity-80 transition-opacity"
+          style={{ borderColor: "#116149", color: "#116149", background: "transparent" }}
+        >
+          Get started free
+        </button>
         <button
           onClick={() => setLocation("/sign-in")}
-          className="px-4 py-2 rounded-full text-sm font-bold border-2 transition-opacity active:opacity-70"
-          style={{ borderColor: "#116149", color: "#116149" }}
+          className="text-sm font-semibold active:opacity-60"
+          style={{ color: "#7E7A73" }}
         >
           Sign in
         </button>
       </div>
 
-      {/* Hero */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-10 text-center">
-        <SpudMascot pose="relaxed" size={120} round={false} />
-        <h1
-          className="text-4xl font-bold mt-6 mb-4 leading-tight"
-          style={{ color: "#111111" }}
-        >
-          Everything you've watched,<br />are watching,<br />and will watch next —<br />all in one place.
-        </h1>
-
-        {/* CTAs */}
-        <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
-          <button
-            onClick={() => setLocation("/sign-up")}
-            className="w-full py-4 rounded-2xl font-bold text-base text-white active:opacity-80 transition-opacity"
-            style={{ background: "#116149" }}
-          >
-            Get started free
-          </button>
-          <button
-            onClick={() => setLocation("/sign-in")}
-            className="w-full py-4 rounded-2xl font-bold text-base active:opacity-80 transition-opacity"
-            style={{ background: "#EFE4D2", color: "#111111" }}
-          >
-            I already have an account
-          </button>
-        </div>
-
-        <p className="text-xs mt-8" style={{ color: "#7E7A73" }}>
-          Free forever · No ads · Your data stays yours
-        </p>
-      </div>
+      <div className="pb-10" />
     </div>
   );
 }

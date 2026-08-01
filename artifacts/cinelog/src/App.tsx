@@ -20,6 +20,7 @@ import Landing from "@/pages/landing";
 import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import Onboarding from "@/pages/onboarding";
+import Welcome from "@/pages/welcome";
 
 const queryClient = new QueryClient();
 
@@ -148,6 +149,7 @@ function Router() {
           {/* REQUIRED — copy verbatim: /*? optional wildcard matches OAuth sub-paths */}
           <Route path="/sign-in/*?" component={SignInPage} />
           <Route path="/sign-up/*?" component={SignUpPage} />
+          <Route path="/welcome" component={() => <ProtectedRoute component={Welcome} />} />
           <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />
           <Route path="/my-shows" component={() => <ProtectedRoute component={MyShows} />} />
           <Route path="/search" component={() => <ProtectedRoute component={Search} />} />

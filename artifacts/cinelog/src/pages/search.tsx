@@ -65,6 +65,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [, setLocation] = useLocation();
   const [addingItem, setAddingItem] = useState<TmdbItem | null>(null);
+  const [quickAddYear, setQuickAddYear] = useState(new Date().getFullYear());
   const { results, loading: searchLoading, noKey: searchNoKey } = useTmdbSearch(query);
   const { data: popular, noKey: popularNoKey, loading: popularLoading } = useTmdbPopular();
   const createEntry = useCreateEntry();
@@ -135,14 +136,13 @@ export default function SearchPage() {
   };
 
   const markWatched = (item: TmdbItem) => {
-    const today = new Date().toISOString().split('T')[0];
     createEntry.mutate(
       {
         data: {
           title: item.title,
           type: item.type,
           status: 'completed',
-          dateWatched: today,
+          dateWatched: `${quickAddYear}-01-01`,
           posterUrl: item.posterUrl ?? undefined,
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
@@ -341,6 +341,20 @@ export default function SearchPage() {
                 </div>
               </div>
             )}
+            {/* Year picker */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold flex-shrink-0" style={{ color: '#7E7A73' }}>Year watched:</span>
+              <select
+                value={quickAddYear}
+                onChange={e => setQuickAddYear(Number(e.target.value))}
+                className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold focus:outline-none"
+                style={{ border: '1.5px solid #E2D9CE', background: '#FFF3E8', color: '#111111' }}
+              >
+                {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
             {/* Actions */}
             <div className="flex flex-col gap-3">
               <button

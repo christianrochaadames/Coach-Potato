@@ -71,6 +71,8 @@ export default function AddEntry() {
   const queryClient = useQueryClient();
   const createEntry = useCreateEntry();
   const [rating, setRating] = useState<number | null>(null);
+  const currentYear = new Date().getFullYear();
+  const [watchedYear, setWatchedYear] = useState(currentYear);
 
   // Parse URL params for TMDB prefill (coming from search page)
   const urlParams = typeof window !== 'undefined'
@@ -163,7 +165,7 @@ export default function AddEntry() {
           posterUrl: data.posterUrl || undefined,
           dateWatched:
             data.status !== 'plan_to_watch'
-              ? data.dateWatched || undefined
+              ? `${watchedYear}-01-01`
               : undefined,
           rating: rating || undefined,
           notes: data.notes || overview || undefined,
@@ -440,19 +442,24 @@ export default function AddEntry() {
           </div>
         )}
 
-        {/* Date (only for non-watchlist) */}
+        {/* Year (only for non-watchlist) */}
         {selectedStatus !== 'plan_to_watch' && (
           <div className="space-y-1.5">
-            <label className="text-sm font-bold" style={{ color: '#111111' }}>Date Watched</label>
-            <input
-              type="date"
-              {...form.register('dateWatched')}
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>
+              {selectedStatus === 'completed' ? 'Year Watched' : 'Year Started'}
+              <span className="ml-1.5 font-normal" style={{ color: '#7E7A73' }}>(you can add the exact date later)</span>
+            </label>
+            <select
+              value={watchedYear}
+              onChange={e => setWatchedYear(Number(e.target.value))}
               className="w-full px-4 py-3.5 rounded-2xl font-semibold focus:outline-none"
-              style={{ border: '2px solid #E2D9CE', background: '#ffffff', color: '#111111' }}
-              onFocus={e => (e.target.style.borderColor = '#116149')}
-              onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
-              data-testid="input-date"
-            />
+              style={{ border: '2px solid #E2D9CE', background: '#ffffff', color: '#111111', appearance: 'none' }}
+              data-testid="input-year"
+            >
+              {Array.from({ length: currentYear - 1950 + 1 }, (_, i) => currentYear - i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
         )}
 

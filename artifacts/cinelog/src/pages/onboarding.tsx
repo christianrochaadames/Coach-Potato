@@ -33,8 +33,8 @@ export default function Onboarding() {
       })
       .catch(() => {});
 
-    // Load popular titles from both movies and shows
-    fetch("/api/tmdb/popular")
+    // Load all-time classic titles for onboarding
+    fetch("/api/tmdb/top-rated")
       .then((r) => r.ok ? r.json() : { movies: [], shows: [] })
       .then((data) => {
         const mixed: TmdbItem[] = [];
@@ -62,7 +62,7 @@ export default function Onboarding() {
 
   const handleContinue = async () => {
     setSubmitting(true);
-    const today = new Date().toISOString().split("T")[0];
+    const today = `${new Date().getFullYear()}-01-01`;
     const toAdd = items.filter((item) => selected.has(item.tmdbId));
 
     try {

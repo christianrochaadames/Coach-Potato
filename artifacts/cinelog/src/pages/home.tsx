@@ -73,6 +73,7 @@ function YearPill({ year }: { year: number }) {
 export default function Home() {
   const [, setLocation] = useLocation();
   const [addingRec, setAddingRec] = useState<RecItem | null>(null);
+  const [recYear, setRecYear] = useState(new Date().getFullYear());
 
   const { data: watching } = useListEntries({ status: 'watching' } as any);
   const { data: watchlist } = useListEntries({ status: 'plan_to_watch' } as any);
@@ -90,7 +91,6 @@ export default function Home() {
   const { results: recs, loading: recsLoading } = useRecommendations();
 
   const addRec = (rec: RecItem, status: 'watching' | 'plan_to_watch' | 'completed') => {
-    const today = new Date().toISOString().split('T')[0];
     createEntry.mutate(
       {
         data: {
@@ -100,7 +100,7 @@ export default function Home() {
           posterUrl: rec.posterUrl ?? undefined,
           tmdbId: rec.tmdbId,
           year: rec.year ?? undefined,
-          dateWatched: status === 'completed' ? today : undefined,
+          dateWatched: status === 'completed' ? `${recYear}-01-01` : undefined,
         } as any,
       },
       {
@@ -353,6 +353,20 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Year picker for Mark Watched */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-bold flex-shrink-0" style={{ color: '#7E7A73' }}>Year watched:</span>
+              <select
+                value={recYear}
+                onChange={e => setRecYear(Number(e.target.value))}
+                className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold focus:outline-none"
+                style={{ border: '1.5px solid #E2D9CE', background: '#FFF3E8', color: '#111111' }}
+              >
+                {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
             {/* Actions */}
             <div className="flex flex-col gap-3">
               <button

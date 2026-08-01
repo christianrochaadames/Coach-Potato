@@ -150,6 +150,31 @@ router.get("/tmdb/popular", async (req, res) => {
   }
 });
 
+// GET /tmdb/top-rated — all-time classics for onboarding picker
+router.get("/tmdb/top-rated", async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    res.status(503).json({ error: "TMDB_API_KEY not configured." });
+    return;
+  }
+  try {
+    const [moviesRes, showsRes] = await Promise.all([
+      fetch(`${TMDB_BASE}/movie/top_rated?api_key=${apiKey}&language=en-US&page=1`),
+      fetch(`${TMDB_BASE}/tv/top_rated?api_key=${apiKey}&language=en-US&page=1`),
+    ]);
+    const [moviesData, showsData] = await Promise.all([
+      moviesRes.json() as Promise<{ results?: Record<string, unknown>[] }>,
+      showsRes.json() as Promise<{ results?: Record<string, unknown>[] }>,
+    ]);
+    const movies: TmdbResult[] = (moviesData.results ?? []).slice(0, 12).map((i) => mapItem(i, "movie"));
+    const shows: TmdbResult[] = (showsData.results ?? []).slice(0, 12).map((i) => mapItem(i, "tv"));
+    res.json({ movies, shows });
+  } catch (err) {
+    req.log.error({ err }, "tmdb top-rated error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /tmdb/show/:id — season count for TV shows
 router.get("/tmdb/show/:id", async (req, res) => {
   const apiKey = getApiKey();
