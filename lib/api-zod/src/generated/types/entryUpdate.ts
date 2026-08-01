@@ -29,5 +29,7 @@ export interface EntryUpdate {
   synopsis?: string | null;
   /** @nullable */
   tmdbId?: number | null;
+  /** @nullable */
+  platform?: string | null;
   tags?: string[];
 }

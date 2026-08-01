@@ -100,6 +100,16 @@ export default function Home() {
                   index={i}
                   onClick={() => setLocation(`/entry/${entry.id}`)}
                 />
+                {(entry as any).platform && (
+                  <div className="mt-1.5 flex justify-center">
+                    <span
+                      className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold truncate max-w-full"
+                      style={{ background: '#4A78FF', color: '#ffffff' }}
+                    >
+                      {(entry as any).platform}
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

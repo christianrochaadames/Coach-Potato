@@ -3,7 +3,8 @@ import { useParams, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft } from 'lucide-react';
+import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft, Monitor } from 'lucide-react';
+import { PLATFORMS } from '@/lib/platforms';
 import {
   useGetEntry,
   useUpdateEntry,
@@ -33,6 +34,7 @@ const formSchema = z.object({
   dateWatched: z.string().optional(),
   notes: z.string().optional(),
   tags: z.string().optional(),
+  platform: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -66,6 +68,7 @@ export default function EntryDetail() {
       dateWatched: '',
       notes: '',
       tags: '',
+      platform: '',
     },
   });
 
@@ -79,6 +82,7 @@ export default function EntryDetail() {
         dateWatched: entry.dateWatched ?? '',
         notes: entry.notes ?? '',
         tags: entry.tags?.join(', ') ?? '',
+        platform: (entry as any).platform ?? '',
       });
       setRating(entry.rating ?? null);
     }
@@ -101,6 +105,7 @@ export default function EntryDetail() {
           dateWatched: data.dateWatched || null,
           rating: rating || null,
           notes: data.notes || null,
+          platform: data.platform || null,
           tags,
         } as any,
       },
@@ -327,6 +332,33 @@ export default function EntryDetail() {
             />
           </div>
 
+          {/* Platform */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>
+              Platform <span style={{ color: '#7E7A73', fontWeight: 400 }}>(where you watched it)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {PLATFORMS.map(p => {
+                const selected = form.watch('platform') === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => form.setValue('platform', selected ? '' : p)}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                    style={
+                      selected
+                        ? { background: '#4A78FF', color: '#ffffff' }
+                        : { background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }
+                    }
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Tags */}
           <div className="space-y-1.5">
             <label className="text-sm font-bold" style={{ color: '#111111' }}>Tags</label>
@@ -432,6 +464,24 @@ export default function EntryDetail() {
               )}
             </div>
           </div>
+
+          {/* Platform */}
+          {(entry as any).platform && (
+            <div className="mb-4">
+              <div className="flex items-center gap-2">
+                <Monitor className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#7E7A73' }} />
+                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Watched on</span>
+              </div>
+              <div className="mt-1.5">
+                <span
+                  className="inline-block px-3 py-1 rounded-full text-xs font-bold"
+                  style={{ background: '#4A78FF', color: '#ffffff' }}
+                >
+                  {(entry as any).platform}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Synopsis */}
           {entry.synopsis && (

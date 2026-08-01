@@ -322,6 +322,8 @@ components:
           type: ["string", "null"]
         tmdbId:
           type: ["integer", "null"]
+        platform:
+          type: ["string", "null"]
         tags:
           type: array
           items:
@@ -364,6 +366,8 @@ components:
           type: string
         tmdbId:
           type: integer
+        platform:
+          type: string
         tags:
           type: array
           items:
@@ -396,6 +400,8 @@ components:
           type: ["string", "null"]
         tmdbId:
           type: ["integer", "null"]
+        platform:
+          type: ["string", "null"]
         tags:
           type: array
           items:

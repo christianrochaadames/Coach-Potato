@@ -24,3 +24,4 @@ export type {
   MonthCount,
   TagCount,
 } from "./generated/types";
+export * from './generated/types';

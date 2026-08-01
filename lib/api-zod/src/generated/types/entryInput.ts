@@ -23,5 +23,6 @@ export interface EntryInput {
   notes?: string;
   synopsis?: string;
   tmdbId?: number;
+  platform?: string;
   tags?: string[];
 }

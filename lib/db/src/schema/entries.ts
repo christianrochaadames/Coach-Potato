@@ -17,6 +17,7 @@ export const entriesTable = pgTable("entries", {
   notes: text("notes"),
   synopsis: text("synopsis"),
   tmdbId: integer("tmdb_id"),
+  platform: text("platform"),
   tags: jsonb("tags").$type<string[]>().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

@@ -49,6 +49,8 @@ export interface Entry {
   synopsis?: string | null;
   /** @nullable */
   tmdbId?: number | null;
+  /** @nullable */
+  platform?: string | null;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -86,6 +88,7 @@ export interface EntryInput {
   notes?: string;
   synopsis?: string;
   tmdbId?: number;
+  platform?: string;
   tags?: string[];
 }
 
@@ -127,6 +130,8 @@ export interface EntryUpdate {
   synopsis?: string | null;
   /** @nullable */
   tmdbId?: number | null;
+  /** @nullable */
+  platform?: string | null;
   tags?: string[];
 }
 

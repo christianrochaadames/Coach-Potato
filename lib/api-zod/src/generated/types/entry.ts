@@ -31,6 +31,8 @@ export interface Entry {
   synopsis?: string | null;
   /** @nullable */
   tmdbId?: number | null;
+  /** @nullable */
+  platform?: string | null;
   tags: string[];
   createdAt: Date;
   updatedAt: Date;

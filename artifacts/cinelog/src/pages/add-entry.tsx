@@ -12,6 +12,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { StarRating } from '@/components/star-rating';
 import { useToast } from '@/hooks/use-toast';
+import { PLATFORMS } from '@/lib/platforms';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -21,6 +22,7 @@ const formSchema = z.object({
   dateWatched: z.string().optional(),
   notes: z.string().optional(),
   tags: z.string().optional(),
+  platform: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -52,6 +54,7 @@ export default function AddEntry() {
       dateWatched: new Date().toISOString().split('T')[0],
       notes: '',
       tags: '',
+      platform: '',
     },
   });
 
@@ -78,6 +81,7 @@ export default function AddEntry() {
           notes: data.notes || prefillOverview || undefined,
           synopsis: prefillOverview || undefined,
           tmdbId: prefillTmdbId,
+          platform: data.platform || undefined,
           tags,
         } as any,
       },
@@ -243,6 +247,33 @@ export default function AddEntry() {
             onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
             data-testid="input-notes"
           />
+        </div>
+
+        {/* Platform */}
+        <div className="space-y-2">
+          <label className="text-sm font-bold" style={{ color: '#111111' }}>
+            Platform <span style={{ color: '#7E7A73', fontWeight: 400 }}>(where you watched it)</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {PLATFORMS.map(p => {
+              const selected = form.watch('platform') === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => form.setValue('platform', selected ? '' : p)}
+                  className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                  style={
+                    selected
+                      ? { background: '#4A78FF', color: '#ffffff' }
+                      : { background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }
+                  }
+                >
+                  {p}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Tags */}

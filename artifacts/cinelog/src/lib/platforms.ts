@@ -1,0 +1,32 @@
+/** Master list of streaming/viewing platforms for the platform picker */
+export const PLATFORMS = [
+  'Netflix',
+  'Prime Video',
+  'Disney+',
+  'Apple TV+',
+  'Paramount+',
+  'Stan',
+  'Binge',
+  'Foxtel',
+  'Max',
+  'Hulu',
+  'Peacock',
+  'Shudder',
+  'AMC+',
+  'BritBox',
+  'Acorn TV',
+  'Mubi',
+  'YouTube Premium',
+  'Tubi',
+  'Pluto TV',
+  'SBS on Demand',
+  'ABC iview',
+  '9Now',
+  '10 Play',
+  '7Plus',
+  'Cinema',
+  'DVD / Blu-ray',
+  'Other',
+] as const;
+
+export type Platform = (typeof PLATFORMS)[number];
