@@ -1,26 +1,28 @@
 import { cn } from '@/lib/utils';
 
 interface SpudProps {
-  pose?: string; // kept for API compat, single image now
+  pose?: string; // kept for API compat
   className?: string;
   size?: number;
   round?: boolean;
 }
 
-export function SpudMascot({ className, size = 120, round }: SpudProps) {
-  const isRound = round ?? size <= 80;
+export function SpudMascot({ className, size = 120, round = false }: SpudProps) {
   return (
     <img
       src="/spud.jpeg"
       alt="Spud mascot"
       draggable={false}
-      className={cn('select-none flex-shrink-0 object-contain', className)}
+      className={cn('select-none flex-shrink-0', className)}
       style={{
         width: size,
         height: size,
-        borderRadius: isRound ? '50%' : '16px',
-        objectFit: 'cover',
-        objectPosition: 'center top',
+        borderRadius: round ? '50%' : 0,
+        objectFit: 'contain',
+        // multiply blend removes the cream/white JPEG background against
+        // the app's warm-cream (#FFF3E8) surface — outlines stay crisp.
+        mixBlendMode: 'multiply',
+        display: 'block',
       }}
     />
   );
