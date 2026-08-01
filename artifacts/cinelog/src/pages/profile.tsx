@@ -21,7 +21,7 @@ export default function Profile() {
         className="mx-5 mb-6 rounded-3xl p-6 flex flex-col items-center text-white"
         style={{ background: '#116149' }}
       >
-        <SpudMascot pose="celebrating" size={100} className="mb-3" />
+        <SpudMascot pose="celebrating" size={140} className="mb-3" />
         <p className="text-xl font-bold">Hey, Spud! 🛋️</p>
         <p className="text-sm opacity-70 mt-1">Your TV life, remembered.</p>
         <div className="mt-4">

@@ -20,7 +20,7 @@ export default function Home() {
       <div className="px-5 pt-8 pb-3 flex items-center justify-between">
         <CouchPotatoLogo size="md" />
         <button onClick={() => setLocation('/profile')}>
-          <SpudMascot pose="relaxed" size={52} />
+          <SpudMascot pose="relaxed" size={68} />
         </button>
       </div>
 
