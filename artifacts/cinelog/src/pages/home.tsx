@@ -5,6 +5,22 @@ import { CouchPotatoLogo } from '@/components/couch-potato-logo';
 import { SpudMascot } from '@/components/spud-mascot';
 import { PosterCard } from '@/components/poster-card';
 
+/** Group currently-watching entries by platform */
+function groupByPlatform(entries: any[]) {
+  const map = new Map<string, any[]>();
+  for (const e of entries) {
+    const key = (e.platform as string | null) ?? '';
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(e);
+  }
+  // Named platforms first (sorted), then entries with no platform
+  return [...map.entries()].sort(([a], [b]) => {
+    if (!a && b) return 1;
+    if (a && !b) return -1;
+    return a.localeCompare(b);
+  });
+}
+
 /** Group an entry array by year (key = year number, sorted descending) */
 function groupByYear(entries: { year?: number | null; dateWatched?: string | null; [k: string]: any }[]) {
   const map = new Map<number, typeof entries>();
@@ -91,27 +107,31 @@ export default function Home() {
           <div className="px-5 mb-3">
             <h2 className="text-base font-bold" style={{ color: '#111111' }}>Currently Watching</h2>
           </div>
-          <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
-            {watching!.map((entry, i) => (
-              <div key={entry.id} className="flex-shrink-0 w-28">
-                <PosterCard
-                  entry={entry}
-                  index={i}
-                  onClick={() => setLocation(`/entry/${entry.id}`)}
-                />
-                {(entry as any).platform && (
-                  <div className="mt-1.5 flex justify-center">
-                    <span
-                      className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold truncate max-w-full"
-                      style={{ background: '#4A78FF', color: '#ffffff' }}
-                    >
-                      {(entry as any).platform}
-                    </span>
+          {groupByPlatform(watching!).map(([platform, items]) => (
+            <div key={platform || '__none__'} className="mb-4">
+              {platform && (
+                <div className="px-5 mb-2">
+                  <span
+                    className="inline-block px-4 py-1 rounded-full text-sm font-bold"
+                    style={{ background: '#4A78FF', color: '#ffffff' }}
+                  >
+                    {platform}
+                  </span>
+                </div>
+              )}
+              <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
+                {items.map((entry: any, i: number) => (
+                  <div key={entry.id} className="flex-shrink-0 w-28">
+                    <PosterCard
+                      entry={entry}
+                      index={i}
+                      onClick={() => setLocation(`/entry/${entry.id}`)}
+                    />
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </section>
       ) : (
         <div className="mx-5 mb-6 rounded-2xl px-4 py-3 flex items-center gap-3"

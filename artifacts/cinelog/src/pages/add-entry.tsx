@@ -43,6 +43,7 @@ export default function AddEntry() {
   const prefillPoster = urlParams.get('poster') ?? '';
   const prefillOverview = urlParams.get('overview') ?? '';
   const prefillTmdbId = urlParams.get('tmdbId') ? Number(urlParams.get('tmdbId')) : undefined;
+  const prefillGenres = urlParams.get('genres') ?? '';
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -53,7 +54,7 @@ export default function AddEntry() {
       posterUrl: prefillPoster,
       dateWatched: new Date().toISOString().split('T')[0],
       notes: '',
-      tags: '',
+      tags: prefillGenres, // auto-populated from TMDB genre_ids
       platform: '',
     },
   });

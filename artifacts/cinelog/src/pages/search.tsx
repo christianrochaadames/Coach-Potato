@@ -16,6 +16,7 @@ interface TmdbItem {
   year: number | null;
   posterUrl: string | null;
   overview: string | null;
+  genres: string[];
 }
 
 function useTmdbSearch(query: string) {
@@ -81,6 +82,7 @@ export default function SearchPage() {
           posterUrl: item.posterUrl ?? undefined,
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
+          tags: item.genres ?? [],
         } as any,
       },
       {
@@ -104,6 +106,7 @@ export default function SearchPage() {
           posterUrl: item.posterUrl ?? undefined,
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
+          tags: item.genres ?? [],
         } as any,
       },
       {
@@ -129,6 +132,7 @@ export default function SearchPage() {
           posterUrl: item.posterUrl ?? undefined,
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
+          tags: item.genres ?? [],
         } as any,
       },
       {
@@ -321,7 +325,7 @@ export default function SearchPage() {
             </div>
             <button
               onClick={() => setLocation(
-                `/add?tmdbId=${addingItem.tmdbId}&title=${encodeURIComponent(addingItem.title)}&type=${addingItem.type}&year=${addingItem.year ?? ''}&poster=${encodeURIComponent(addingItem.posterUrl ?? '')}&overview=${encodeURIComponent(addingItem.overview ?? '')}`
+                `/add?tmdbId=${addingItem.tmdbId}&title=${encodeURIComponent(addingItem.title)}&type=${addingItem.type}&year=${addingItem.year ?? ''}&poster=${encodeURIComponent(addingItem.posterUrl ?? '')}&overview=${encodeURIComponent(addingItem.overview ?? '')}&genres=${encodeURIComponent((addingItem.genres ?? []).join(','))}`
               )}
               className="w-full text-center text-sm font-semibold"
               style={{ color: '#7E7A73' }}
