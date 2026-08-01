@@ -110,59 +110,6 @@ export default function Stats() {
             </div>
           </div>
 
-          {/* Genre breakdown — interactive horizontal bars */}
-          {genreData.length > 0 && (
-            <div
-              className="rounded-2xl p-5"
-              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
-            >
-              <p className="font-bold mb-1" style={{ color: '#111111' }}>Genre Breakdown</p>
-              <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
-                Tap a genre to highlight · based on all watched titles
-              </p>
-              <div className="space-y-2.5">
-                {genreData.map(({ genre, count, pct }, idx) => {
-                  const color = GENRE_COLORS[idx % GENRE_COLORS.length];
-                  const isActive = activeGenre === genre;
-                  const isDimmed = activeGenre !== null && !isActive;
-                  return (
-                    <button
-                      key={genre}
-                      type="button"
-                      onClick={() => setActiveGenre(isActive ? null : genre)}
-                      className="w-full text-left transition-opacity"
-                      style={{ opacity: isDimmed ? 0.35 : 1 }}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span
-                          className="text-xs font-bold"
-                          style={{ color: isActive ? color : '#111111' }}
-                        >
-                          {genre}
-                        </span>
-                        <span className="text-xs font-bold" style={{ color: '#7E7A73' }}>
-                          {count} · {pct}%
-                        </span>
-                      </div>
-                      <div
-                        className="h-2 rounded-full overflow-hidden"
-                        style={{ background: '#EFE4D2' }}
-                      >
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${(count / maxGenreCount) * 100}%`,
-                            background: color,
-                          }}
-                        />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           {/* Movies vs Shows — CSS conic-gradient donut */}
           {donutData.length > 0 && (() => {
             const total = donutData.reduce((s, x) => s + x.value, 0);
@@ -239,6 +186,59 @@ export default function Stats() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Genre breakdown — interactive horizontal bars (bottom of page) */}
+          {genreData.length > 0 && (
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="font-bold mb-1" style={{ color: '#111111' }}>Genre Breakdown</p>
+              <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
+                Tap a genre to highlight · based on all watched titles
+              </p>
+              <div className="space-y-2.5">
+                {genreData.map(({ genre, count, pct }, idx) => {
+                  const color = GENRE_COLORS[idx % GENRE_COLORS.length];
+                  const isActive = activeGenre === genre;
+                  const isDimmed = activeGenre !== null && !isActive;
+                  return (
+                    <button
+                      key={genre}
+                      type="button"
+                      onClick={() => setActiveGenre(isActive ? null : genre)}
+                      className="w-full text-left transition-opacity"
+                      style={{ opacity: isDimmed ? 0.35 : 1 }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className="text-xs font-bold"
+                          style={{ color: isActive ? color : '#111111' }}
+                        >
+                          {genre}
+                        </span>
+                        <span className="text-xs font-bold" style={{ color: '#7E7A73' }}>
+                          {count} · {pct}%
+                        </span>
+                      </div>
+                      <div
+                        className="h-2 rounded-full overflow-hidden"
+                        style={{ background: '#EFE4D2' }}
+                      >
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${(count / maxGenreCount) * 100}%`,
+                            background: color,
+                          }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex flex-col items-center py-16 gap-4 px-5">

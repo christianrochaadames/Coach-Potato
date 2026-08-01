@@ -16,6 +16,7 @@ const entryInputSchema = z.object({
   synopsis: z.string().optional(),
   tmdbId: z.number().int().optional(),
   tags: z.array(z.string()).optional(),
+  platform: z.string().optional(),
 });
 
 const entryUpdateSchema = z.object({
@@ -29,6 +30,7 @@ const entryUpdateSchema = z.object({
   synopsis: z.string().nullable().optional(),
   tmdbId: z.number().int().nullable().optional(),
   tags: z.array(z.string()).optional(),
+  platform: z.string().nullable().optional(),
 });
 
 function serializeEntry(entry: typeof entriesTable.$inferSelect) {
@@ -42,6 +44,7 @@ function serializeEntry(entry: typeof entriesTable.$inferSelect) {
     synopsis: entry.synopsis ?? null,
     tmdbId: entry.tmdbId ?? null,
     tags: (entry.tags as string[]) ?? [],
+    platform: (entry as any).platform ?? null,
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
   };
@@ -97,6 +100,7 @@ router.post("/entries", async (req, res) => {
     synopsis,
     tmdbId,
     tags,
+    platform,
   } = parsed.data;
 
   const year = dateWatched ? Number(dateWatched.split("-")[0]) : null;
@@ -116,7 +120,8 @@ router.post("/entries", async (req, res) => {
         synopsis: synopsis ?? null,
         tmdbId: tmdbId ?? null,
         tags: tags ?? [],
-      })
+        platform: platform ?? null,
+      } as any)
       .returning();
 
     res.status(201).json(serializeEntry(row));

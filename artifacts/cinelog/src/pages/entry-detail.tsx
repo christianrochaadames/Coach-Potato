@@ -443,16 +443,18 @@ export default function EntryDetail() {
             <div className="flex-1 min-w-0 pt-1">
               {/* Type + Status badges */}
               <div className="flex flex-wrap gap-1.5 mb-2">
+                {/* Type pill — movie=blue, show=pink so it never clashes with status pills */}
                 <span
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                   style={
                     entry.type === 'movie'
                       ? { background: '#9BD6FF', color: '#116149' }
-                      : { background: '#BDECC8', color: '#116149' }
+                      : { background: '#FF4BAE', color: '#ffffff' }
                   }
                 >
                   {entry.type === 'movie' ? '🎬 Movie' : '📺 Show'}
                 </span>
+                {/* Status pill — completed=mint, watching=blue, planned=beige */}
                 {entry.status && (
                   <span
                     className="text-[10px] font-bold px-2 py-0.5 rounded-full"
