@@ -8,19 +8,17 @@ export default function Landing() {
       className="min-h-[100dvh] flex flex-col"
       style={{ background: "#FFF3E8", overflow: "hidden" }}
     >
-      {/* ── Logo — left-aligned, tilted counter-clockwise ── */}
+      {/* ── Logo — left-aligned, straight ── */}
       <div className="pt-10 pl-6 flex justify-start">
         <img
           src="/logo.jpeg"
           alt="Couch Potato"
           draggable={false}
           style={{
-            height: 110,
+            height: 128,
             width: "auto",
             objectFit: "contain",
             mixBlendMode: "multiply",
-            transform: "rotate(-12deg)",
-            transformOrigin: "center center",
           }}
         />
       </div>
