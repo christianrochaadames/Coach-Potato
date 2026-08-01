@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/cinelog-mobile/"
+title = "CineLog Mobile"
+description = "A native mobile companion app for CineLog — the personal movie and TV show tracker. Log entries immediately after watching, browse your year grid, view stats, and edit details. Connects to the shared CineLog API backend."
+version = "1.0.0"
+id = "artifacts/cinelog-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/cinelog-mobile/" ]
+localPort = 21078
+
+[services.development]
+run = "pnpm --filter @workspace/cinelog-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/cinelog-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/cinelog-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "21078"
+BASE_PATH = "/cinelog-mobile/"
