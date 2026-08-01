@@ -3,7 +3,7 @@ import { useParams, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft, Monitor } from 'lucide-react';
+import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft, Monitor, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { PLATFORMS } from '@/lib/platforms';
 import {
   useGetEntry,
@@ -49,6 +49,14 @@ export default function EntryDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
   const [seasonCount, setSeasonCount] = useState<number | null>(null);
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+  const [tmdbDetail, setTmdbDetail] = useState<{
+    cast: Array<{ name: string; character: string; profileUrl: string | null }>;
+    directors: Array<{ name: string; job: string }>;
+    voteAverage: number | null;
+    genres: string[];
+  } | null>(null);
+  const [tmdbDetailLoading, setTmdbDetailLoading] = useState(false);
 
   const entryId = params.id ? Number(params.id) : undefined;
   const { data: entry, isLoading } = useGetEntry(entryId!, {
@@ -99,6 +107,28 @@ export default function EntryDetail() {
       .then((r) => (r.ok ? r.json() : {}))
       .then((d) => setSeasonCount(d.numberOfSeasons ?? null))
       .catch(() => {});
+  }, [entry?.tmdbId, entry?.type]);
+
+  // Fetch cast + director from TMDB
+  useEffect(() => {
+    if (!entry?.tmdbId) { setTmdbDetail(null); return; }
+    const endpoint = entry.type === 'movie'
+      ? `/api/tmdb/movie/${entry.tmdbId}`
+      : `/api/tmdb/tv/${entry.tmdbId}`;
+    setTmdbDetailLoading(true);
+    fetch(endpoint)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!d) return;
+        setTmdbDetail({
+          cast: d.cast ?? [],
+          directors: d.directors ?? [],
+          voteAverage: d.voteAverage ?? null,
+          genres: d.genres ?? [],
+        });
+      })
+      .catch(() => {})
+      .finally(() => setTmdbDetailLoading(false));
   }, [entry?.tmdbId, entry?.type]);
 
   const setSeasonRating = (num: number, rating: number | null) => {
@@ -608,14 +638,134 @@ export default function EntryDetail() {
             );
           })()}
 
-          {/* Synopsis */}
+          {/* About (collapsible synopsis) */}
           {entry.synopsis && (
+            <div
+              className="rounded-2xl mb-4 overflow-hidden"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <button
+                className="w-full px-4 py-3.5 flex items-center justify-between"
+                onClick={() => setSynopsisExpanded((v) => !v)}
+                aria-expanded={synopsisExpanded}
+              >
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>About</p>
+                {synopsisExpanded
+                  ? <ChevronUp className="w-4 h-4 flex-shrink-0" style={{ color: '#7E7A73' }} />
+                  : <ChevronDown className="w-4 h-4 flex-shrink-0" style={{ color: '#7E7A73' }} />
+                }
+              </button>
+              {synopsisExpanded && (
+                <div className="px-4 pb-4">
+                  <p className="text-sm leading-relaxed" style={{ color: '#111111' }}>{entry.synopsis}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* More info — cast & director from TMDB */}
+          {entry.tmdbId && (
             <div
               className="rounded-2xl p-4 mb-4"
               style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
             >
-              <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Synopsis</p>
-              <p className="text-sm leading-relaxed" style={{ color: '#111111' }}>{entry.synopsis}</p>
+              <div className="flex items-center gap-1.5 mb-3">
+                <Info className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#7E7A73' }} />
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>More Info</p>
+              </div>
+
+              {tmdbDetailLoading && (
+                <div className="space-y-2 animate-pulse">
+                  <div className="h-3 rounded w-1/3" style={{ background: '#EFE4D2' }} />
+                  <div className="flex gap-3 overflow-hidden">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="flex-shrink-0 space-y-1">
+                        <div className="w-14 h-14 rounded-full" style={{ background: '#EFE4D2' }} />
+                        <div className="h-2 rounded w-14" style={{ background: '#EFE4D2' }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!tmdbDetailLoading && tmdbDetail && (
+                <>
+                  {/* Director / Creator */}
+                  {tmdbDetail.directors.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-[11px] font-bold mb-1.5" style={{ color: '#7E7A73' }}>
+                        {entry.type === 'movie' ? 'Director' : 'Creator'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {tmdbDetail.directors.map((d) => (
+                          <span
+                            key={d.name}
+                            className="px-3 py-1 rounded-full text-xs font-bold"
+                            style={{ background: '#EFE4D2', color: '#116149' }}
+                          >
+                            {d.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cast */}
+                  {tmdbDetail.cast.length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-bold mb-2" style={{ color: '#7E7A73' }}>Cast</p>
+                      <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+                        {tmdbDetail.cast.slice(0, 12).map((actor) => (
+                          <div key={actor.name} className="flex-shrink-0 w-14 text-center">
+                            <div
+                              className="w-14 h-14 rounded-full overflow-hidden mb-1 mx-auto"
+                              style={{ background: '#EFE4D2' }}
+                            >
+                              {actor.profileUrl ? (
+                                <img
+                                  src={actor.profileUrl}
+                                  alt={actor.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div
+                                  className="w-full h-full flex items-center justify-center text-lg font-bold"
+                                  style={{ color: '#116149' }}
+                                >
+                                  {actor.name[0]?.toUpperCase() ?? '?'}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-[9px] font-bold leading-tight" style={{ color: '#111111' }}>
+                              {actor.name}
+                            </p>
+                            {actor.character && (
+                              <p className="text-[9px] leading-tight" style={{ color: '#7E7A73' }}>
+                                {actor.character}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TMDB attribution */}
+                  <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid #EFE4D2' }}>
+                    <svg width="14" height="14" viewBox="0 0 273 185" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+                      <rect width="273" height="185" rx="4" fill="#01B4E4"/>
+                      <path d="M117.543 36.816v111.368H96.317V36.816h-36.94V17.5h94.606v19.316h-36.44zM273 17.5v111.684H252.274V17.5H273z" fill="white"/>
+                    </svg>
+                    <span className="text-[10px]" style={{ color: '#7E7A73' }}>
+                      Cast &amp; crew data from The Movie Database (TMDB)
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {!tmdbDetailLoading && !tmdbDetail && (
+                <p className="text-xs" style={{ color: '#7E7A73' }}>Cast info unavailable</p>
+              )}
             </div>
           )}
 

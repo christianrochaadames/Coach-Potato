@@ -208,4 +208,170 @@ router.get("/tmdb/show/:id", async (req, res) => {
   }
 });
 
+interface CastMember {
+  name: string;
+  character: string;
+  profileUrl: string | null;
+  order: number;
+}
+
+interface CrewMember {
+  name: string;
+  job: string;
+  profileUrl: string | null;
+}
+
+interface TmdbDetailResponse {
+  title: string;
+  overview: string | null;
+  cast: CastMember[];
+  directors: CrewMember[];
+  runtime: number | null;
+  releaseYear: number | null;
+  voteAverage: number | null;
+  genres: string[];
+}
+
+function mapCredits(credits: {
+  cast?: Record<string, unknown>[];
+  crew?: Record<string, unknown>[];
+}): { cast: CastMember[]; directors: CrewMember[] } {
+  const cast: CastMember[] = (credits.cast ?? [])
+    .slice(0, 15)
+    .map((m) => ({
+      name: m.name as string,
+      character: (m.character as string) ?? "",
+      profileUrl: m.profile_path ? `https://image.tmdb.org/t/p/w185${m.profile_path}` : null,
+      order: m.order as number ?? 99,
+    }));
+
+  const directors: CrewMember[] = (credits.crew ?? [])
+    .filter((m) => m.job === "Director" || m.job === "Creator")
+    .slice(0, 3)
+    .map((m) => ({
+      name: m.name as string,
+      job: m.job as string,
+      profileUrl: m.profile_path ? `https://image.tmdb.org/t/p/w185${m.profile_path}` : null,
+    }));
+
+  return { cast, directors };
+}
+
+// GET /tmdb/movie/:id — movie details with cast and director
+router.get("/tmdb/movie/:id", async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    res.status(503).json({ error: "TMDB_API_KEY not configured" });
+    return;
+  }
+  const tmdbId = Number(req.params.id);
+  if (isNaN(tmdbId)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    const url = `${TMDB_BASE}/movie/${tmdbId}?api_key=${apiKey}&language=en-US&append_to_response=credits`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      res.status(502).json({ error: "TMDB request failed" });
+      return;
+    }
+    const data = (await response.json()) as {
+      title?: string;
+      overview?: string;
+      runtime?: number;
+      release_date?: string;
+      vote_average?: number;
+      genres?: { id: number; name: string }[];
+      credits?: {
+        cast?: Record<string, unknown>[];
+        crew?: Record<string, unknown>[];
+      };
+    };
+
+    const { cast, directors } = mapCredits(data.credits ?? {});
+    const year = data.release_date ? parseInt(data.release_date.split("-")[0], 10) : null;
+    const genreNames = (data.genres ?? []).map((g) => g.name);
+
+    const result: TmdbDetailResponse = {
+      title: data.title ?? "",
+      overview: data.overview ?? null,
+      cast,
+      directors,
+      runtime: data.runtime ?? null,
+      releaseYear: year && !isNaN(year) ? year : null,
+      voteAverage: data.vote_average ?? null,
+      genres: genreNames,
+    };
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "tmdb movie detail error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /tmdb/tv/:id — TV show details with cast and creator
+router.get("/tmdb/tv/:id", async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    res.status(503).json({ error: "TMDB_API_KEY not configured" });
+    return;
+  }
+  const tmdbId = Number(req.params.id);
+  if (isNaN(tmdbId)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  try {
+    const url = `${TMDB_BASE}/tv/${tmdbId}?api_key=${apiKey}&language=en-US&append_to_response=credits`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      res.status(502).json({ error: "TMDB request failed" });
+      return;
+    }
+    const data = (await response.json()) as {
+      name?: string;
+      overview?: string;
+      number_of_seasons?: number;
+      first_air_date?: string;
+      vote_average?: number;
+      genres?: { id: number; name: string }[];
+      created_by?: { name: string; profile_path: string | null }[];
+      credits?: {
+        cast?: Record<string, unknown>[];
+        crew?: Record<string, unknown>[];
+      };
+    };
+
+    const { cast } = mapCredits(data.credits ?? {});
+
+    // TV shows have created_by separate from credits crew
+    const creators: CrewMember[] = (data.created_by ?? []).slice(0, 3).map((c) => ({
+      name: c.name,
+      job: "Creator",
+      profileUrl: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null,
+    }));
+
+    const year = data.first_air_date ? parseInt(data.first_air_date.split("-")[0], 10) : null;
+    const genreNames = (data.genres ?? []).map((g) => g.name);
+
+    const result: TmdbDetailResponse = {
+      title: data.name ?? "",
+      overview: data.overview ?? null,
+      cast,
+      directors: creators,
+      runtime: null,
+      releaseYear: year && !isNaN(year) ? year : null,
+      voteAverage: data.vote_average ?? null,
+      genres: genreNames,
+    };
+
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "tmdb tv detail error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

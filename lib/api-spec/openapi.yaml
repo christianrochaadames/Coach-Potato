@@ -272,6 +272,82 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /tmdb/movie/{id}:
+    get:
+      operationId: tmdbMovieDetail
+      tags: [tmdb]
+      summary: Get movie details including cast and director from TMDB
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: TMDB movie ID
+      responses:
+        "200":
+          description: Movie details with cast and director
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TmdbDetail"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: TMDB upstream error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: TMDB API key not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /tmdb/tv/{id}:
+    get:
+      operationId: tmdbTvDetail
+      tags: [tmdb]
+      summary: Get TV show details including cast and creator from TMDB
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: TMDB TV show ID
+      responses:
+        "200":
+          description: TV show details with cast and creator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TmdbDetail"
+        "400":
+          description: Invalid id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: TMDB upstream error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: TMDB API key not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -427,6 +503,66 @@ components:
           type: ["string", "null"]
         overview:
           type: ["string", "null"]
+
+    TmdbCastMember:
+      type: object
+      required:
+        - name
+        - character
+        - order
+      properties:
+        name:
+          type: string
+        character:
+          type: string
+        profileUrl:
+          type: ["string", "null"]
+        order:
+          type: integer
+
+    TmdbCrewMember:
+      type: object
+      required:
+        - name
+        - job
+      properties:
+        name:
+          type: string
+        job:
+          type: string
+        profileUrl:
+          type: ["string", "null"]
+
+    TmdbDetail:
+      type: object
+      required:
+        - title
+        - cast
+        - directors
+        - genres
+      properties:
+        title:
+          type: string
+        overview:
+          type: ["string", "null"]
+        cast:
+          type: array
+          items:
+            $ref: "#/components/schemas/TmdbCastMember"
+        directors:
+          type: array
+          items:
+            $ref: "#/components/schemas/TmdbCrewMember"
+        runtime:
+          type: ["integer", "null"]
+        releaseYear:
+          type: ["integer", "null"]
+        voteAverage:
+          type: ["number", "null"]
+        genres:
+          type: array
+          items:
+            type: string
 
     TmdbSearchResponse:
       type: object
