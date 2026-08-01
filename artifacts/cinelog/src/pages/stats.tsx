@@ -91,15 +91,15 @@ export default function Stats() {
         <div className="px-5 space-y-4">
           {/* Summary cards — 2 cards only, movie/show detail lives in the donut */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl p-5" style={{ background: '#116149' }}>
-              <p className="text-3xl font-bold text-white" data-testid="stat-total">{stats.total}</p>
-              <p className="text-sm font-semibold text-white opacity-80">Total Watched</p>
+            <div className="rounded-2xl p-5" style={{ background: '#FFD34D' }}>
+              <p className="text-3xl font-bold" style={{ color: '#111111' }} data-testid="stat-total">{stats.total}</p>
+              <p className="text-sm font-semibold" style={{ color: '#111111', opacity: 0.7 }}>Total Watched</p>
             </div>
-            <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
-              <p className="text-3xl font-bold" style={{ color: '#FFD34D' }} data-testid="stat-avg-rating">
+            <div className="rounded-2xl p-5" style={{ background: '#FFE4F3' }}>
+              <p className="text-3xl font-bold" style={{ color: '#FF4BAE' }} data-testid="stat-avg-rating">
                 {stats.averageRating != null ? stats.averageRating.toFixed(1) : '—'}
               </p>
-              <p className="text-sm font-semibold" style={{ color: '#7E7A73' }}>Avg Rating ★</p>
+              <p className="text-sm font-semibold" style={{ color: '#c73b8e' }}>Avg Rating ★</p>
             </div>
           </div>
 
@@ -175,7 +175,7 @@ export default function Stats() {
                     fontWeight: 600,
                   }}
                 />
-                <Bar dataKey="count" fill="#116149" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="#6B46C1" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
