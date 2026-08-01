@@ -38,17 +38,17 @@ export const listEntriesResponseRatingMax = 5;
 
 
 export const ListEntriesResponseItem = zod.object({
-  "id": zod.int(),
+  "id": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
   "status": zod.enum(['watching', 'plan_to_watch', 'completed']).default(listEntriesResponseStatusDefault),
   "posterUrl": zod.string().nullish(),
   "dateWatched": zod.coerce.date().nullish(),
-  "year": zod.int().nullable(),
-  "rating": zod.int().min(1).max(listEntriesResponseRatingMax).nullish(),
+  "year": zod.number().int().nullable(),
+  "rating": zod.number().int().min(1).max(listEntriesResponseRatingMax).nullish(),
   "notes": zod.string().nullish(),
   "synopsis": zod.string().nullish(),
-  "tmdbId": zod.int().nullish(),
+  "tmdbId": zod.number().int().nullish(),
   "platform": zod.string().nullish(),
   "tags": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
@@ -72,10 +72,10 @@ export const CreateEntryBody = zod.object({
   "status": zod.enum(['watching', 'plan_to_watch', 'completed']).default(createEntryBodyStatusDefault),
   "posterUrl": zod.string().optional(),
   "dateWatched": zod.coerce.date().optional(),
-  "rating": zod.int().min(1).max(createEntryBodyRatingMax).optional(),
+  "rating": zod.number().int().min(1).max(createEntryBodyRatingMax).optional(),
   "notes": zod.string().optional(),
   "synopsis": zod.string().optional(),
-  "tmdbId": zod.int().optional(),
+  "tmdbId": zod.number().int().optional(),
   "platform": zod.string().optional(),
   "tags": zod.array(zod.string()).optional()
 })
@@ -86,17 +86,17 @@ export const createEntryResponseRatingMax = 5;
 
 
 export const CreateEntryResponse = zod.object({
-  "id": zod.int(),
+  "id": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
   "status": zod.enum(['watching', 'plan_to_watch', 'completed']).default(createEntryResponseStatusDefault),
   "posterUrl": zod.string().nullish(),
   "dateWatched": zod.coerce.date().nullish(),
-  "year": zod.int().nullable(),
-  "rating": zod.int().min(1).max(createEntryResponseRatingMax).nullish(),
+  "year": zod.number().int().nullable(),
+  "rating": zod.number().int().min(1).max(createEntryResponseRatingMax).nullish(),
   "notes": zod.string().nullish(),
   "synopsis": zod.string().nullish(),
-  "tmdbId": zod.int().nullish(),
+  "tmdbId": zod.number().int().nullish(),
   "platform": zod.string().nullish(),
   "tags": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
@@ -117,17 +117,17 @@ export const getEntryResponseRatingMax = 5;
 
 
 export const GetEntryResponse = zod.object({
-  "id": zod.int(),
+  "id": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
   "status": zod.enum(['watching', 'plan_to_watch', 'completed']).default(getEntryResponseStatusDefault),
   "posterUrl": zod.string().nullish(),
   "dateWatched": zod.coerce.date().nullish(),
-  "year": zod.int().nullable(),
-  "rating": zod.int().min(1).max(getEntryResponseRatingMax).nullish(),
+  "year": zod.number().int().nullable(),
+  "rating": zod.number().int().min(1).max(getEntryResponseRatingMax).nullish(),
   "notes": zod.string().nullish(),
   "synopsis": zod.string().nullish(),
-  "tmdbId": zod.int().nullish(),
+  "tmdbId": zod.number().int().nullish(),
   "platform": zod.string().nullish(),
   "tags": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
@@ -153,10 +153,10 @@ export const UpdateEntryBody = zod.object({
   "status": zod.enum(['watching', 'plan_to_watch', 'completed']).optional(),
   "posterUrl": zod.string().nullish(),
   "dateWatched": zod.coerce.date().nullish(),
-  "rating": zod.int().min(1).max(updateEntryBodyRatingMax).nullish(),
+  "rating": zod.number().int().min(1).max(updateEntryBodyRatingMax).nullish(),
   "notes": zod.string().nullish(),
   "synopsis": zod.string().nullish(),
-  "tmdbId": zod.int().nullish(),
+  "tmdbId": zod.number().int().nullish(),
   "platform": zod.string().nullish(),
   "tags": zod.array(zod.string()).optional()
 })
@@ -167,17 +167,17 @@ export const updateEntryResponseRatingMax = 5;
 
 
 export const UpdateEntryResponse = zod.object({
-  "id": zod.int(),
+  "id": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
   "status": zod.enum(['watching', 'plan_to_watch', 'completed']).default(updateEntryResponseStatusDefault),
   "posterUrl": zod.string().nullish(),
   "dateWatched": zod.coerce.date().nullish(),
-  "year": zod.int().nullable(),
-  "rating": zod.int().min(1).max(updateEntryResponseRatingMax).nullish(),
+  "year": zod.number().int().nullable(),
+  "rating": zod.number().int().min(1).max(updateEntryResponseRatingMax).nullish(),
   "notes": zod.string().nullish(),
   "synopsis": zod.string().nullish(),
-  "tmdbId": zod.int().nullish(),
+  "tmdbId": zod.number().int().nullish(),
   "platform": zod.string().nullish(),
   "tags": zod.array(zod.string()),
   "createdAt": zod.coerce.date(),
@@ -207,18 +207,18 @@ export const getStatsResponseByMonthItemMonthMax = 12;
 
 
 export const GetStatsResponse = zod.object({
-  "year": zod.int(),
-  "total": zod.int(),
-  "movies": zod.int(),
-  "shows": zod.int(),
+  "year": zod.number().int(),
+  "total": zod.number().int(),
+  "movies": zod.number().int(),
+  "shows": zod.number().int(),
   "averageRating": zod.number().nullable(),
   "byMonth": zod.array(zod.object({
-  "month": zod.int().min(1).max(getStatsResponseByMonthItemMonthMax),
-  "count": zod.int()
+  "month": zod.number().int().min(1).max(getStatsResponseByMonthItemMonthMax),
+  "count": zod.number().int()
 })),
   "byTag": zod.array(zod.object({
   "tag": zod.string(),
-  "count": zod.int()
+  "count": zod.number().int()
 }))
 })
 
@@ -227,8 +227,8 @@ export const GetStatsResponse = zod.object({
  * @summary List all years that have entries
  */
 export const ListYearsResponseItem = zod.object({
-  "year": zod.int().nullable(),
-  "count": zod.int()
+  "year": zod.number().int().nullable(),
+  "count": zod.number().int()
 })
 export const ListYearsResponse = zod.array(ListYearsResponseItem)
 
@@ -242,10 +242,10 @@ export const TmdbSearchQueryParams = zod.object({
 
 export const TmdbSearchResponse = zod.object({
   "results": zod.array(zod.object({
-  "tmdbId": zod.int(),
+  "tmdbId": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
-  "year": zod.int().nullish(),
+  "year": zod.number().int().nullish(),
   "posterUrl": zod.string().nullish(),
   "overview": zod.string().nullish()
 }))
@@ -257,10 +257,10 @@ export const TmdbSearchResponse = zod.object({
  */
 export const TmdbTrendingResponse = zod.object({
   "results": zod.array(zod.object({
-  "tmdbId": zod.int(),
+  "tmdbId": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
-  "year": zod.int().nullish(),
+  "year": zod.number().int().nullish(),
   "posterUrl": zod.string().nullish(),
   "overview": zod.string().nullish()
 }))
@@ -272,18 +272,18 @@ export const TmdbTrendingResponse = zod.object({
  */
 export const TmdbPopularResponse = zod.object({
   "movies": zod.array(zod.object({
-  "tmdbId": zod.int(),
+  "tmdbId": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
-  "year": zod.int().nullish(),
+  "year": zod.number().int().nullish(),
   "posterUrl": zod.string().nullish(),
   "overview": zod.string().nullish()
 })),
   "shows": zod.array(zod.object({
-  "tmdbId": zod.int(),
+  "tmdbId": zod.number().int(),
   "title": zod.string(),
   "type": zod.enum(['movie', 'show']),
-  "year": zod.int().nullish(),
+  "year": zod.number().int().nullish(),
   "posterUrl": zod.string().nullish(),
   "overview": zod.string().nullish()
 }))
