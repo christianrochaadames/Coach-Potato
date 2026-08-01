@@ -13,6 +13,25 @@ function textColorFor(bg: string): string {
     : '#ffffff';
 }
 
+function StarRow({ rating, size = 10 }: { rating: number; size?: number }) {
+  return (
+    <div className="flex items-center gap-[1px]" style={{ lineHeight: 1 }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          style={{
+            fontSize: size,
+            color: star <= rating ? '#FFD34D' : '#D6CECC',
+            lineHeight: 1,
+          }}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  );
+}
+
 interface PosterCardProps {
   entry: {
     id: number;
@@ -40,6 +59,7 @@ export function PosterCard({ entry, onClick, compact = false, index = 0 }: Poste
       style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
       data-testid={`poster-card-${entry.id}`}
     >
+      {/* Poster image */}
       <div className="relative aspect-[2/3] rounded-xl overflow-hidden shadow-sm">
         {entry.posterUrl ? (
           <img
@@ -59,7 +79,8 @@ export function PosterCard({ entry, onClick, compact = false, index = 0 }: Poste
             </span>
           </div>
         )}
-        {/* Status badge */}
+
+        {/* Status badge (top-left) */}
         {entry.status && entry.status !== 'completed' && (
           <div
             className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
@@ -71,24 +92,25 @@ export function PosterCard({ entry, onClick, compact = false, index = 0 }: Poste
             {entry.status === 'watching' ? '▶' : '🔖'}
           </div>
         )}
-        {/* Rating overlay */}
-        {entry.rating && (
-          <div
-            className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-            style={{ background: 'rgba(0,0,0,0.6)', color: '#FFD34D' }}
-          >
-            ★ {entry.rating}
-          </div>
-        )}
       </div>
+
+      {/* Title + rating below poster */}
       {!compact && (
-        <div className="mt-1.5">
-          <p className="text-xs font-bold truncate" style={{ color: '#111111' }} data-testid={`poster-title-${entry.id}`}>
+        <div className="mt-1.5 space-y-0.5">
+          <p
+            className="text-xs font-bold truncate leading-tight"
+            style={{ color: '#111111' }}
+            data-testid={`poster-title-${entry.id}`}
+          >
             {entry.title}
           </p>
-          <p className="text-[10px]" style={{ color: '#7E7A73' }}>
-            {entry.year ?? ''}
-          </p>
+          {entry.rating ? (
+            <StarRow rating={entry.rating} size={9} />
+          ) : (
+            <p className="text-[10px]" style={{ color: '#7E7A73' }}>
+              {entry.year ?? ''}
+            </p>
+          )}
         </div>
       )}
     </div>

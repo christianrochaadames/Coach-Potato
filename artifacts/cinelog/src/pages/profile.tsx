@@ -25,7 +25,7 @@ export default function Profile() {
         <p className="text-xl font-bold">Hey, Spud! 🛋️</p>
         <p className="text-sm opacity-70 mt-1">Your TV life, remembered.</p>
         <div className="mt-4">
-          <CouchPotatoLogo size="sm" />
+          <CouchPotatoLogo size="sm" onDark />
         </div>
       </div>
 
