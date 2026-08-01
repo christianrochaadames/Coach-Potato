@@ -60,8 +60,8 @@ export default function Home() {
         className="mx-5 mb-5 rounded-3xl p-5 text-white"
         style={{ background: '#116149' }}
       >
-        <p className="text-sm font-semibold opacity-70 mb-1">Your TV life, remembered.</p>
-        <p className="text-xl font-bold mb-4">Here's what you've been watching</p>
+        <p className="text-sm font-semibold opacity-70 mb-1">From cinemas to couch marathons.</p>
+        <p className="text-xl font-bold mb-4">Everything you've watched, are watching and want to watch, all in one place.</p>
         <div className="flex gap-4">
           <div className="flex-1 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.12)' }}>
             <p className="text-2xl font-bold">{watchedCount}</p>

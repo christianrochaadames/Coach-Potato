@@ -71,6 +71,29 @@ export default function SearchPage() {
 
   const noKey = searchNoKey || popularNoKey;
 
+  const markWatching = (item: TmdbItem) => {
+    createEntry.mutate(
+      {
+        data: {
+          title: item.title,
+          type: item.type,
+          status: 'watching',
+          posterUrl: item.posterUrl ?? undefined,
+          synopsis: item.overview ?? undefined,
+          tmdbId: item.tmdbId,
+        } as any,
+      },
+      {
+        onSuccess: () => {
+          toast({ title: '▶ Now Watching', description: item.title });
+          queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+          setAddingItem(null);
+        },
+        onError: () => toast({ title: 'Error', description: 'Could not mark as watching', variant: 'destructive' }),
+      }
+    );
+  };
+
   const addToWatchlist = (item: TmdbItem) => {
     createEntry.mutate(
       {
@@ -268,23 +291,33 @@ export default function SearchPage() {
               </div>
             </div>
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-3">
               <button
-                onClick={() => addToWatchlist(addingItem)}
+                onClick={() => markWatching(addingItem)}
                 disabled={createEntry.isPending}
-                className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
-                style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
-              >
-                🔖 Watchlist
-              </button>
-              <button
-                onClick={() => markWatched(addingItem)}
-                disabled={createEntry.isPending}
-                className="py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
+                className="w-full py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
                 style={{ background: '#116149' }}
               >
-                ✓ Mark Watched
+                ▶ Currently Watching
               </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => addToWatchlist(addingItem)}
+                  disabled={createEntry.isPending}
+                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                >
+                  🔖 Watchlist
+                </button>
+                <button
+                  onClick={() => markWatched(addingItem)}
+                  disabled={createEntry.isPending}
+                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                >
+                  ✓ Mark Watched
+                </button>
+              </div>
             </div>
             <button
               onClick={() => setLocation(
