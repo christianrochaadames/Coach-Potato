@@ -101,6 +101,16 @@ export default function EntryDetail() {
       .catch(() => {});
   }, [entry?.tmdbId, entry?.type]);
 
+  const setSeasonRating = (num: number, rating: number | null) => {
+    if (!entryId || !entry) return;
+    const seasons = ((entry as any).seasons ?? []) as Array<{ number: number; status: string; dateWatched?: string | null; rating?: number | null }>;
+    const updated = seasons.map((s) => s.number === num ? { ...s, rating } : s);
+    updateEntry.mutate(
+      { id: entryId, data: { seasons: updated } as any },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) }) }
+    );
+  };
+
   const toggleSeason = (num: number) => {
     if (!entryId || !entry) return;
     const seasons = ((entry as any).seasons ?? []) as Array<{ number: number; status: string; dateWatched?: string | null }>;
@@ -553,23 +563,41 @@ export default function EntryDetail() {
                     {watchedNums.size}/{totalSeasons} watched
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {pills.map((num) => {
                     const isWatched = watchedNums.has(num);
+                    const seasonData = (seasons as Array<{ number: number; status: string; rating?: number | null }>).find((s) => s.number === num);
+                    const seasonRating = seasonData?.rating ?? null;
                     return (
-                      <button
-                        key={num}
-                        onClick={() => toggleSeason(num)}
-                        disabled={updateEntry.isPending}
-                        className="w-10 h-10 rounded-full font-bold text-xs transition-all active:scale-90 disabled:opacity-50"
-                        style={isWatched
-                          ? { background: '#116149', color: '#ffffff' }
-                          : { background: '#EFE4D2', color: '#7E7A73' }
-                        }
-                        title={isWatched ? `Season ${num} — tap to unmark` : `Season ${num} — tap to mark watched`}
-                      >
-                        S{num}
-                      </button>
+                      <div key={num} className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => toggleSeason(num)}
+                          disabled={updateEntry.isPending}
+                          className="w-10 h-10 rounded-full font-bold text-xs transition-all active:scale-90 disabled:opacity-50 flex-shrink-0"
+                          style={isWatched
+                            ? { background: '#116149', color: '#ffffff' }
+                            : { background: '#EFE4D2', color: '#7E7A73' }
+                          }
+                          title={isWatched ? `Season ${num} — tap to unmark` : `Season ${num} — tap to mark watched`}
+                        >
+                          S{num}
+                        </button>
+                        {isWatched && (
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() => setSeasonRating(num, star === seasonRating ? null : star)}
+                                disabled={updateEntry.isPending}
+                                className="text-base leading-none transition-all active:scale-110 disabled:opacity-50"
+                                title={`Season ${num}: ${star}/5`}
+                              >
+                                <span style={{ color: star <= (seasonRating ?? 0) ? '#FFD34D' : '#D4C9BC' }}>★</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

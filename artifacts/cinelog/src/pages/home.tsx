@@ -168,12 +168,12 @@ export default function Home() {
       {!recsLoading && recs.length > 0 && (
         <section className="mb-6">
           <div className="px-5 mb-3 flex items-center gap-2">
-            <h2 className="text-base font-bold" style={{ color: '#111111' }}>You Might Like</h2>
+            <h2 className="text-base font-bold" style={{ color: '#111111' }}>Picked for you</h2>
             <span
               className="text-[10px] font-bold px-2.5 py-0.5 rounded-full"
-              style={{ background: '#FFD34D', color: '#111111' }}
+              style={{ background: '#6B46C1', color: '#ffffff' }}
             >
-              For you
+              Based on what you've watched
             </span>
           </div>
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
