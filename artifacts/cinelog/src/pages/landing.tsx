@@ -48,20 +48,20 @@ export default function Landing() {
           style={{ gap: 22, zIndex: 1, maxWidth: "65%" }}
         >
           <p
-            className="leading-snug"
-            style={{ color: "#116149", fontSize: 22, fontWeight: 500 }}
+            className="font-bold leading-snug"
+            style={{ color: "#116149", fontSize: 22 }}
           >
             Everything you're watching
           </p>
           <p
-            className="leading-snug"
-            style={{ color: "#116149", fontSize: 22, fontWeight: 500 }}
+            className="font-bold leading-snug"
+            style={{ color: "#116149", fontSize: 22 }}
           >
-            What you've already seen
+            What you've already watched
           </p>
           <p
-            className="leading-snug"
-            style={{ color: "#116149", fontSize: 22, fontWeight: 500 }}
+            className="font-bold leading-snug"
+            style={{ color: "#116149", fontSize: 22 }}
           >
             What you'll watch next
           </p>
