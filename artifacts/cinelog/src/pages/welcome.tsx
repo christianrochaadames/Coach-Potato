@@ -95,7 +95,7 @@ export default function Welcome() {
           }}
         />
 
-        {/* Spud hero — slightly smaller so it clears the logo */}
+        {/* Spud hero — nudged down so he sits clear of the logo */}
         <img
           src="/spud-hero.png"
           alt=""
@@ -103,7 +103,7 @@ export default function Welcome() {
           draggable={false}
           style={{
             position: "absolute",
-            top: 10,
+            top: 30,
             right: -10,
             height: 246,
             width: "auto",
@@ -160,11 +160,12 @@ export default function Welcome() {
           BOTTOM — couch Spud left, small pill button in the empty
           space to its right. No overlap between button and illustration.
       ════════════════════════════════════════════════════════════════ */}
+      {/* Container tall enough to show the full couch image without clipping the hat */}
       <div
         className="relative flex-shrink-0"
-        style={{ height: 160, overflow: "hidden" }}
+        style={{ height: 224 }}
       >
-        {/* Couch Spud — bottom-left */}
+        {/* Couch Spud — bottom-left, full image visible */}
         <img
           src="/spud-couch.png"
           alt=""
@@ -174,7 +175,7 @@ export default function Welcome() {
             position: "absolute",
             bottom: 0,
             left: -14,
-            width: 215,
+            width: 212,
             height: "auto",
             objectFit: "contain",
             opacity: 0.9,
@@ -182,7 +183,7 @@ export default function Welcome() {
           }}
         />
 
-        {/* Pill button — vertically centred within the couch illustration height */}
+        {/* Pill button — centred on the vertical midpoint of the couch illustration */}
         <button
           onClick={() => setShowForm(true)}
           className="font-bold text-white active:opacity-80 transition-opacity"
