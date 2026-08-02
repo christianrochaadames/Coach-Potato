@@ -95,7 +95,7 @@ export default function Welcome() {
           }}
         />
 
-        {/* Spud hero — new transparent PNG, sits beside logo without overlapping */}
+        {/* Spud hero — slightly smaller so it clears the logo */}
         <img
           src="/spud-hero.png"
           alt=""
@@ -105,7 +105,7 @@ export default function Welcome() {
             position: "absolute",
             top: 10,
             right: -10,
-            height: 262,
+            height: 246,
             width: "auto",
             objectFit: "contain",
           }}
@@ -115,7 +115,7 @@ export default function Welcome() {
       {/* ═══════════════════════════════════════════════════════════════
           TEXT CONTENT — nudged up by reducing top margin
       ════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-col px-7" style={{ gap: 0, marginTop: -18 }}>
+      <div className="flex flex-col px-7" style={{ gap: 0, marginTop: -4 }}>
 
         {/* "Welcome!" — dominant heading */}
         <h1
@@ -182,14 +182,15 @@ export default function Welcome() {
           }}
         />
 
-        {/* Pill button — floats in the empty space to the right of the couch */}
+        {/* Pill button — vertically centred within the couch illustration height */}
         <button
           onClick={() => setShowForm(true)}
           className="font-bold text-white active:opacity-80 transition-opacity"
           style={{
             position: "absolute",
             right: 20,
-            bottom: 48,
+            top: "50%",
+            transform: "translateY(-50%)",
             background: GREEN,
             borderRadius: 9999,
             fontSize: 14,
