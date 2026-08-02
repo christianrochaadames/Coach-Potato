@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
-import { ChevronLeft, LogOut, Edit2, Camera } from "lucide-react";
+import { ChevronLeft, LogOut, Edit2, Camera, ZoomIn, ZoomOut } from "lucide-react";
 import { useListEntries } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -9,6 +9,174 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // All 14 Spud avatar variants (numbers match spud-avatar-N.png filenames)
 const SPUD_AVATARS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
+const PREVIEW_SIZE = 256; // px — size of the crop circle preview
+
+// ── Interactive crop modal ──────────────────────────────────────────────────
+function CropModal({
+  imageSrc,
+  onConfirm,
+  onCancel,
+}: {
+  imageSrc: string;
+  onConfirm: (dataUrl: string) => void;
+  onCancel: () => void;
+}) {
+  const [scale, setScale]             = useState(1);
+  const [dragX, setDragX]             = useState(0);
+  const [dragY, setDragY]             = useState(0);
+  const [dragging, setDragging]       = useState(false);
+  const [nat, setNat]                 = useState<{ w: number; h: number } | null>(null);
+  const lastPos                       = useRef<{ x: number; y: number } | null>(null);
+  const imgRef                        = useRef<HTMLImageElement>(null);
+
+  // clamp drag so the image never shows empty space inside the circle
+  const clamp = (next: number, axis: "x" | "y", sc: number) => {
+    if (!nat) return next;
+    const base = Math.max(PREVIEW_SIZE / nat.w, PREVIEW_SIZE / nat.h);
+    const total = base * sc;
+    const half = (axis === "x" ? nat.w * total - PREVIEW_SIZE : nat.h * total - PREVIEW_SIZE) / 2;
+    return Math.max(-half, Math.min(half, next));
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    setDragging(true);
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging || !lastPos.current) return;
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    setDragX(prev => clamp(prev + dx, "x", scale));
+    setDragY(prev => clamp(prev + dy, "y", scale));
+  };
+  const onPointerUp = () => { setDragging(false); lastPos.current = null; };
+
+  const onScaleChange = (next: number) => {
+    setScale(next);
+    // re-clamp offsets when zooming out (image might no longer cover)
+    setDragX(prev => clamp(prev, "x", next));
+    setDragY(prev => clamp(prev, "y", next));
+  };
+
+  const confirm = () => {
+    if (!nat || !imgRef.current) return;
+    const OUTPUT = 400;
+    const base  = Math.max(OUTPUT / nat.w, OUTPUT / nat.h);
+    const total = base * scale;
+    const ratio = OUTPUT / PREVIEW_SIZE;
+    const x = (OUTPUT - nat.w * total) / 2 + dragX * ratio;
+    const y = (OUTPUT - nat.h * total) / 2 + dragY * ratio;
+    const canvas = document.createElement("canvas");
+    canvas.width  = OUTPUT;
+    canvas.height = OUTPUT;
+    canvas.getContext("2d")!.drawImage(imgRef.current, x, y, nat.w * total, nat.h * total);
+    onConfirm(canvas.toDataURL("image/jpeg", 0.9));
+  };
+
+  // computed image dimensions for the preview
+  const imgStyle: React.CSSProperties = nat ? (() => {
+    const base  = Math.max(PREVIEW_SIZE / nat.w, PREVIEW_SIZE / nat.h);
+    const total = base * scale;
+    return {
+      position: "absolute",
+      width:  nat.w * total,
+      height: nat.h * total,
+      left: (PREVIEW_SIZE - nat.w * total) / 2 + dragX,
+      top:  (PREVIEW_SIZE - nat.h * total) / 2 + dragY,
+      maxWidth: "none",
+      maxHeight: "none",
+      userSelect: "none",
+      pointerEvents: "none" as const,
+    };
+  })() : { width: "100%", height: "100%", objectFit: "cover" as const };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center pb-6 px-4"
+      style={{ background: "rgba(0,0,0,0.65)" }}
+      onClick={(e) => e.target === e.currentTarget && onCancel()}
+    >
+      <div className="w-full max-w-sm rounded-3xl overflow-hidden" style={{ background: "#ffffff" }}>
+        <div className="px-6 pt-6 pb-2">
+          <p className="text-sm font-bold text-center mb-1" style={{ color: "#111111" }}>
+            Position your photo
+          </p>
+          <p className="text-xs text-center mb-4" style={{ color: "#7E7A73" }}>
+            Drag to reposition · Slide to zoom
+          </p>
+
+          {/* Circle crop preview */}
+          <div className="flex justify-center mb-4">
+            <div
+              style={{
+                width: PREVIEW_SIZE,
+                height: PREVIEW_SIZE,
+                borderRadius: "50%",
+                overflow: "hidden",
+                position: "relative",
+                cursor: dragging ? "grabbing" : "grab",
+                border: "3px solid #116149",
+                flexShrink: 0,
+                touchAction: "none",
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerLeave={onPointerUp}
+            >
+              <img
+                ref={imgRef}
+                src={imageSrc}
+                alt="crop"
+                draggable={false}
+                onLoad={e => {
+                  const i = e.currentTarget;
+                  setNat({ w: i.naturalWidth, h: i.naturalHeight });
+                }}
+                style={imgStyle}
+              />
+            </div>
+          </div>
+
+          {/* Zoom slider */}
+          <div className="flex items-center gap-3 mx-2 mb-5">
+            <ZoomOut className="w-4 h-4 flex-shrink-0" style={{ color: "#7E7A73" }} />
+            <input
+              type="range"
+              min={1} max={3} step={0.02}
+              value={scale}
+              onChange={e => onScaleChange(Number(e.target.value))}
+              className="flex-1"
+              style={{ accentColor: "#116149" }}
+            />
+            <ZoomIn className="w-4 h-4 flex-shrink-0" style={{ color: "#7E7A73" }} />
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 px-6 pb-6">
+          <button
+            onClick={confirm}
+            className="flex-1 py-3 rounded-2xl text-sm font-bold text-white"
+            style={{ background: "#116149" }}
+          >
+            Use this photo
+          </button>
+          <button
+            onClick={onCancel}
+            className="px-5 py-3 rounded-2xl text-sm font-semibold"
+            style={{ background: "#EFE4D2", color: "#7E7A73" }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ── Hoisted outside Profile so React never unmounts/remounts inputs on re-render ── */
 function InlineEditor({
@@ -79,6 +247,7 @@ export default function Profile() {
   const [avatarId,    setAvatarId]    = useState<string | null>(null);
   const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [cropSrc,     setCropSrc]     = useState<string | null>(null);
 
   const { data: allEntries } = useListEntries({} as any);
   const { data: watching }   = useListEntries({ status: "watching" } as any);
@@ -172,34 +341,19 @@ export default function Profile() {
     }
   };
 
-  // ── Photo upload: resize to 400×400 JPEG then store as base64 ──
+  // ── Photo upload: open the crop modal instead of auto-saving ──
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const src = ev.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        const SIZE = 400;
-        const canvas = document.createElement("canvas");
-        canvas.width = SIZE;
-        canvas.height = SIZE;
-        const ctx = canvas.getContext("2d")!;
-        ctx.fillStyle = "#FFF3E8";
-        ctx.fillRect(0, 0, SIZE, SIZE);
-        const scale = Math.min(SIZE / img.width, SIZE / img.height);
-        const x = (SIZE - img.width * scale) / 2;
-        const y = (SIZE - img.height * scale) / 2;
-        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-        saveAvatar({ avatarId: null, avatarUrl: dataUrl });
-      };
-      img.src = src;
-    };
+    reader.onload = (ev) => setCropSrc(ev.target?.result as string);
     reader.readAsDataURL(file);
-    // Reset so the same file can be re-selected
     e.target.value = "";
+  };
+
+  const handleCropConfirm = (dataUrl: string) => {
+    setCropSrc(null);
+    saveAvatar({ avatarId: null, avatarUrl: dataUrl });
   };
 
   const watched       = (allEntries ?? []).filter((e: any) => e.status === "completed").length;
@@ -242,6 +396,15 @@ export default function Profile() {
 
   return (
     <div className="min-h-full pb-24" style={{ background: "#FFF3E8" }}>
+      {/* ── Interactive crop modal ── */}
+      {cropSrc && (
+        <CropModal
+          imageSrc={cropSrc}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
+
       {/* ── Header: back button only, no logo ── */}
       <div className="px-5 pt-8 pb-4 flex items-center">
         <button onClick={() => setLocation("/")} className="p-2 -ml-2 active:opacity-60">

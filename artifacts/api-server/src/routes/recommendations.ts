@@ -62,31 +62,61 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     );
     const inCollection = new Set(allRows.map((r) => r.tmdb_id));
 
-    // 3. Fetch TMDB recommendations for each seed entry in parallel.
-    //    Tag each result with the recency rank (0 = most recent) and the
-    //    seed's star rating (1-5, null = unrated) for weighted scoring.
+    // 3. Fetch TMDB recommendations AND similar titles for each seed entry.
+    //    Many niche/foreign titles return 0 results from /recommendations alone,
+    //    so we also hit /similar and merge both pools together.
     type TaggedRec = ReturnType<typeof mapRec> & { recencyRank: number; seedRating: number | null };
     const allRecs: TaggedRec[] = [];
 
+    const fetchEndpoint = async (
+      mediaType: "movie" | "tv",
+      tmdbId: number,
+      endpoint: "recommendations" | "similar",
+      idx: number,
+      rating: number | null
+    ) => {
+      try {
+        const url = `${TMDB_BASE}/${mediaType}/${tmdbId}/${endpoint}?api_key=${apiKey}&language=en-US&page=1`;
+        const r = await fetch(url);
+        if (!r.ok) return;
+        const data = (await r.json()) as { results?: Record<string, unknown>[] };
+        for (const item of data.results ?? []) {
+          if (!item.poster_path) continue;
+          const id = item.id as number;
+          if (inCollection.has(id)) continue;
+          allRecs.push({ ...mapRec(item, mediaType), recencyRank: idx, seedRating: rating });
+        }
+      } catch { /* ignore */ }
+    };
+
     await Promise.all(
-      recentRows.map(async (row, idx) => {
+      recentRows.flatMap((row, idx) => {
         const mediaType = row.type === "movie" ? "movie" : "tv";
-        try {
-          const url = `${TMDB_BASE}/${mediaType}/${row.tmdb_id}/recommendations?api_key=${apiKey}&language=en-US&page=1`;
-          const r = await fetch(url);
-          if (!r.ok) return;
-          const data = (await r.json()) as { results?: Record<string, unknown>[] };
-          for (const item of data.results ?? []) {
+        return [
+          fetchEndpoint(mediaType, row.tmdb_id, "recommendations", idx, row.rating),
+          fetchEndpoint(mediaType, row.tmdb_id, "similar",         idx, row.rating),
+        ];
+      })
+    );
+
+    // 3b. If the pool is still very small, pad with trending titles the user
+    //     hasn't seen yet so the section is never empty.
+    if (allRecs.length < 6) {
+      try {
+        const trendUrl = `${TMDB_BASE}/trending/all/week?api_key=${apiKey}&language=en-US`;
+        const tr = await fetch(trendUrl);
+        if (tr.ok) {
+          const tdata = (await tr.json()) as { results?: Record<string, unknown>[] };
+          for (const item of tdata.results ?? []) {
             if (!item.poster_path) continue;
             const id = item.id as number;
             if (inCollection.has(id)) continue;
-            allRecs.push({ ...mapRec(item, mediaType), recencyRank: idx, seedRating: row.rating });
+            const mt = (item.media_type as string) === "movie" ? "movie" : "tv";
+            allRecs.push({ ...mapRec(item, mt), recencyRank: 99, seedRating: null });
           }
-        } catch {
-          // ignore individual failures
         }
-      })
-    );
+      } catch { /* ignore */ }
+    }
 
     // 4. Deduplicate: keep the entry sourced from the highest-quality seed
     //    (lowest effective score); track how many distinct seeds recommended it.
