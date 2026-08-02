@@ -103,12 +103,21 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     // Vintage fan = more than half their library is older than the cutoff
     const isVintageFan = medianYear < RECENCY_CUTOFF;
 
-    // ── 2. Full collection set (to exclude already-seen titles from results) ──
+    // ── 2. Build exclusion sets ──
+    // 2a. Everything already in the user's collection (watched / watchlist / watching)
     const { rows: allRows } = await pool.query<{ tmdb_id: number }>(
       `SELECT tmdb_id FROM entries WHERE tmdb_id IS NOT NULL AND user_id = $1`,
       [req.userId]
     );
     const inCollection = new Set(allRows.map((r) => r.tmdb_id));
+
+    // 2b. Everything already shown as a recommendation in any previous session/refresh.
+    //     We track these so the user never sees the same suggestion twice.
+    const { rows: histRows } = await pool.query<{ tmdb_id: number }>(
+      `SELECT tmdb_id FROM recommendation_history WHERE user_id = $1`,
+      [req.userId]
+    );
+    const alreadyShown = new Set(histRows.map((r) => r.tmdb_id));
 
     // ── 3. Fetch /recommendations AND /similar for each seed in parallel ──
     const allRecs: TaggedRec[] = [];
@@ -239,6 +248,9 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     for (const rec of allRecs) {
       // ── Hard filters ──
 
+      // 0. Already shown in a previous session or refresh → skip
+      if (alreadyShown.has(rec.tmdbId)) continue;
+
       // 1. Language: skip content the user doesn't watch
       if (rec.originalLanguage && !allowedLangs.has(rec.originalLanguage)) continue;
 
@@ -270,12 +282,55 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     }
 
     // ── 7. Final rank: multi-seed bonus, then shuffle top 24 → return 12 ──
-    const scored = Array.from(dedupMap.values())
+    let scored = Array.from(dedupMap.values())
       .map(({ item, bestScore, count }) => ({
         item,
         score: bestScore - Math.log(count + 1) * 2,
       }))
       .sort((a, b) => a.score - b.score);
+
+    // ── 7b. Pool exhaustion guard ──
+    // If history has grown so large that fewer than 6 fresh results remain,
+    // clear the history for this user and rebuild the scored list without
+    // the "already shown" filter so they get a fresh cycle.
+    if (scored.length < 6 && alreadyShown.size > 0) {
+      await pool.query(
+        `DELETE FROM recommendation_history WHERE user_id = $1`,
+        [req.userId]
+      );
+      alreadyShown.clear();
+      // Re-score the full dedupMap (which was built before the alreadyShown filter,
+      // so we rebuild it without that filter applied — dedupMap still has everything)
+      // Actually dedupMap was built AFTER the alreadyShown filter, so re-run from allRecs:
+      dedupMap.clear();
+      for (const rec of allRecs) {
+        if (rec.originalLanguage && !allowedLangs.has(rec.originalLanguage)) continue;
+        if (!isVintageFan && rec.year !== null && rec.year < RECENCY_CUTOFF) continue;
+        if (rec.voteCount < 150 || rec.popularity < 5) continue;
+        const score =
+          rec.recencyRank * ratingMult(rec.seedRating)
+          - genreBonus(rec.genres)
+          - popularityBonus(rec.popularity);
+        const existing = dedupMap.get(rec.tmdbId);
+        if (!existing) {
+          const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
+          dedupMap.set(rec.tmdbId, { item: clean, bestScore: score, count: 1 });
+        } else {
+          existing.count++;
+          if (score < existing.bestScore) {
+            existing.bestScore = score;
+            const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
+            existing.item = clean;
+          }
+        }
+      }
+      scored = Array.from(dedupMap.values())
+        .map(({ item, bestScore, count }) => ({
+          item,
+          score: bestScore - Math.log(count + 1) * 2,
+        }))
+        .sort((a, b) => a.score - b.score);
+    }
 
     const candidates = scored.slice(0, 24);
     for (let i = candidates.length - 1; i > 0; i--) {
@@ -283,7 +338,23 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
 
-    res.json({ results: candidates.slice(0, 12).map((s) => s.item) });
+    const toReturn = candidates.slice(0, 12).map((s) => s.item);
+
+    // ── 8. Record shown IDs so they're never surfaced again ──
+    // Fire-and-forget (don't block the response). Uses ON CONFLICT DO NOTHING
+    // so duplicate inserts from concurrent requests are safe.
+    if (toReturn.length > 0) {
+      const values = toReturn
+        .map((_, i) => `($1, $${i + 2})`)
+        .join(", ");
+      pool.query(
+        `INSERT INTO recommendation_history (user_id, tmdb_id) VALUES ${values}
+         ON CONFLICT DO NOTHING`,
+        [req.userId, ...toReturn.map((r) => r.tmdbId)]
+      ).catch(() => { /* non-critical — ignore write failures */ });
+    }
+
+    res.json({ results: toReturn });
   } catch (err) {
     req.log.error({ err }, "recommendations error");
     res.status(500).json({ error: "Internal server error" });
