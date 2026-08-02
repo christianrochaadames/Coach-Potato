@@ -95,29 +95,27 @@ export default function Welcome() {
           }}
         />
 
-        {/* Spud-walk (chocolates) — sized to sit beside logo without overlapping it */}
+        {/* Spud hero — new transparent PNG, sits beside logo without overlapping */}
         <img
-          src="/spud-walk.png"
+          src="/spud-hero.png"
           alt=""
           aria-hidden
           draggable={false}
           style={{
             position: "absolute",
-            top: 20,
-            right: -14,
-            height: 240,
+            top: 10,
+            right: -10,
+            height: 262,
             width: "auto",
             objectFit: "contain",
-            opacity: 0.9,
-            mixBlendMode: "multiply",
           }}
         />
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
-          TEXT CONTENT — generous vertical spacing between every element
+          TEXT CONTENT — nudged up by reducing top margin
       ════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-col px-7" style={{ gap: 0 }}>
+      <div className="flex flex-col px-7" style={{ gap: 0, marginTop: -18 }}>
 
         {/* "Welcome!" — dominant heading */}
         <h1
@@ -159,46 +157,48 @@ export default function Welcome() {
       <div className="flex-1" />
 
       {/* ═══════════════════════════════════════════════════════════════
-          CTA — fully pill-shaped, wide, visually dominant
-      ════════════════════════════════════════════════════════════════ */}
-      <div className="px-7 pb-5">
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full font-bold text-white active:opacity-80 transition-opacity"
-          style={{
-            background: GREEN,
-            borderRadius: 9999,
-            fontSize: 18,
-            padding: "18px 0",
-          }}
-        >
-          Let's get comfy
-        </button>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════
-          BOTTOM ILLUSTRATIONS — phone (left) + couch (right) frame button.
-          Slightly larger than before; peek from corners.
+          BOTTOM — couch Spud left, small pill button in the empty
+          space to its right. No overlap between button and illustration.
       ════════════════════════════════════════════════════════════════ */}
       <div
-        className="flex justify-start items-end flex-shrink-0"
-        style={{ height: 155, overflow: "hidden" }}
+        className="relative flex-shrink-0"
+        style={{ height: 160, overflow: "hidden" }}
       >
+        {/* Couch Spud — bottom-left */}
         <img
           src="/spud-couch.png"
           alt=""
           aria-hidden
           draggable={false}
           style={{
-            width: 210,
+            position: "absolute",
+            bottom: 0,
+            left: -14,
+            width: 215,
             height: "auto",
             objectFit: "contain",
             opacity: 0.9,
             mixBlendMode: "multiply",
-            marginLeft: -14,
-            alignSelf: "flex-end",
           }}
         />
+
+        {/* Pill button — floats in the empty space to the right of the couch */}
+        <button
+          onClick={() => setShowForm(true)}
+          className="font-bold text-white active:opacity-80 transition-opacity"
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: 48,
+            background: GREEN,
+            borderRadius: 9999,
+            fontSize: 14,
+            padding: "11px 24px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Let's get comfy
+        </button>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════
