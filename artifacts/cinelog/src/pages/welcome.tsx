@@ -165,7 +165,7 @@ export default function Welcome() {
         className="relative flex-shrink-0"
         style={{ height: 224 }}
       >
-        {/* Couch Spud — bottom-left, full image visible */}
+        {/* Couch Spud — left edge aligned with logo/text margin */}
         <img
           src="/spud-couch.png"
           alt=""
@@ -174,7 +174,7 @@ export default function Welcome() {
           style={{
             position: "absolute",
             bottom: 0,
-            left: -14,
+            left: 14,
             width: 212,
             height: "auto",
             objectFit: "contain",
@@ -190,7 +190,7 @@ export default function Welcome() {
           style={{
             position: "absolute",
             right: 20,
-            top: "50%",
+            top: "54%",
             transform: "translateY(-50%)",
             background: GREEN,
             borderRadius: 9999,
