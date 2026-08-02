@@ -269,28 +269,51 @@ export default function Home() {
         </div>
       )}
 
-      {/* ── You Might Like ── */}
-      {!recsLoading && recs.length > 0 && (
-        <section className="mb-6">
-          <div className="px-5 mb-3 flex items-start justify-between gap-2">
-            <div>
-              <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
-              <span
-                className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
-                style={{ background: '#6B46C1', color: '#ffffff' }}
-              >
-                Picked for you
-              </span>
-            </div>
-            <button
-              onClick={refetchRecs}
-              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold active:opacity-60 mt-0.5"
-              style={{ background: '#EFE4D2', color: '#116149' }}
+      {/* ── You Might Like — always rendered so it never disappears ── */}
+      <section className="mb-6">
+        <div className="px-5 mb-3 flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
+            <span
+              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+              style={{ background: '#6B46C1', color: '#ffffff' }}
             >
-              <RefreshCw className="w-3 h-3" />
-              Refresh
-            </button>
+              Picked for you
+            </span>
           </div>
+          <button
+            onClick={refetchRecs}
+            className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold active:opacity-60 mt-0.5"
+            style={{ background: '#EFE4D2', color: '#116149' }}
+          >
+            <RefreshCw className="w-3 h-3" />
+            Refresh
+          </button>
+        </div>
+
+        {/* Loading skeleton */}
+        {recsLoading && (
+          <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="flex-shrink-0 w-28">
+                <div className="aspect-[2/3] rounded-xl animate-pulse mb-1.5" style={{ background: '#EFE4D2' }} />
+                <div className="h-3 rounded-full animate-pulse mb-1" style={{ background: '#EFE4D2', width: '80%' }} />
+                <div className="h-2 rounded-full animate-pulse" style={{ background: '#EFE4D2', width: '50%' }} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!recsLoading && recs.length === 0 && (
+          <div className="mx-5 px-4 py-5 rounded-2xl text-center" style={{ background: '#EFE4D2' }}>
+            <p className="text-sm font-semibold" style={{ color: '#116149' }}>Log a few titles you've watched</p>
+            <p className="text-xs mt-1" style={{ color: '#7E7A73' }}>Recommendations appear once we know your taste</p>
+          </div>
+        )}
+
+        {/* Results */}
+        {!recsLoading && recs.length > 0 && (
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
             {recs.map((rec) => (
               <div
@@ -317,8 +340,8 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       {/* ── Watched — grouped by year ── */}
       <section className="px-5 mb-10">
