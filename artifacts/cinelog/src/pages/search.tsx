@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { Search as SearchIcon, X, Film, Tv } from 'lucide-react';
+import { PLATFORMS } from '@/lib/platforms';
 import {
   useCreateEntry,
   useListEntries,
@@ -66,6 +67,7 @@ export default function SearchPage() {
   const [, setLocation] = useLocation();
   const [addingItem, setAddingItem] = useState<TmdbItem | null>(null);
   const [quickAddYear, setQuickAddYear] = useState(new Date().getFullYear());
+  const [quickAddPlatform, setQuickAddPlatform] = useState('');
   const { results, loading: searchLoading, noKey: searchNoKey } = useTmdbSearch(query);
   const { data: popular, noKey: popularNoKey, loading: popularLoading } = useTmdbPopular();
   const createEntry = useCreateEntry();
@@ -87,6 +89,11 @@ export default function SearchPage() {
 
   const noKey = searchNoKey || popularNoKey;
 
+  // Reset platform selection whenever the sheet opens for a new item
+  useEffect(() => {
+    setQuickAddPlatform('');
+  }, [addingItem?.tmdbId]);
+
   const markWatching = (item: TmdbItem) => {
     createEntry.mutate(
       {
@@ -98,6 +105,7 @@ export default function SearchPage() {
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
           tags: item.genres ?? [],
+          platform: quickAddPlatform || undefined,
         } as any,
       },
       {
@@ -122,6 +130,7 @@ export default function SearchPage() {
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
           tags: item.genres ?? [],
+          platform: quickAddPlatform || undefined,
         } as any,
       },
       {
@@ -147,6 +156,7 @@ export default function SearchPage() {
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
           tags: item.genres ?? [],
+          platform: quickAddPlatform || undefined,
         } as any,
       },
       {
@@ -354,6 +364,32 @@ export default function SearchPage() {
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
+            </div>
+            {/* Platform picker */}
+            <div className="space-y-2">
+              <p className="text-sm font-bold" style={{ color: '#111111' }}>
+                Platform <span style={{ color: '#7E7A73', fontWeight: 400 }}>(optional)</span>
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {PLATFORMS.map(p => {
+                  const selected = quickAddPlatform === p;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setQuickAddPlatform(selected ? '' : p)}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                      style={
+                        selected
+                          ? { background: '#4A78FF', color: '#ffffff' }
+                          : { background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }
+                      }
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             {/* Actions */}
             <div className="flex flex-col gap-3">
