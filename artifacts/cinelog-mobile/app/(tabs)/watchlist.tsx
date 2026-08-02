@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +13,8 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useListEntries } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useListEntries, useUpdateEntry, getListEntriesQueryKey } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 
 export default function WatchlistScreen() {
@@ -21,9 +23,24 @@ export default function WatchlistScreen() {
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const queryClient = useQueryClient();
+  const updateEntry = useUpdateEntry();
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
+
   const { data, isLoading, refetch, isRefetching } = useListEntries({});
   const all: any[] = (data as any[]) ?? [];
   const watchlist = all.filter((e) => e.status === 'plan_to_watch');
+
+  const handleQuickUpdate = async (id: number, status: string) => {
+    setUpdatingId(id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await updateEntry.mutateAsync({ id, data: { status } as any });
+      queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey({}) });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -77,11 +94,16 @@ export default function WatchlistScreen() {
           onRefresh={refetch}
           refreshing={isRefetching}
           renderItem={({ item }) => (
-            <View
+            <TouchableOpacity
               style={[
                 styles.card,
                 { backgroundColor: colors.card, borderColor: colors.border },
               ]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                router.push(('/entry/' + item.id) as any);
+              }}
+              activeOpacity={0.75}
             >
               {item.posterUrl ? (
                 <Image
@@ -105,9 +127,38 @@ export default function WatchlistScreen() {
                   {item.type === 'movie' ? 'Movie' : 'Show'}
                   {item.year ? ` · ${item.year}` : ''}
                 </Text>
+                <View style={styles.buttonsRow}>
+                  <TouchableOpacity
+                    style={styles.pillStart}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleQuickUpdate(item.id, 'watching');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    {updatingId === item.id ? (
+                      <ActivityIndicator size="small" color={colors.foreground} />
+                    ) : (
+                      <Text style={[styles.pillText, { color: colors.foreground }]}>▶  Start watching</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.pillWatched}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleQuickUpdate(item.id, 'completed');
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    {updatingId === item.id ? (
+                      <ActivityIndicator size="small" color="#ffffff" />
+                    ) : (
+                      <Text style={styles.pillTextWhite}>✓  Mark watched</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
-              <Feather name="chevron-right" size={18} color={colors.border} style={{ marginRight: 12 }} />
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -154,16 +205,41 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 8,
-    overflow: 'hidden',
   },
-  poster: { width: 54, height: 80 },
+  poster: { width: 54, height: 100 },
   posterPlaceholder: {
     width: 54,
-    height: 80,
+    height: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardBody: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
   cardTitle: { fontSize: 15, fontFamily: 'Manrope_600SemiBold', lineHeight: 20 },
   cardMeta: { fontSize: 12, fontFamily: 'Manrope_400Regular' },
+  buttonsRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 6,
+  },
+  pillStart: {
+    backgroundColor: '#9BD6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  pillWatched: {
+    backgroundColor: '#116149',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  pillText: {
+    fontSize: 11,
+    fontFamily: 'Manrope_600SemiBold',
+  },
+  pillTextWhite: {
+    fontSize: 11,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#ffffff',
+  },
 });

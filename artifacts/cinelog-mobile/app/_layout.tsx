@@ -134,6 +134,7 @@ export default function RootLayout() {
                       name="log-entry"
                       options={{ presentation: 'modal', headerShown: false }}
                     />
+                    <Stack.Screen name="entry/[id]" options={{ headerShown: false }} />
                   </Stack>
                 </KeyboardProvider>
               </QueryClientProvider>

@@ -43,9 +43,8 @@ export default function HomeScreen() {
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const { data, isLoading } = useListEntries({});
+  const { data, isLoading, refetch, isRefetching } = useListEntries({});
   const entries: EntryItem[] = (data as EntryItem[]) ?? [];
-  const recent = entries.slice(0, 20);
 
   const handleLogPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -57,7 +56,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
         <View>
-          <Text style={[styles.brand, { color: colors.primary }]}>CineLog</Text>
+          <Text style={[styles.brand, { color: colors.primary }]}>CouchPotato</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
             Your watch history
           </Text>
@@ -76,7 +75,7 @@ export default function HomeScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
-      ) : recent.length === 0 ? (
+      ) : entries.length === 0 ? (
         <View style={styles.center}>
           <Feather name="film" size={48} color={colors.border} />
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
@@ -88,7 +87,7 @@ export default function HomeScreen() {
         </View>
       ) : (
         <FlatList
-          data={recent}
+          data={entries}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{
             paddingHorizontal: 16,
@@ -96,6 +95,8 @@ export default function HomeScreen() {
             paddingTop: 8,
           }}
           showsVerticalScrollIndicator={false}
+          onRefresh={refetch}
+          refreshing={isRefetching}
           renderItem={({ item }) => <EntryCard item={item} colors={colors} />}
         />
       )}
@@ -118,7 +119,11 @@ function EntryCard({ item, colors }: { item: EntryItem; colors: ReturnType<typeo
   const label = STATUS_LABEL[item.status] ?? item.status;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <TouchableOpacity
+      activeOpacity={0.75}
+      onPress={() => { Haptics.selectionAsync(); router.push(('/entry/' + item.id) as any); }}
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+    >
       {item.posterUrl ? (
         <Image
           source={{ uri: item.posterUrl }}
@@ -169,7 +174,8 @@ function EntryCard({ item, colors }: { item: EntryItem; colors: ReturnType<typeo
           {label}
         </Text>
       </View>
-    </View>
+      <Feather name="chevron-right" size={14} color={colors.border} style={{ marginRight: 10 }} />
+    </TouchableOpacity>
   );
 }
 
