@@ -15,10 +15,17 @@ const GENRE_COLORS = [
   '#9BD6FF', '#6B46C1',
 ];
 
+// Platform bar palette — same brand colors, offset so they feel distinct
+const PLATFORM_COLORS = [
+  '#116149', '#4A78FF', '#FF4BAE', '#FFD34D', '#FF8B4D',
+  '#9BD6FF', '#6B46C1', '#116149', '#4A78FF', '#FF4BAE',
+];
+
 export default function Stats() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [activeGenre, setActiveGenre] = useState<string | null>(null);
+  const [activePlatform, setActivePlatform] = useState<string | null>(null);
 
   const { data: yearSummaries } = useListYears();
   const { data: stats, isLoading } = useGetStats({ year: selectedYear });
@@ -66,6 +73,22 @@ export default function Stats() {
   }, [allEntries]);
 
   const maxGenreCount = genreData[0]?.count ?? 1;
+
+  // Build platform breakdown from all entries' platform field
+  const platformData = useMemo(() => {
+    if (!allEntries) return [];
+    const counts = new Map<string, number>();
+    for (const entry of allEntries) {
+      const platform = ((entry as any).platform as string | null) || 'Other';
+      counts.set(platform, (counts.get(platform) ?? 0) + 1);
+    }
+    const total = allEntries.length || 1;
+    return [...counts.entries()]
+      .map(([platform, count]) => ({ platform, count, pct: Math.round((count / total) * 100) }))
+      .sort((a, b) => b.count - a.count);
+  }, [allEntries]);
+
+  const maxPlatformCount = platformData[0]?.count ?? 1;
 
   return (
     <div className="min-h-full pb-8" style={{ background: '#FFF3E8' }}>
@@ -179,6 +202,59 @@ export default function Stats() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Platform breakdown — interactive horizontal bars */}
+          {platformData.length > 0 && (
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="font-bold mb-1" style={{ color: '#111111' }}>Platform Breakdown</p>
+              <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
+                Tap a platform to highlight · based on all watched titles
+              </p>
+              <div className="space-y-2.5">
+                {platformData.map(({ platform, count, pct }, idx) => {
+                  const color = PLATFORM_COLORS[idx % PLATFORM_COLORS.length];
+                  const isActive = activePlatform === platform;
+                  const isDimmed = activePlatform !== null && !isActive;
+                  return (
+                    <button
+                      key={platform}
+                      type="button"
+                      onClick={() => setActivePlatform(isActive ? null : platform)}
+                      className="w-full text-left transition-opacity"
+                      style={{ opacity: isDimmed ? 0.35 : 1 }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span
+                          className="text-xs font-bold"
+                          style={{ color: isActive ? color : '#111111' }}
+                        >
+                          {platform}
+                        </span>
+                        <span className="text-xs font-bold" style={{ color: '#7E7A73' }}>
+                          {count} · {pct}%
+                        </span>
+                      </div>
+                      <div
+                        className="h-2 rounded-full overflow-hidden"
+                        style={{ background: '#EFE4D2' }}
+                      >
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${(count / maxPlatformCount) * 100}%`,
+                            background: color,
+                          }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Genre breakdown — interactive horizontal bars (bottom of page) */}
           {genreData.length > 0 && (
