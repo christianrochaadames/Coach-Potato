@@ -79,7 +79,6 @@ const clerkAppearance = {
     footer: "!shadow-none !border-0 !bg-white !rounded-none",
     headerTitle: "font-bold",
     headerSubtitle: "text-sm",
-    socialButtonsBlockButtonText: "font-semibold text-sm",
     formFieldLabel: "font-medium text-sm",
     footerActionLink: "font-semibold",
     footerActionText: "text-sm",

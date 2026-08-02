@@ -48,13 +48,19 @@ type RecItem = { tmdbId: number; title: string; type: 'movie' | 'show'; year: nu
 function useRecommendations() {
   const [results, setResults] = useState<RecItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const refetch = () => { setLoading(true); setRefreshKey(k => k + 1); };
+
   useEffect(() => {
+    setLoading(true);
     fetch('/api/recommendations')
       .then((r) => (r.ok ? r.json() : { results: [] }))
       .then((d) => { setResults(d.results ?? []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
-  return { results, loading };
+  }, [refreshKey]);
+
+  return { results, loading, refetch };
 }
 
 function YearPill({ year }: { year: number }) {
@@ -83,6 +89,8 @@ export default function Home() {
   const [recYear, setRecYear] = useState(new Date().getFullYear());
   const [pickingYear, setPickingYear] = useState(false);
   const [firstName, setFirstName] = useState<string | null>(null);
+  const [avatarId,  setAvatarId]  = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const greeting = useGreeting();
 
   // Onboarding guard: if the user has no username yet (e.g. signed up via
@@ -96,6 +104,8 @@ export default function Home() {
           return;
         }
         if (p.firstName) setFirstName(p.firstName);
+        setAvatarId(p.avatarId ?? null);
+        setAvatarUrl(p.avatarUrl ?? null);
       })
       .catch(() => {});
   }, []);
@@ -113,7 +123,7 @@ export default function Home() {
   const queueCount    = watchlist?.length ?? 0;
 
   const yearGroups = groupByYear(completed ?? []);
-  const { results: recs, loading: recsLoading } = useRecommendations();
+  const { results: recs, loading: recsLoading, refetch: refetchRecs } = useRecommendations();
 
   const addRec = (rec: RecItem, status: 'watching' | 'plan_to_watch' | 'completed') => {
     createEntry.mutate(
@@ -147,8 +157,34 @@ export default function Home() {
       {/* ── Header ── */}
       <div className="px-5 pt-8 pb-3 flex items-center justify-between">
         <CouchPotatoLogo size="lg" />
-        <button onClick={() => setLocation('/profile')} className="flex-shrink-0">
-          <SpudMascot pose="relaxed" size={72} round={false} />
+        <button
+          onClick={() => setLocation('/profile')}
+          className="flex-shrink-0 flex flex-col items-center gap-1"
+        >
+          {/* Avatar circle */}
+          <div
+            className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center"
+            style={{ background: '#EFE4D2' }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : avatarId ? (
+              <img
+                src={`/spud-avatar-${avatarId}.png`}
+                alt="Spud"
+                className="w-full h-full object-contain p-0.5"
+              />
+            ) : (
+              <SpudMascot pose="relaxed" size={56} round={false} />
+            )}
+          </div>
+          {/* Hot-pink Edit Profile pill */}
+          <span
+            className="px-2.5 py-0.5 rounded-full text-[10px] font-bold leading-none"
+            style={{ background: '#FF3B9A', color: '#ffffff' }}
+          >
+            Edit Profile
+          </span>
         </button>
       </div>
 
@@ -235,14 +271,23 @@ export default function Home() {
       {/* ── You Might Like ── */}
       {!recsLoading && recs.length > 0 && (
         <section className="mb-6">
-          <div className="px-5 mb-3">
-            <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
-            <span
-              className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
-              style={{ background: '#6B46C1', color: '#ffffff' }}
+          <div className="px-5 mb-3 flex items-start justify-between gap-2">
+            <div>
+              <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
+              <span
+                className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                style={{ background: '#6B46C1', color: '#ffffff' }}
+              >
+                Picked for you
+              </span>
+            </div>
+            <button
+              onClick={refetchRecs}
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold active:opacity-60 mt-0.5"
+              style={{ background: '#EFE4D2', color: '#116149' }}
             >
-              Picked for you
-            </span>
+              ↻ Refresh
+            </button>
           </div>
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
             {recs.map((rec) => (

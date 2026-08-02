@@ -14,7 +14,7 @@ export function CouchPotatoLogo({ size = 'md', onDark = false, className }: Logo
 
   const img = (
     <img
-      src="/logo.jpeg"
+      src="/logo-text-v2.png"
       alt="Couch Potato"
       draggable={false}
       style={{

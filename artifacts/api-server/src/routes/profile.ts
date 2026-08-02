@@ -16,6 +16,10 @@ const profileUpdateSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores — no spaces")
     .optional(),
   bio: z.string().max(200).optional().nullable(),
+  /** Spud variant id ("2"–"15"). null clears the selection. */
+  avatarId: z.string().max(10).optional().nullable(),
+  /** base64 data-URL for a custom uploaded photo. Can be large (up to ~200 KB). */
+  avatarUrl: z.string().max(300000).optional().nullable(),
   onboardingCompleted: z.boolean().optional(),
 });
 

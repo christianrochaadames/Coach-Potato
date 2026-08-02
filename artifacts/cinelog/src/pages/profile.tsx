@@ -1,12 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
-import { ChevronLeft, LogOut, Edit2, Check, X } from "lucide-react";
-import { CouchPotatoLogo } from "@/components/couch-potato-logo";
+import { ChevronLeft, LogOut, Edit2, Camera } from "lucide-react";
 import { useListEntries } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+// All 14 Spud avatar variants (numbers match spud-avatar-N.png filenames)
+const SPUD_AVATARS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
 /* ── Hoisted outside Profile so React never unmounts/remounts inputs on re-render ── */
 function InlineEditor({
@@ -50,6 +52,8 @@ type ProfileData = {
   lastName: string | null;
   username: string | null;
   bio: string | null;
+  avatarId: string | null;
+  avatarUrl: string | null;
 };
 
 type EditField = "name" | "username" | "bio" | null;
@@ -59,6 +63,7 @@ export default function Profile() {
   const { signOut } = useClerk();
   const { user, isLoaded } = useUser();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [editing, setEditing] = useState<EditField>(null);
@@ -69,6 +74,11 @@ export default function Profile() {
   const [bioVal,       setBioVal]       = useState("");
   const [fieldError,   setFieldError]   = useState("");
   const [saving,       setSaving]       = useState(false);
+
+  // Avatar state
+  const [avatarId,    setAvatarId]    = useState<string | null>(null);
+  const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
   const { data: allEntries } = useListEntries({} as any);
   const { data: watching }   = useListEntries({ status: "watching" } as any);
@@ -83,15 +93,13 @@ export default function Profile() {
         setLastNameVal(p.lastName ?? "");
         setUsernameVal(p.username ?? "");
         setBioVal(p.bio ?? "");
+        setAvatarId(p.avatarId ?? null);
+        setAvatarUrl(p.avatarUrl ?? null);
       })
       .catch(() => {});
   }, []);
 
-  const startEdit = (field: EditField) => {
-    setEditing(field);
-    setFieldError("");
-  };
-
+  const startEdit = (field: EditField) => { setEditing(field); setFieldError(""); };
   const cancelEdit = () => {
     setEditing(null);
     setFieldError("");
@@ -126,11 +134,10 @@ export default function Profile() {
     }
   };
 
-  const saveName = () => {
+  const saveName     = () => {
     if (!firstNameVal.trim()) { setFieldError("First name is required"); return; }
     save({ firstName: firstNameVal.trim(), lastName: lastNameVal.trim() || null });
   };
-
   const saveUsername = () => {
     if (!usernameVal.trim()) { setFieldError("Username is required"); return; }
     if (!/^[a-zA-Z0-9_]+$/.test(usernameVal.trim())) {
@@ -139,8 +146,61 @@ export default function Profile() {
     }
     save({ username: usernameVal.trim().toLowerCase() });
   };
-
   const saveBio = () => save({ bio: bioVal.trim() || null });
+
+  // ── Avatar save ──
+  const saveAvatar = async (patch: { avatarId: string | null; avatarUrl: string | null }) => {
+    setSavingAvatar(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setAvatarId(updated.avatarId ?? null);
+        setAvatarUrl(updated.avatarUrl ?? null);
+        toast({ title: "Avatar updated ✓" });
+      } else {
+        toast({ title: "Could not save avatar", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error", variant: "destructive" });
+    } finally {
+      setSavingAvatar(false);
+    }
+  };
+
+  // ── Photo upload: resize to 400×400 JPEG then store as base64 ──
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const SIZE = 400;
+        const canvas = document.createElement("canvas");
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "#FFF3E8";
+        ctx.fillRect(0, 0, SIZE, SIZE);
+        const scale = Math.min(SIZE / img.width, SIZE / img.height);
+        const x = (SIZE - img.width * scale) / 2;
+        const y = (SIZE - img.height * scale) / 2;
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        saveAvatar({ avatarId: null, avatarUrl: dataUrl });
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
+    // Reset so the same file can be re-selected
+    e.target.value = "";
+  };
 
   const watched       = (allEntries ?? []).filter((e: any) => e.status === "completed").length;
   const watchingCount = watching?.length ?? 0;
@@ -160,14 +220,6 @@ export default function Profile() {
     ? new Date(user.createdAt).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
     : null;
 
-  if (!isLoaded) {
-    return (
-      <div className="min-h-full flex items-center justify-center" style={{ background: "#FFF3E8" }}>
-        <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "#EFE4D2" }} />
-      </div>
-    );
-  }
-
   const inputStyle = (hasError?: boolean) => ({
     width: "100%",
     padding: "10px 14px",
@@ -180,28 +232,45 @@ export default function Profile() {
     outline: "none",
   });
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-full flex items-center justify-center" style={{ background: "#FFF3E8" }}>
+        <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "#EFE4D2" }} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-full pb-24" style={{ background: "#FFF3E8" }}>
-      {/* Header */}
-      <div className="px-5 pt-8 pb-4 flex items-center justify-between">
+      {/* ── Header: back button only, no logo ── */}
+      <div className="px-5 pt-8 pb-4 flex items-center">
         <button onClick={() => setLocation("/")} className="p-2 -ml-2 active:opacity-60">
           <ChevronLeft className="w-6 h-6" style={{ color: "#111111" }} />
         </button>
-        <CouchPotatoLogo size="sm" />
-        <div className="w-10" />
+        <h1 className="text-base font-bold ml-2" style={{ color: "#111111" }}>My Profile</h1>
       </div>
 
-      {/* Avatar initials + name */}
+      {/* ── Avatar circle + name ── */}
       <div className="px-5 flex flex-col items-center pb-6">
         <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold"
-          style={{ background: "#EFE4D2", color: "#116149" }}
+          className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center"
+          style={{ background: "#EFE4D2" }}
         >
-          {initials}
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="Profile photo" className="w-full h-full object-cover" />
+          ) : avatarId ? (
+            <img
+              src={`/spud-avatar-${avatarId}.png`}
+              alt="Spud avatar"
+              className="w-full h-full object-contain p-1"
+            />
+          ) : (
+            <span className="text-3xl font-bold" style={{ color: "#116149" }}>{initials}</span>
+          )}
         </div>
-        <h1 className="mt-3 text-xl font-bold text-center" style={{ color: "#111111" }}>
+        <h2 className="mt-3 text-xl font-bold text-center" style={{ color: "#111111" }}>
           {displayName}
-        </h1>
+        </h2>
         {user?.primaryEmailAddress && (
           <p className="text-sm mt-0.5" style={{ color: "#7E7A73" }}>
             {user.primaryEmailAddress.emailAddress}
@@ -212,13 +281,88 @@ export default function Profile() {
         )}
       </div>
 
-      {/* Stats */}
+      {/* ── Stats ── */}
       <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#116149" }}>
         <div className="grid grid-cols-3 gap-2 text-white text-center">
           <div><p className="text-2xl font-bold">{watched}</p><p className="text-xs opacity-70 mt-0.5">Watched</p></div>
           <div><p className="text-2xl font-bold">{watchingCount}</p><p className="text-xs opacity-70 mt-0.5">Watching</p></div>
           <div><p className="text-2xl font-bold">{queueCount}</p><p className="text-xs opacity-70 mt-0.5">Watchlist</p></div>
         </div>
+      </div>
+
+      {/* ── Avatar picker ── */}
+      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7E7A73" }}>
+          Choose your avatar
+        </p>
+
+        {/* Grid: 14 Spud variants + 1 photo upload button */}
+        <div className="grid grid-cols-5 gap-2">
+          {SPUD_AVATARS.map((id) => (
+            <button
+              key={id}
+              onClick={() => saveAvatar({ avatarId: String(id), avatarUrl: null })}
+              disabled={savingAvatar}
+              style={{
+                aspectRatio: "1",
+                borderRadius: "50%",
+                overflow: "hidden",
+                background: "#EFE4D2",
+                border: avatarId === String(id) && !avatarUrl
+                  ? "3px solid #116149"
+                  : "2.5px solid transparent",
+                padding: 0,
+                cursor: "pointer",
+                transition: "border-color 0.15s",
+              }}
+            >
+              <img
+                src={`/spud-avatar-${id}.png`}
+                alt={`Spud ${id}`}
+                style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+              />
+            </button>
+          ))}
+
+          {/* Upload your own photo */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={savingAvatar}
+            style={{
+              aspectRatio: "1",
+              borderRadius: "50%",
+              background: avatarUrl ? "#EFE4D2" : "#F5F0EB",
+              border: avatarUrl ? "3px solid #116149" : "2.5px dashed #C4B9AD",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              gap: 2,
+            }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Your photo" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
+            ) : (
+              <>
+                <Camera style={{ width: 18, height: 18, color: "#7E7A73" }} />
+                <span style={{ fontSize: 8, fontWeight: 700, color: "#7E7A73", lineHeight: 1 }}>Photo</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handlePhotoUpload}
+        />
+
+        {savingAvatar && (
+          <p className="text-xs text-center mt-2" style={{ color: "#7E7A73" }}>Saving avatar…</p>
+        )}
       </div>
 
       {/* ── Name card ── */}
@@ -313,7 +457,7 @@ export default function Profile() {
         )}
       </div>
 
-      {/* Sign out */}
+      {/* ── Sign out ── */}
       <div className="px-5">
         <button
           onClick={() => signOut({ redirectUrl: basePath || "/" })}

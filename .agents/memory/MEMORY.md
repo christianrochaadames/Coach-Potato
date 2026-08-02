@@ -6,3 +6,4 @@
 - [TMDB proxy](tmdb-proxy.md) — /api/tmdb/search, /api/tmdb/trending, /api/tmdb/popular proxy routes in api-server. Requires TMDB_API_KEY env secret. Returns 503 if key missing.
 - [App structure](app-structure.md) — Bottom nav (4 tabs: Home/Search/Watchlist/Stats). Routes: /, /my-shows, /search, /watchlist, /stats, /profile, /entry/:id, /add. No top navbar.
 - [Seed script](seed-script.md) — scripts/seed-2026.ts seeds 63 titles via TMDB; run after TMDB_API_KEY is set.
+- [Avatar system](avatar-system.md) — avatarId ("2"–"15" Spud variants) + avatarUrl (base64 photo); both nullable on profiles table; avatarUrl wins; initials fallback.
