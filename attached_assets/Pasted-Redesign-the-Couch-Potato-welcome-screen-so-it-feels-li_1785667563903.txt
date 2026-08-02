@@ -1,0 +1,39 @@
+Redesign the Couch Potato welcome screen so it feels like a polished, playful consumer app rather than a static brochure.
+
+Keep the existing mint background, dark green typography, Couch Potato logo and all three Spud illustrations. Do not redraw or alter the illustrations.
+
+Layout changes:
+
+1. Keep the Couch Potato logo in the upper-left corner, but give it more breathing room from the screen edges.
+2. Make the main Spud illustration at the top significantly larger, approximately twice its current size. Position him toward the upper-right so the logo and mascot feel like one strong hero section. He can sit slightly closer to the edge, but do not crop important parts of the illustration.
+3. Increase the size and visual impact of the “Welcome!” heading. It should be the strongest text element on the screen.
+4. Place “I’m Spud.” directly underneath in a smaller but still prominent size.
+5. Replace the current body copy with:
+
+“I’m your personal TV and movie sidekick. I’ll help you remember what you’ve watched, keep track of what you’re watching and find your next obsession.”
+
+6. Add this shorter personality line underneath:
+
+“Now grab the remote and let’s get comfy.”
+
+7. Increase the vertical spacing between the heading, introduction, body copy and call-to-action. The screen should feel clean and spacious, not crowded.
+8. Replace the rectangular “Get started” button with a fully rounded pill-shaped button. Use the existing dark green colour with white text. Make it wide, prominent and easy to tap.
+
+Change the button text to:
+
+“Let’s get comfy”
+
+9. Keep the other two Spud illustrations at the bottom of the screen. Make them slightly larger than they are now, but position one in the bottom-left corner and the other in the bottom-right corner. They should frame the pill-shaped button without competing with it. Leave enough spacing so the layout does not feel cluttered.
+10. The button should remain visually dominant. The bottom illustrations can sit slightly lower and partially approach the screen edges, creating a playful composition.
+11. Maintain consistent padding, alignment and safe-area spacing across different mobile screen sizes.
+12. Do not introduce any new colours, gradients, shadows or decorative elements. Keep the visual identity simple, bold, friendly and premium.
+
+The final hierarchy should be:
+
+Couch Potato logo and large Spud hero illustration
+Large “Welcome!” heading
+“I’m Spud.”
+Short introduction copy
+Personality line
+Large pill-shaped “Let’s get comfy” button
+Two supporting Spud illustrations framing the bottom of the screen

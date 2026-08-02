@@ -2,16 +2,17 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 
 const PASTEL_MINT = "#E2F5EC";
+const GREEN = "#116149";
 
 export default function Welcome() {
   const [, setLocation] = useLocation();
-  const [showForm, setShowForm]     = useState(false);
-  const [firstName, setFirstName]   = useState("");
-  const [lastName, setLastName]     = useState("");
-  const [username, setUsername]     = useState("");
-  const [errors, setErrors]         = useState<Record<string, string>>({});
-  const [saving, setSaving]         = useState(false);
-  const [apiError, setApiError]     = useState("");
+  const [showForm, setShowForm]   = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName]   = useState("");
+  const [username, setUsername]   = useState("");
+  const [errors, setErrors]       = useState<Record<string, string>>({});
+  const [saving, setSaving]       = useState(false);
+  const [apiError, setApiError]   = useState("");
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -72,142 +73,167 @@ export default function Welcome() {
       className="min-h-[100dvh] flex flex-col overflow-hidden"
       style={{ background: PASTEL_MINT }}
     >
-      {/* ── Page content ── */}
-      <div className="relative z-10 flex flex-col flex-1 px-6">
 
-        {/* ── TOP ROW: Logo left + Spud-walk (chocolates) right, tucked against logo ── */}
-        <div className="pt-10 flex items-end justify-between">
-          <img
-            src="/logo-text.png"
-            alt="Couch Potato"
-            draggable={false}
-            style={{
-              height: 96,
-              width: "auto",
-              objectFit: "contain",
-              marginLeft: -10,
-            }}
-          />
-          <img
-            src="/spud-walk.png"
-            alt=""
-            aria-hidden
-            draggable={false}
-            style={{
-              height: 200,
-              width: "auto",
-              objectFit: "contain",
-              opacity: 0.9,
-              mixBlendMode: "multiply",
-              marginRight: -16,
-            }}
-          />
-        </div>
+      {/* ═══════════════════════════════════════════════════════════════
+          HERO SECTION — Logo (top-left) + large Spud-walk (top-right)
+          Fixed height container; Spud allowed to bleed slightly right.
+      ════════════════════════════════════════════════════════════════ */}
+      <div className="relative flex-shrink-0" style={{ height: 300 }}>
 
-        {/* ── WELCOME COPY — below the logo row, no illustrations nearby ── */}
-        <div className="mt-7 mb-6">
-          <h1
-            className="font-bold leading-tight mb-1"
-            style={{ color: "#116149", fontSize: 38 }}
-          >
-            Welcome!
-          </h1>
-          <h2
-            className="font-bold mb-5"
-            style={{ color: "#116149", fontSize: 24 }}
-          >
-            I'm Spud.
-          </h2>
-          <p
-            className="leading-relaxed"
-            style={{ color: "#0e4f3a", fontSize: 16, fontWeight: 500 }}
-          >
-            Think of me as your personal TV and movie sidekick. I'll help you
-            remember what you've watched, keep track of what you're watching and
-            discover what to watch next.
-          </p>
-          <p
-            className="mt-4 font-semibold leading-snug"
-            style={{ color: "#116149", fontSize: 16 }}
-          >
-            Now grab the remote… and let's get comfy.
-          </p>
-        </div>
+        {/* Logo — upper-left, generous breathing room from edges */}
+        <img
+          src="/logo-text.png"
+          alt="Couch Potato"
+          draggable={false}
+          style={{
+            position: "absolute",
+            top: 44,
+            left: 14,
+            height: 104,
+            width: "auto",
+            objectFit: "contain",
+          }}
+        />
 
-        <div className="flex-1" />
-
-        {/* ── CTA BUTTON ── */}
-        <div className="mb-5">
-          <button
-            onClick={() => setShowForm(true)}
-            className="w-full py-4 rounded-2xl font-bold text-base text-white active:opacity-80 transition-opacity"
-            style={{ background: "#116149" }}
-          >
-            Get started
-          </button>
-        </div>
-
-        {/* ── BOTTOM ILLUSTRATION ROW: spud-phone left, spud-couch right ── */}
-        {/* Placed below the button so they never sit behind any text ── */}
-        <div
-          className="flex justify-between items-end -mx-6 overflow-hidden"
-          style={{ height: 145 }}
-        >
-          <img
-            src="/spud-phone.png"
-            alt=""
-            aria-hidden
-            draggable={false}
-            style={{
-              width: 120,
-              height: "auto",
-              objectFit: "contain",
-              opacity: 0.9,
-              mixBlendMode: "multiply",
-              marginLeft: -14,
-              alignSelf: "flex-end",
-            }}
-          />
-          <img
-            src="/spud-couch.png"
-            alt=""
-            aria-hidden
-            draggable={false}
-            style={{
-              width: 170,
-              height: "auto",
-              objectFit: "contain",
-              opacity: 0.9,
-              mixBlendMode: "multiply",
-              marginRight: -14,
-              alignSelf: "flex-end",
-            }}
-          />
-        </div>
-
+        {/* Spud-walk (chocolates) — ~2× previous size, upper-right hero */}
+        <img
+          src="/spud-walk.png"
+          alt=""
+          aria-hidden
+          draggable={false}
+          style={{
+            position: "absolute",
+            top: 4,
+            right: -18,
+            height: 310,
+            width: "auto",
+            objectFit: "contain",
+            opacity: 0.9,
+            mixBlendMode: "multiply",
+          }}
+        />
       </div>
 
-      {/* ── Profile form — bottom-sheet modal ── */}
+      {/* ═══════════════════════════════════════════════════════════════
+          TEXT CONTENT — generous vertical spacing between every element
+      ════════════════════════════════════════════════════════════════ */}
+      <div className="flex flex-col px-7" style={{ gap: 0 }}>
+
+        {/* "Welcome!" — dominant heading */}
+        <h1
+          className="font-extrabold leading-none"
+          style={{ color: GREEN, fontSize: 52, letterSpacing: -1 }}
+        >
+          Welcome!
+        </h1>
+
+        {/* "I'm Spud." — secondary heading */}
+        <h2
+          className="font-bold"
+          style={{ color: GREEN, fontSize: 28, marginTop: 6 }}
+        >
+          I'm Spud.
+        </h2>
+
+        {/* Body copy */}
+        <p
+          className="leading-relaxed"
+          style={{ color: "#0e4f3a", fontSize: 16, fontWeight: 500, marginTop: 20 }}
+        >
+          I'm your personal TV and movie sidekick. I'll help you remember what
+          you've watched, keep track of what you're watching and find your next
+          obsession.
+        </p>
+
+        {/* Personality line */}
+        <p
+          className="font-semibold"
+          style={{ color: GREEN, fontSize: 16, marginTop: 16 }}
+        >
+          Now grab the remote and let's get comfy.
+        </p>
+      </div>
+
+      {/* Flexible spacer — pushes button + bottom illustrations down */}
+      <div className="flex-1" />
+
+      {/* ═══════════════════════════════════════════════════════════════
+          CTA — fully pill-shaped, wide, visually dominant
+      ════════════════════════════════════════════════════════════════ */}
+      <div className="px-7 pb-5">
+        <button
+          onClick={() => setShowForm(true)}
+          className="w-full font-bold text-white active:opacity-80 transition-opacity"
+          style={{
+            background: GREEN,
+            borderRadius: 9999,
+            fontSize: 18,
+            padding: "18px 0",
+          }}
+        >
+          Let's get comfy
+        </button>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          BOTTOM ILLUSTRATIONS — phone (left) + couch (right) frame button.
+          Slightly larger than before; peek from corners.
+      ════════════════════════════════════════════════════════════════ */}
+      <div
+        className="flex justify-between items-end flex-shrink-0"
+        style={{ height: 150, overflow: "hidden" }}
+      >
+        <img
+          src="/spud-phone.png"
+          alt=""
+          aria-hidden
+          draggable={false}
+          style={{
+            width: 132,
+            height: "auto",
+            objectFit: "contain",
+            opacity: 0.9,
+            mixBlendMode: "multiply",
+            marginLeft: -14,
+            alignSelf: "flex-end",
+          }}
+        />
+        <img
+          src="/spud-couch.png"
+          alt=""
+          aria-hidden
+          draggable={false}
+          style={{
+            width: 190,
+            height: "auto",
+            objectFit: "contain",
+            opacity: 0.9,
+            mixBlendMode: "multiply",
+            marginRight: -14,
+            alignSelf: "flex-end",
+          }}
+        />
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════
+          PROFILE FORM — bottom-sheet, slides up on "Let's get comfy"
+      ════════════════════════════════════════════════════════════════ */}
       {showForm && (
         <>
-          {/* Backdrop */}
           <div
             className="fixed inset-0 z-20"
             style={{ background: "rgba(0,0,0,0.45)" }}
             onClick={() => setShowForm(false)}
           />
-
-          {/* Sheet */}
           <div
             className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-6 pt-5 pb-10"
             style={{ background: "#ffffff", maxHeight: "88dvh", overflowY: "auto" }}
           >
-            {/* Drag handle */}
             <div className="flex justify-center mb-5">
               <div className="w-12 h-1.5 rounded-full" style={{ background: "#E2D9CE" }} />
             </div>
 
-            <h2 className="text-2xl font-bold mb-1" style={{ color: "#116149" }}>
+            <h2 className="text-2xl font-bold mb-1" style={{ color: GREEN }}>
               Tell me about yourself
             </h2>
             <p className="text-sm mb-6" style={{ color: "#7E7A73" }}>
@@ -215,10 +241,9 @@ export default function Welcome() {
             </p>
 
             <div className="flex flex-col gap-4">
-
               {/* First name */}
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "#116149" }}>
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: GREEN }}>
                   First name <span style={{ color: "#DC2626" }}>*</span>
                 </label>
                 <input
@@ -237,11 +262,9 @@ export default function Welcome() {
 
               {/* Last name */}
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "#116149" }}>
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: GREEN }}>
                   Last name{" "}
-                  <span className="text-xs font-normal normal-case" style={{ color: "#7E7A73" }}>
-                    (optional)
-                  </span>
+                  <span className="text-xs font-normal normal-case" style={{ color: "#7E7A73" }}>(optional)</span>
                 </label>
                 <input
                   value={lastName}
@@ -255,13 +278,13 @@ export default function Welcome() {
 
               {/* Username */}
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "#116149" }}>
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: GREEN }}>
                   Username <span style={{ color: "#DC2626" }}>*</span>
                 </label>
                 <div className="relative">
                   <span
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold"
-                    style={{ color: "#116149" }}
+                    style={{ color: GREEN }}
                   >
                     @
                   </span>
@@ -290,8 +313,8 @@ export default function Welcome() {
               <button
                 onClick={handleSubmit}
                 disabled={saving}
-                className="w-full py-4 rounded-2xl font-bold text-base text-white active:opacity-80 transition-opacity disabled:opacity-60"
-                style={{ background: "#116149" }}
+                className="w-full font-bold text-base text-white active:opacity-80 transition-opacity disabled:opacity-60"
+                style={{ background: GREEN, borderRadius: 9999, padding: "18px 0" }}
               >
                 {saving ? "Saving…" : "Let's go →"}
               </button>
