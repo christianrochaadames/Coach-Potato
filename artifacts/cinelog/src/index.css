@@ -49,6 +49,25 @@
   }
 }
 
+@layer clerk {
+  /* Suppress Clerk dev-mode orange notice — targets v5/v6 element keys */
+  .cl-devModeNotice,
+  [class*="devMode"],
+  [data-localization-key="badge__devMode"],
+  [data-localization-key*="devMode"],
+  .cl-badge[data-localization-key] {
+    background-color: #F3F4F6 !important;
+    color: #9CA3AF !important;
+    border-color: #E5E7EB !important;
+  }
+  /* Also soften the dots flanking the badge */
+  .cl-devModeNotice__dots,
+  [class*="devModeNotice"] {
+    color: #D1D5DB !important;
+    background-color: transparent !important;
+  }
+}
+
 @layer utilities {
   input[type='search']::-webkit-search-cancel-button { display: none; }
   

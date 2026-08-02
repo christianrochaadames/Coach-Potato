@@ -48,6 +48,9 @@ if (!clerkPubKey) {
 const clerkAppearance = {
   theme: shadcn,
   cssLayerName: "clerk",
+  layout: {
+    unsafe_disableDevelopmentModeWarnings: true,
+  },
   options: {
     logoPlacement: "none" as const,
   },
@@ -64,6 +67,11 @@ const clerkAppearance = {
     borderRadius: "14px",
   },
   elements: {
+    devModeNotice: {
+      background: "#4B5563",
+      color: "#E5E7EB",
+      borderColor: "#6B7280",
+    },
     rootBox: "w-full flex justify-center",
     cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden",
     card: "!shadow-none !border-0 !bg-transparent !rounded-none",
@@ -91,6 +99,38 @@ const clerkAppearance = {
     main: "gap-4",
   },
 };
+
+// Recolors Clerk's orange "Development mode" notice to neutral gray at runtime
+function ClerkDevModeNeutralizer() {
+  useEffect(() => {
+    const gray = "#9CA3AF";
+    const neutralize = () => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node: Text | null;
+      while ((node = walker.nextNode() as Text | null)) {
+        if (node.textContent?.trim().toLowerCase() === "development mode") {
+          // Walk up 6 levels, forcing gray with !important on every ancestor
+          let el: HTMLElement | null = node.parentElement;
+          for (let i = 0; i < 6 && el && el !== document.body; i++) {
+            el.style.setProperty("color", gray, "important");
+            el.style.setProperty("background", "transparent", "important");
+            el.style.setProperty("background-color", "transparent", "important");
+            el.style.setProperty("border-color", "#E5E7EB", "important");
+            el = el.parentElement;
+          }
+        }
+      }
+    };
+    neutralize();
+    // Retry for 6 s in case Clerk renders asynchronously after mount
+    const interval = setInterval(neutralize, 300);
+    const cleanup = setTimeout(() => clearInterval(interval), 6000);
+    const observer = new MutationObserver(neutralize);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => { observer.disconnect(); clearInterval(interval); clearTimeout(cleanup); };
+  }, []);
+  return null;
+}
 
 // Clears React Query cache when the signed-in user changes
 function ClerkQueryClientCacheInvalidator() {
@@ -182,6 +222,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <ClerkDevModeNeutralizer />
         <ClerkQueryClientCacheInvalidator />
         <TooltipProvider>
           <Router />

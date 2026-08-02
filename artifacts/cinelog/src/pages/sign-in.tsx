@@ -8,25 +8,27 @@ export default function SignInPage() {
       className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
       style={{ background: "#FFF3E8" }}
     >
-      {/* Real branding above the Clerk card */}
-      <div className="flex flex-col items-center mb-4">
-        <img
-          src="/spud.png"
-          alt="Spud mascot"
-          style={{ width: 110, height: 110, objectFit: "contain" }}
-          draggable={false}
-        />
+      {/* Branding: logo left, Spud right */}
+      <div
+        className="flex items-center justify-between mb-5"
+        style={{ width: "100%", maxWidth: 440 }}
+      >
         <img
           src="/logo.jpeg"
           alt="Couch Potato"
           draggable={false}
           style={{
-            height: 64,
+            height: 96,
             width: "auto",
             objectFit: "contain",
             mixBlendMode: "multiply",
-            marginTop: 4,
           }}
+        />
+        <img
+          src="/spud.png"
+          alt="Spud"
+          draggable={false}
+          style={{ height: 96, width: "auto", objectFit: "contain" }}
         />
       </div>
 

@@ -8,8 +8,8 @@ export default function Landing() {
       className="min-h-[100dvh] flex flex-col"
       style={{ background: "#FFF3E8", overflow: "hidden" }}
     >
-      {/* ── Logo — left-aligned, straight ── */}
-      <div className="pt-10 pl-6 flex justify-start">
+      {/* ── Logo — left-aligned, flush so JPEG whitespace aligns with text px-6 ── */}
+      <div className="pt-10 flex justify-start">
         <img
           src="/logo.jpeg"
           alt="Couch Potato"
