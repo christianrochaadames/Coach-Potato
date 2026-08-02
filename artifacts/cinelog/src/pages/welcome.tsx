@@ -95,7 +95,7 @@ export default function Welcome() {
           }}
         />
 
-        {/* Spud-walk (chocolates) — ~2× previous size, upper-right hero */}
+        {/* Spud-walk (chocolates) — sized to sit beside logo without overlapping it */}
         <img
           src="/spud-walk.png"
           alt=""
@@ -103,9 +103,9 @@ export default function Welcome() {
           draggable={false}
           style={{
             position: "absolute",
-            top: 4,
-            right: -18,
-            height: 310,
+            top: 20,
+            right: -14,
+            height: 240,
             width: "auto",
             objectFit: "contain",
             opacity: 0.9,
@@ -140,17 +140,18 @@ export default function Welcome() {
           className="leading-relaxed"
           style={{ color: "#0e4f3a", fontSize: 16, fontWeight: 500, marginTop: 20 }}
         >
-          I'm your personal TV and movie sidekick. I'll help you remember what
-          you've watched, keep track of what you're watching and find your next
-          obsession.
+          I'm your personal TV and movie sidekick. I'll help you keep track of
+          every movie and series you've watched, so you'll never forget a great
+          recommendation again.
         </p>
 
         {/* Personality line */}
         <p
-          className="font-semibold"
+          className="font-semibold leading-relaxed"
           style={{ color: GREEN, fontSize: 16, marginTop: 16 }}
         >
-          Now grab the remote and let's get comfy.
+          Next time someone asks what you've been watching lately, you'll know
+          exactly where to look.
         </p>
       </div>
 
@@ -180,36 +181,21 @@ export default function Welcome() {
           Slightly larger than before; peek from corners.
       ════════════════════════════════════════════════════════════════ */}
       <div
-        className="flex justify-between items-end flex-shrink-0"
-        style={{ height: 150, overflow: "hidden" }}
+        className="flex justify-start items-end flex-shrink-0"
+        style={{ height: 155, overflow: "hidden" }}
       >
-        <img
-          src="/spud-phone.png"
-          alt=""
-          aria-hidden
-          draggable={false}
-          style={{
-            width: 132,
-            height: "auto",
-            objectFit: "contain",
-            opacity: 0.9,
-            mixBlendMode: "multiply",
-            marginLeft: -14,
-            alignSelf: "flex-end",
-          }}
-        />
         <img
           src="/spud-couch.png"
           alt=""
           aria-hidden
           draggable={false}
           style={{
-            width: 190,
+            width: 210,
             height: "auto",
             objectFit: "contain",
             opacity: 0.9,
             mixBlendMode: "multiply",
-            marginRight: -14,
+            marginLeft: -14,
             alignSelf: "flex-end",
           }}
         />
