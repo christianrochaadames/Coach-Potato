@@ -751,14 +751,17 @@ export default function EntryDetail() {
                   )}
 
                   {/* TMDB attribution */}
-                  <div className="flex items-center gap-1.5 mt-3 pt-3" style={{ borderTop: '1px solid #EFE4D2' }}>
-                    <svg width="14" height="14" viewBox="0 0 273 185" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
-                      <rect width="273" height="185" rx="4" fill="#01B4E4"/>
-                      <path d="M117.543 36.816v111.368H96.317V36.816h-36.94V17.5h94.606v19.316h-36.44zM273 17.5v111.684H252.274V17.5H273z" fill="white"/>
-                    </svg>
-                    <span className="text-[10px]" style={{ color: '#7E7A73' }}>
-                      Cast &amp; crew data from The Movie Database (TMDB)
-                    </span>
+                  <div className="flex items-center gap-1 mt-3 pt-3" style={{ borderTop: '1px solid #EFE4D2' }}>
+                    <span className="text-[10px] font-semibold" style={{ color: '#7E7A73' }}>Source:</span>
+                    <a
+                      href="https://www.themoviedb.org"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[10px] underline"
+                      style={{ color: '#7E7A73' }}
+                    >
+                      The Movie Database (TMDB)
+                    </a>
                   </div>
                 </>
               )}

@@ -8,6 +8,43 @@ import { useToast } from "@/hooks/use-toast";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
+/* ── Hoisted outside Profile so React never unmounts/remounts inputs on re-render ── */
+function InlineEditor({
+  label, onSave, onCancel, children, fieldError, saving,
+}: {
+  label: string;
+  onSave: () => void;
+  onCancel: () => void;
+  children: React.ReactNode;
+  fieldError: string;
+  saving: boolean;
+}) {
+  return (
+    <div>
+      {children}
+      {fieldError && (
+        <p className="text-xs font-semibold mt-1.5" style={{ color: "#DC2626" }}>{fieldError}</p>
+      )}
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={onSave} disabled={saving}
+          className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
+          style={{ background: "#116149" }}
+        >
+          {saving ? "Saving…" : `Save ${label}`}
+        </button>
+        <button
+          onClick={onCancel}
+          className="px-4 py-2.5 rounded-xl text-sm font-semibold"
+          style={{ background: "#EFE4D2", color: "#7E7A73" }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type ProfileData = {
   firstName: string | null;
   lastName: string | null;
@@ -131,34 +168,6 @@ export default function Profile() {
     );
   }
 
-  /* ── Reusable inline editor shell ── */
-  const InlineEditor = ({
-    label, onSave, onCancel, children,
-  }: { label: string; onSave: () => void; onCancel: () => void; children: React.ReactNode }) => (
-    <div>
-      {children}
-      {fieldError && (
-        <p className="text-xs font-semibold mt-1.5" style={{ color: "#DC2626" }}>{fieldError}</p>
-      )}
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={onSave} disabled={saving}
-          className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
-          style={{ background: "#116149" }}
-        >
-          {saving ? "Saving…" : `Save ${label}`}
-        </button>
-        <button
-          onClick={onCancel}
-          className="px-4 py-2.5 rounded-xl text-sm font-semibold"
-          style={{ background: "#EFE4D2", color: "#7E7A73" }}
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-
   const inputStyle = (hasError?: boolean) => ({
     width: "100%",
     padding: "10px 14px",
@@ -221,7 +230,7 @@ export default function Profile() {
           )}
         </div>
         {editing === "name" ? (
-          <InlineEditor label="name" onSave={saveName} onCancel={cancelEdit}>
+          <InlineEditor label="name" onSave={saveName} onCancel={cancelEdit} fieldError={fieldError} saving={saving}>
             <div className="flex gap-2">
               <input
                 value={firstNameVal}
@@ -254,7 +263,7 @@ export default function Profile() {
           )}
         </div>
         {editing === "username" ? (
-          <InlineEditor label="username" onSave={saveUsername} onCancel={cancelEdit}>
+          <InlineEditor label="username" onSave={saveUsername} onCancel={cancelEdit} fieldError={fieldError} saving={saving}>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold" style={{ color: "#7E7A73" }}>@</span>
               <input
@@ -285,7 +294,7 @@ export default function Profile() {
           )}
         </div>
         {editing === "bio" ? (
-          <InlineEditor label="bio" onSave={saveBio} onCancel={cancelEdit}>
+          <InlineEditor label="bio" onSave={saveBio} onCancel={cancelEdit} fieldError={fieldError} saving={saving}>
             <textarea
               value={bioVal}
               onChange={e => setBioVal(e.target.value)}

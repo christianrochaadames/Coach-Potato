@@ -81,6 +81,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const [addingRec, setAddingRec] = useState<RecItem | null>(null);
   const [recYear, setRecYear] = useState(new Date().getFullYear());
+  const [pickingYear, setPickingYear] = useState(false);
   const [firstName, setFirstName] = useState<string | null>(null);
   const greeting = useGreeting();
 
@@ -126,6 +127,7 @@ export default function Home() {
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
           setAddingRec(null);
+          setPickingYear(false);
         },
         onError: () => toast({ title: 'Error', description: 'Could not add entry', variant: 'destructive' }),
       }
@@ -341,7 +343,7 @@ export default function Home() {
         <div
           className="fixed inset-0 z-50 flex items-end"
           style={{ background: 'rgba(0,0,0,0.4)' }}
-          onClick={() => setAddingRec(null)}
+          onClick={() => { setAddingRec(null); setPickingYear(false); }}
         >
           <div
             className="w-full rounded-t-3xl p-6 space-y-5"
@@ -372,49 +374,70 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Year picker for Mark Watched */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold flex-shrink-0" style={{ color: '#7E7A73' }}>Year watched:</span>
-              <select
-                value={recYear}
-                onChange={e => setRecYear(Number(e.target.value))}
-                className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold focus:outline-none"
-                style={{ border: '1.5px solid #E2D9CE', background: '#FFF3E8', color: '#111111' }}
-              >
-                {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            {/* Actions */}
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => addRec(addingRec, 'watching')}
-                disabled={createEntry.isPending}
-                className="w-full py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
-                style={{ background: '#116149' }}
-              >
-                ▶ Currently Watching
-              </button>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => addRec(addingRec, 'plan_to_watch')}
-                  disabled={createEntry.isPending}
-                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
-                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
-                >
-                  🔖 Watchlist
-                </button>
-                <button
-                  onClick={() => addRec(addingRec, 'completed')}
-                  disabled={createEntry.isPending}
-                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
-                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
-                >
-                  ✓ Mark Watched
-                </button>
+            {/* Actions — or year-picker step when "Mark Watched" was tapped */}
+            {pickingYear ? (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-bold mb-2" style={{ color: '#111111' }}>When did you watch it?</p>
+                  <select
+                    value={recYear}
+                    onChange={e => setRecYear(Number(e.target.value))}
+                    className="w-full px-3 py-3 rounded-xl text-sm font-semibold focus:outline-none"
+                    style={{ border: '1.5px solid #E2D9CE', background: '#FFF3E8', color: '#111111' }}
+                  >
+                    {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setPickingYear(false)}
+                    className="py-3.5 rounded-full font-bold text-sm"
+                    style={{ border: '2px solid #E2D9CE', color: '#7E7A73', background: 'transparent' }}
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    onClick={() => { setPickingYear(false); addRec(addingRec, 'completed'); }}
+                    disabled={createEntry.isPending}
+                    className="py-3.5 rounded-full font-bold text-sm text-white disabled:opacity-50"
+                    style={{ background: '#116149' }}
+                  >
+                    ✓ Confirm
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => addRec(addingRec, 'watching')}
+                  disabled={createEntry.isPending}
+                  className="w-full py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
+                  style={{ background: '#116149' }}
+                >
+                  ▶ Currently Watching
+                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => addRec(addingRec, 'plan_to_watch')}
+                    disabled={createEntry.isPending}
+                    className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                    style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                  >
+                    🔖 Watchlist
+                  </button>
+                  <button
+                    onClick={() => setPickingYear(true)}
+                    disabled={createEntry.isPending}
+                    className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                    style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                  >
+                    ✓ Mark Watched
+                  </button>
+                </div>
+              </div>
+            )}
             <button
               onClick={() => {
                 const p = new URLSearchParams({
@@ -426,6 +449,7 @@ export default function Home() {
                   overview: addingRec.overview ?? '',
                 });
                 setAddingRec(null);
+                setPickingYear(false);
                 setLocation(`/add?${p.toString()}`);
               }}
               className="w-full text-center text-sm font-semibold"
