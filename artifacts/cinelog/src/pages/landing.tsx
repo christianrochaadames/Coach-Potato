@@ -36,7 +36,7 @@ export default function Landing() {
             position: "absolute",
             right: 0,
             bottom: 0,
-            width: 252,
+            width: 228,
             objectFit: "contain",
             pointerEvents: "none",
             userSelect: "none",
