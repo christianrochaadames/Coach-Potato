@@ -7,7 +7,14 @@ import { requireAuth } from "../middlewares/requireAuth";
 const router = Router();
 
 const profileUpdateSchema = z.object({
-  username: z.string().min(2).max(30).regex(/^[a-zA-Z0-9_]+$/).optional(),
+  firstName: z.string().min(1).max(50).optional(),
+  lastName: z.string().max(50).optional().nullable(),
+  username: z
+    .string()
+    .min(2)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores — no spaces")
+    .optional(),
   bio: z.string().max(200).optional().nullable(),
   onboardingCompleted: z.boolean().optional(),
 });
@@ -27,7 +34,6 @@ router.get("/profile", requireAuth, async (req, res) => {
         .onConflictDoNothing()
         .returning();
 
-      // If onConflictDoNothing() returned nothing, fetch the existing row
       if (!profile) {
         [profile] = await db
           .select()
@@ -47,7 +53,9 @@ router.get("/profile", requireAuth, async (req, res) => {
 router.patch("/profile", requireAuth, async (req, res) => {
   const parsed = profileUpdateSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+    // Return the first human-readable error message
+    const firstError = parsed.error.errors[0];
+    res.status(400).json({ error: firstError?.message ?? "Invalid input" });
     return;
   }
 
@@ -62,7 +70,12 @@ router.patch("/profile", requireAuth, async (req, res) => {
       .returning();
 
     res.json(profile);
-  } catch (err) {
+  } catch (err: any) {
+    // Unique constraint violation on username
+    if (err?.code === "23505" || err?.message?.includes("unique")) {
+      res.status(400).json({ error: "That username is already taken — try another one" });
+      return;
+    }
     req.log.error({ err }, "updateProfile error");
     res.status(500).json({ error: "Internal server error" });
   }

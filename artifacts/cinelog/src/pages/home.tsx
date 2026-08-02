@@ -70,10 +70,26 @@ function YearPill({ year }: { year: number }) {
   );
 }
 
+function useGreeting() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "Good morning";
+  if (h >= 12 && h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function Home() {
   const [, setLocation] = useLocation();
   const [addingRec, setAddingRec] = useState<RecItem | null>(null);
   const [recYear, setRecYear] = useState(new Date().getFullYear());
+  const [firstName, setFirstName] = useState<string | null>(null);
+  const greeting = useGreeting();
+
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(r => r.ok ? r.json() : null)
+      .then(p => { if (p?.firstName) setFirstName(p.firstName); })
+      .catch(() => {});
+  }, []);
 
   const { data: watching } = useListEntries({ status: 'watching' } as any);
   const { data: watchlist } = useListEntries({ status: 'plan_to_watch' } as any);
@@ -131,7 +147,10 @@ export default function Home() {
         className="mx-5 mb-5 rounded-3xl p-5 text-white"
         style={{ background: '#116149' }}
       >
-        <p className="text-xl font-bold mb-4">Everything you've watched, are watching and want to watch, all in one place.</p>
+        <p className="text-xl font-bold" style={{ marginBottom: 2 }}>
+          {greeting}{firstName ? `, ${firstName}` : ''}
+        </p>
+        <p className="text-sm opacity-70 mb-4">Welcome back to your personal TV &amp; movie library.</p>
         <div className="flex gap-4">
           <div className="flex-1 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.12)' }}>
             <p className="text-2xl font-bold">{watchedCount}</p>
