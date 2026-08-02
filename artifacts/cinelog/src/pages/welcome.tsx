@@ -103,7 +103,7 @@ export default function Welcome() {
           draggable={false}
           style={{
             position: "absolute",
-            top: 30,
+            top: 44,
             right: -10,
             height: 246,
             width: "auto",
@@ -115,7 +115,7 @@ export default function Welcome() {
       {/* ═══════════════════════════════════════════════════════════════
           TEXT CONTENT — nudged up by reducing top margin
       ════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-col px-7" style={{ gap: 0, marginTop: 6 }}>
+      <div className="flex flex-col px-7" style={{ gap: 0, marginTop: 20 }}>
 
         {/* "Welcome!" — dominant heading */}
         <h1
@@ -154,7 +154,7 @@ export default function Welcome() {
       </div>
 
       {/* Flexible spacer — pushes button + bottom illustrations down */}
-      <div style={{ height: 18 }} />
+      <div style={{ height: 6 }} />
 
       {/* ═══════════════════════════════════════════════════════════════
           BOTTOM — couch Spud left, small pill button in the empty
