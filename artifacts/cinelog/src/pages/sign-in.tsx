@@ -27,27 +27,27 @@ export default function SignInPage() {
       className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
       style={{ background: "#FFF3E8" }}
     >
-      {/* Branding: logo left, Spud (thumbs-up) right */}
+      {/* Branding: transparent logo left-aligned, Spud right */}
       <div
-        className="flex items-center justify-between mb-5"
+        className="flex items-center justify-between mb-4"
         style={{ width: "100%", maxWidth: 440 }}
       >
         <img
-          src="/logo.jpeg"
+          src="/logo-text.png"
           alt="Couch Potato"
           draggable={false}
           style={{
-            height: 96,
+            height: 120,
             width: "auto",
             objectFit: "contain",
-            mixBlendMode: "multiply",
+            marginLeft: -10,
           }}
         />
         <img
           src="/spud-thumbsup.png"
           alt="Spud giving a thumbs up"
           draggable={false}
-          style={{ height: 110, width: "auto", objectFit: "contain" }}
+          style={{ height: 124, width: "auto", objectFit: "contain" }}
         />
       </div>
 
