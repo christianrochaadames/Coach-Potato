@@ -55,6 +55,11 @@
     "experiments": {
       "typedRoutes": true
     },
+    "extra": {
+      "eas": {
+        "projectId": "10be5917-231d-4717-a9ab-56d93ae75a32"
+      }
+    },
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
