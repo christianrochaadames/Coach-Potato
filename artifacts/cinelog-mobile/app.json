@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "CineLog",
+    "slug": "cinelog-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "cinelog-mobile",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.replit.cinelog",
+      "infoPlist": {
+        "UIApplicationShortcutItems": [
+          {
+            "UIApplicationShortcutItemTitle": "Log Entry",
+            "UIApplicationShortcutItemSubtitle": "Log a movie or show",
+            "UIApplicationShortcutItemType": "com.replit.cinelog.logentry",
+            "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeAdd"
+          },
+          {
+            "UIApplicationShortcutItemTitle": "My Watchlist",
+            "UIApplicationShortcutItemSubtitle": "View your watchlist",
+            "UIApplicationShortcutItemType": "com.replit.cinelog.watchlist",
+            "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeBookmark"
+          }
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#116149"
+      },
+      "package": "com.replit.cinelog"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF3E8",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      "expo-quick-actions"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFF3E8"
+    }
+  }
+}
