@@ -8,7 +8,8 @@ export default function Landing() {
       className="min-h-[100dvh] flex flex-col"
       style={{ background: "#FFF3E8", overflow: "hidden" }}
     >
-      {/* ── Logo — transparent PNG, left-aligned with same px-6 as body text ── */}
+      {/* ── Logo — transparent PNG. marginLeft nudges out the PNG's internal padding
+           so the visible letter edge aligns exactly with the text below (px-6). ── */}
       <div className="pt-10 px-6 flex justify-start">
         <img
           src="/logo-text.png"
@@ -18,12 +19,13 @@ export default function Landing() {
             height: 148,
             width: "auto",
             objectFit: "contain",
+            marginLeft: -10,
           }}
         />
       </div>
 
       {/* ── Hero: text left / Spud right ── */}
-      <div className="relative flex-1 mt-5" style={{ minHeight: 380 }}>
+      <div className="relative flex-1 mt-2" style={{ minHeight: 380 }}>
 
         {/* Spud — tucked into bottom-right corner */}
         <img
