@@ -330,12 +330,12 @@ export default function Profile() {
         const updated = await res.json();
         setAvatarId(updated.avatarId ?? null);
         setAvatarUrl(updated.avatarUrl ?? null);
-        toast({ title: "Avatar updated ✓" });
+        toast({ title: "Photo saved ✓" });
       } else {
-        toast({ title: "Could not save avatar", variant: "destructive" });
+        toast({ title: "Could not save your photo — please try again", variant: "destructive" });
       }
     } catch {
-      toast({ title: "Network error", variant: "destructive" });
+      toast({ title: "Network error — could not save photo", variant: "destructive" });
     } finally {
       setSavingAvatar(false);
     }

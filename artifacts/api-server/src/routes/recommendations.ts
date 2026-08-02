@@ -160,12 +160,12 @@ router.get("/recommendations", requireAuth, async (req, res) => {
 
     // Take top 24 candidates by score, then shuffle them so every Refresh
     // call surfaces a different mix of well-matched titles.
-    const pool = scored.slice(0, 24);
-    for (let i = pool.length - 1; i > 0; i--) {
+    const candidates = scored.slice(0, 24);
+    for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
-    res.json({ results: pool.slice(0, 12).map((s) => s.item) });
+    res.json({ results: candidates.slice(0, 12).map((s) => s.item) });
   } catch (err) {
     req.log.error({ err }, "recommendations error");
     res.status(500).json({ error: "Internal server error" });
