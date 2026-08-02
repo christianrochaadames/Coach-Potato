@@ -15,6 +15,11 @@ const GENRE_MAP: Record<number, string> = {
   10765: "Sci-Fi & Fantasy", 10766: "Soap", 10767: "Talk", 10768: "War & Politics",
 };
 
+// Reverse map: genre name → TMDB genre id (for Discover API calls)
+const GENRE_NAME_TO_ID: Record<string, number> = Object.fromEntries(
+  Object.entries(GENRE_MAP).map(([id, name]) => [name, Number(id)])
+);
+
 function mapRec(item: Record<string, unknown>, mediaType: "movie" | "tv") {
   const isMovie = mediaType === "movie";
   const rawTitle = isMovie ? (item.title as string) : (item.name as string);
@@ -32,11 +37,15 @@ function mapRec(item: Record<string, unknown>, mediaType: "movie" | "tv") {
     posterUrl: posterPath ? `${POSTER_BASE}${posterPath}` : null,
     overview: (item.overview as string) || null,
     genres: genreIds.map((id) => GENRE_MAP[id]).filter(Boolean) as string[],
+    // Track original_language so we can filter non-matching content
+    originalLanguage: (item.original_language as string | null) ?? null,
   };
 }
 
+type MappedRec = ReturnType<typeof mapRec>;
+type TaggedRec = MappedRec & { recencyRank: number; seedRating: number | null };
+
 // GET /api/recommendations
-// Fetches personalised TMDB recommendations based on the user's recently watched entries
 router.get("/recommendations", requireAuth, async (req, res) => {
   const apiKey = process.env.TMDB_API_KEY;
   if (!apiKey) {
@@ -45,27 +54,44 @@ router.get("/recommendations", requireAuth, async (req, res) => {
   }
 
   try {
-    // 1. Grab up to 8 recently-watched entries that have a TMDB id
-    const { rows: recentRows } = await pool.query<{ tmdb_id: number; type: string; rating: number | null }>(
-      `SELECT DISTINCT ON (tmdb_id) tmdb_id, type, rating
-       FROM entries
-       WHERE status = 'completed' AND tmdb_id IS NOT NULL AND user_id = $1
-       ORDER BY tmdb_id, date_watched DESC NULLS LAST, created_at DESC
-       LIMIT 8`,
+    // ── 1. Seeds: most recent + highest-rated entries, deduplicated by tmdb_id ──
+    // 4-5★ entries are boosted to the front so the algo is anchored on loved content.
+    const { rows: recentRows } = await pool.query<{
+      tmdb_id: number;
+      type: string;
+      rating: number | null;
+    }>(
+      `WITH deduped AS (
+         SELECT
+           tmdb_id, type, rating,
+           ROW_NUMBER() OVER (
+             PARTITION BY tmdb_id
+             ORDER BY COALESCE(date_watched, created_at) DESC
+           ) AS rn,
+           COALESCE(date_watched, created_at) AS watch_ts
+         FROM entries
+         WHERE status = 'completed'
+           AND tmdb_id IS NOT NULL
+           AND user_id = $1
+       )
+       SELECT tmdb_id, type, rating
+       FROM deduped
+       WHERE rn = 1
+       ORDER BY
+         CASE WHEN rating >= 4 THEN 0 ELSE 1 END,  -- loved titles first
+         watch_ts DESC                               -- then by recency
+       LIMIT 12`,
       [req.userId]
     );
 
-    // 2. Collect all tmdb_ids already in the collection so we can filter them out
+    // ── 2. Full collection set (to exclude already-seen titles from results) ──
     const { rows: allRows } = await pool.query<{ tmdb_id: number }>(
       `SELECT tmdb_id FROM entries WHERE tmdb_id IS NOT NULL AND user_id = $1`,
       [req.userId]
     );
     const inCollection = new Set(allRows.map((r) => r.tmdb_id));
 
-    // 3. Fetch TMDB recommendations AND similar titles for each seed entry.
-    //    Many niche/foreign titles return 0 results from /recommendations alone,
-    //    so we also hit /similar and merge both pools together.
-    type TaggedRec = ReturnType<typeof mapRec> & { recencyRank: number; seedRating: number | null };
+    // ── 3. Fetch /recommendations AND /similar for each seed in parallel ──
     const allRecs: TaggedRec[] = [];
 
     const fetchEndpoint = async (
@@ -82,11 +108,10 @@ router.get("/recommendations", requireAuth, async (req, res) => {
         const data = (await r.json()) as { results?: Record<string, unknown>[] };
         for (const item of data.results ?? []) {
           if (!item.poster_path) continue;
-          const id = item.id as number;
-          if (inCollection.has(id)) continue;
+          if (inCollection.has(item.id as number)) continue;
           allRecs.push({ ...mapRec(item, mediaType), recencyRank: idx, seedRating: rating });
         }
-      } catch { /* ignore */ }
+      } catch { /* ignore per-seed failures */ }
     };
 
     await Promise.all(
@@ -99,72 +124,123 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       })
     );
 
-    // 3b. If the pool is still very small, pad with trending titles the user
-    //     hasn't seen yet so the section is never empty.
-    if (allRecs.length < 6) {
-      try {
-        const trendUrl = `${TMDB_BASE}/trending/all/week?api_key=${apiKey}&language=en-US`;
-        const tr = await fetch(trendUrl);
-        if (tr.ok) {
-          const tdata = (await tr.json()) as { results?: Record<string, unknown>[] };
-          for (const item of tdata.results ?? []) {
-            if (!item.poster_path) continue;
-            const id = item.id as number;
-            if (inCollection.has(id)) continue;
-            const mt = (item.media_type as string) === "movie" ? "movie" : "tv";
-            allRecs.push({ ...mapRec(item, mt), recencyRank: 99, seedRating: null });
-          }
-        }
-      } catch { /* ignore */ }
-    }
-
-    // 4. Deduplicate: keep the entry sourced from the highest-quality seed
-    //    (lowest effective score); track how many distinct seeds recommended it.
-    const dedupMap = new Map<
-      number,
-      { item: ReturnType<typeof mapRec>; bestSeedScore: number; count: number }
-    >();
-
-    // Rating multiplier: 5★ → 0.6 (very strong signal), 1★ → 1.4 (weak signal)
-    // Unrated entries use 1.0 (neutral).
-    const ratingMultiplier = (r: number | null) => {
-      if (r === null) return 1.0;
-      return 1.6 - r * 0.2; // 5→0.6  4→0.8  3→1.0  2→1.2  1→1.4
-    };
+    // ── 4. Build genre & language profile from seed results ──
+    // This tells us what genres AND what languages the user's taste clusters around.
+    const genreFreq = new Map<string, number>();
+    const langFreq  = new Map<string, number>();
 
     for (const rec of allRecs) {
-      const seedScore = rec.recencyRank * ratingMultiplier(rec.seedRating);
+      for (const g of rec.genres) {
+        genreFreq.set(g, (genreFreq.get(g) ?? 0) + 1);
+      }
+      if (rec.originalLanguage) {
+        langFreq.set(rec.originalLanguage, (langFreq.get(rec.originalLanguage) ?? 0) + 1);
+      }
+    }
+
+    // Top genres by frequency (used for scoring and fallback Discover calls)
+    const topGenres = [...genreFreq.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([g]) => g);
+
+    // Preferred language: dominant language from seed results, defaulting to "en"
+    const preferredLang = [...langFreq.entries()]
+      .sort((a, b) => b[1] - a[1])[0]?.[0] ?? "en";
+
+    // Allowed languages: user's preferred language + English (as a universal bridge)
+    const allowedLangs = new Set([preferredLang, "en"]);
+
+    // ── 5. Discover-based fallback when seed results are thin ──
+    // Uses TMDB Discover filtered by the user's detected language + top genres.
+    // Far better than raw trending which is dominated by random regional content.
+    if (allRecs.length < 10) {
+      const topGenreIds = topGenres
+        .map((g) => GENRE_NAME_TO_ID[g])
+        .filter(Boolean)
+        .slice(0, 3)
+        .join(",");
+
+      const baseDiscover = `api_key=${apiKey}&language=en-US`
+        + `&with_original_language=${preferredLang}`
+        + `&sort_by=vote_average.desc`
+        + `&vote_count.gte=300`
+        + (topGenreIds ? `&with_genres=${topGenreIds}` : "");
+
+      await Promise.all([
+        (async () => {
+          try {
+            const r = await fetch(`${TMDB_BASE}/discover/movie?${baseDiscover}`);
+            if (!r.ok) return;
+            const d = (await r.json()) as { results?: Record<string, unknown>[] };
+            for (const item of d.results ?? []) {
+              if (!item.poster_path || inCollection.has(item.id as number)) continue;
+              allRecs.push({ ...mapRec(item, "movie"), recencyRank: 50, seedRating: null });
+            }
+          } catch { /* ignore */ }
+        })(),
+        (async () => {
+          try {
+            const r = await fetch(`${TMDB_BASE}/discover/tv?${baseDiscover}`);
+            if (!r.ok) return;
+            const d = (await r.json()) as { results?: Record<string, unknown>[] };
+            for (const item of d.results ?? []) {
+              if (!item.poster_path || inCollection.has(item.id as number)) continue;
+              allRecs.push({ ...mapRec(item, "tv"), recencyRank: 50, seedRating: null });
+            }
+          } catch { /* ignore */ }
+        })(),
+      ]);
+    }
+
+    // ── 6. Deduplicate, filter by language, then score ──
+
+    // Rating multiplier: 5★ seed → 0.6 (strong signal), 1★ → 1.4 (weak), null → 1.0
+    const ratingMult = (r: number | null) =>
+      r === null ? 1.0 : Math.max(0.4, 1.6 - r * 0.2);
+
+    // Genre overlap bonus: how many of this title's genres are in the user's top genres
+    const genreBonus = (genres: string[]) =>
+      genres.filter((g) => topGenres.includes(g)).length * 0.6;
+
+    const dedupMap = new Map<
+      number,
+      { item: MappedRec; bestScore: number; count: number }
+    >();
+
+    for (const rec of allRecs) {
+      // Skip titles in languages the user doesn't watch
+      if (rec.originalLanguage && !allowedLangs.has(rec.originalLanguage)) continue;
+
+      const score = rec.recencyRank * ratingMult(rec.seedRating) - genreBonus(rec.genres);
       const existing = dedupMap.get(rec.tmdbId);
       if (!existing) {
-        const { recencyRank: _r, seedRating: _s, ...clean } = rec;
-        dedupMap.set(rec.tmdbId, { item: clean, bestSeedScore: seedScore, count: 1 });
+        const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
+        dedupMap.set(rec.tmdbId, { item: clean, bestScore: score, count: 1 });
       } else {
         existing.count++;
-        if (seedScore < existing.bestSeedScore) {
-          existing.bestSeedScore = seedScore;
-          const { recencyRank: _r, seedRating: _s, ...clean } = rec;
+        if (score < existing.bestScore) {
+          existing.bestScore = score;
+          const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
           existing.item = clean;
         }
       }
     }
 
-    // 5. Final score: lower is better.
-    //    bestSeedScore already encodes recency + rating quality.
-    //    Subtract a bonus for items recommended by multiple seeds.
+    // ── 7. Final rank: multi-seed bonus, then shuffle top 24 → return 12 ──
     const scored = Array.from(dedupMap.values())
-      .map(({ item, bestSeedScore, count }) => ({
+      .map(({ item, bestScore, count }) => ({
         item,
-        score: bestSeedScore - Math.log(count) * 2,
+        score: bestScore - Math.log(count + 1) * 2,
       }))
       .sort((a, b) => a.score - b.score);
 
-    // Take top 24 candidates by score, then shuffle them so every Refresh
-    // call surfaces a different mix of well-matched titles.
     const candidates = scored.slice(0, 24);
     for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
+
     res.json({ results: candidates.slice(0, 12).map((s) => s.item) });
   } catch (err) {
     req.log.error({ err }, "recommendations error");
