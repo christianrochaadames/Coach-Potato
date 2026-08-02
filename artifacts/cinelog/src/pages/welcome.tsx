@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 
-// Very soft pastel mint — far gentler than the previous saturated version
 const PASTEL_MINT = "#E2F5EC";
 
 export default function Welcome() {
@@ -70,71 +69,43 @@ export default function Welcome() {
 
   return (
     <div
-      className="min-h-[100dvh] relative flex flex-col overflow-hidden"
+      className="min-h-[100dvh] flex flex-col overflow-hidden"
       style={{ background: PASTEL_MINT }}
     >
-      {/* ── Scattered Spud decorations (black PNGs use multiply to go transparent) ── */}
-
-      {/* Spud with phone — top-right, peeking in */}
-      <img src="/spud-phone.png" alt="" aria-hidden draggable={false}
-        style={{
-          position: "absolute", top: -10, right: -24, width: 170,
-          opacity: 0.8, pointerEvents: "none", userSelect: "none",
-          transform: "rotate(8deg)", mixBlendMode: "multiply",
-        }} />
-
-      {/* Spud walking — left mid */}
-      <img src="/spud-walk.png" alt="" aria-hidden draggable={false}
-        style={{
-          position: "absolute", top: "38%", left: -28, width: 130,
-          opacity: 0.65, pointerEvents: "none", userSelect: "none",
-          transform: "rotate(-5deg)", mixBlendMode: "multiply",
-        }} />
-
-      {/* Spud pizza — bottom-left accent */}
-      <img src="/spud-pizza.png" alt="" aria-hidden draggable={false}
-        style={{
-          position: "absolute", bottom: 88, left: -18, width: 120,
-          opacity: 0.6, pointerEvents: "none", userSelect: "none",
-          transform: "rotate(10deg)", mixBlendMode: "multiply",
-        }} />
-
-      {/* Spud couch — bottom-right */}
-      <img src="/spud-couch.png" alt="" aria-hidden draggable={false}
-        style={{
-          position: "absolute", bottom: 78, right: -16, width: 200,
-          opacity: 0.55, pointerEvents: "none", userSelect: "none",
-          transform: "rotate(-4deg)", mixBlendMode: "multiply",
-        }} />
-
       {/* ── Page content ── */}
       <div className="relative z-10 flex flex-col flex-1 px-6">
 
-        {/* Logo */}
-        <div className="pt-12 mb-6">
+        {/* ── TOP ROW: Logo left + Spud-walk (chocolates) right, tucked against logo ── */}
+        <div className="pt-10 flex items-end justify-between">
           <img
             src="/logo-text.png"
             alt="Couch Potato"
             draggable={false}
-            style={{ height: 76, width: "auto", objectFit: "contain", marginLeft: -10 }}
+            style={{
+              height: 96,
+              width: "auto",
+              objectFit: "contain",
+              marginLeft: -10,
+            }}
           />
-        </div>
-
-        {/* Hero Spud — large, centred, welcoming */}
-        <div className="flex justify-center mb-5">
           <img
-            src="/spud-thumbsup.png"
-            alt="Spud giving a thumbs up"
+            src="/spud-walk.png"
+            alt=""
+            aria-hidden
             draggable={false}
             style={{
-              height: 210, width: "auto", objectFit: "contain",
+              height: 200,
+              width: "auto",
+              objectFit: "contain",
+              opacity: 0.9,
               mixBlendMode: "multiply",
+              marginRight: -16,
             }}
           />
         </div>
 
-        {/* Welcome copy */}
-        <div className="mb-6">
+        {/* ── WELCOME COPY — below the logo row, no illustrations nearby ── */}
+        <div className="mt-7 mb-6">
           <h1
             className="font-bold leading-tight mb-1"
             style={{ color: "#116149", fontSize: 38 }}
@@ -165,16 +136,55 @@ export default function Welcome() {
 
         <div className="flex-1" />
 
-        {/* Get Started button */}
-        <div className="mb-10">
+        {/* ── CTA BUTTON ── */}
+        <div className="mb-5">
           <button
             onClick={() => setShowForm(true)}
             className="w-full py-4 rounded-2xl font-bold text-base text-white active:opacity-80 transition-opacity"
             style={{ background: "#116149" }}
           >
-            Get started now →
+            Get started
           </button>
         </div>
+
+        {/* ── BOTTOM ILLUSTRATION ROW: spud-phone left, spud-couch right ── */}
+        {/* Placed below the button so they never sit behind any text ── */}
+        <div
+          className="flex justify-between items-end -mx-6 overflow-hidden"
+          style={{ height: 145 }}
+        >
+          <img
+            src="/spud-phone.png"
+            alt=""
+            aria-hidden
+            draggable={false}
+            style={{
+              width: 120,
+              height: "auto",
+              objectFit: "contain",
+              opacity: 0.9,
+              mixBlendMode: "multiply",
+              marginLeft: -14,
+              alignSelf: "flex-end",
+            }}
+          />
+          <img
+            src="/spud-couch.png"
+            alt=""
+            aria-hidden
+            draggable={false}
+            style={{
+              width: 170,
+              height: "auto",
+              objectFit: "contain",
+              opacity: 0.9,
+              mixBlendMode: "multiply",
+              marginRight: -14,
+              alignSelf: "flex-end",
+            }}
+          />
+        </div>
+
       </div>
 
       {/* ── Profile form — bottom-sheet modal ── */}
