@@ -1,0 +1,20 @@
+kind = "mobile"
+previewPath = "/cinelog-mobile"
+title = "CouchPotato Mobile"
+version = "1.0.0"
+id = "artifacts/cinelog-mobile"
+router = "path"
+
+[[services]]
+name = "Expo"
+paths = [ "/cinelog-mobile" ]
+localPort = 8082
+
+[services.development]
+run = "pnpm --filter @workspace/cinelog-mobile run dev"
+
+[services.env]
+PORT = "8082"
+BASE_PATH = "/cinelog-mobile"
+EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = "$CLERK_PUBLISHABLE_KEY"
+EXPO_PUBLIC_DOMAIN = "$REPLIT_DEV_DOMAIN"
