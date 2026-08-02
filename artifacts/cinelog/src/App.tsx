@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ClerkProvider, Show, useClerk } from "@clerk/react";
+import { ClerkProvider, Show, useClerk, useAuth } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wouter";
@@ -152,18 +152,32 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
-// Wraps any page that requires authentication
+// Wraps any page that requires authentication.
+// Uses useAuth() instead of <Show> so the loading state never renders blank —
+// <Show when="signed-in"> renders nothing while Clerk is initialising, which
+// causes the blank white page after OAuth redirects.
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
-  return (
-    <>
-      <Show when="signed-in">
-        <Component />
-      </Show>
-      <Show when="signed-out">
-        <Redirect to="/sign-in" />
-      </Show>
-    </>
-  );
+  const { isLoaded, isSignedIn } = useAuth();
+
+  if (!isLoaded) {
+    return (
+      <div
+        className="min-h-[100dvh] flex items-center justify-center"
+        style={{ background: "#FFF3E8" }}
+      >
+        <div
+          className="w-8 h-8 rounded-full animate-pulse"
+          style={{ background: "#E2D9CE" }}
+        />
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <Redirect to="/sign-in" />;
+  }
+
+  return <Component />;
 }
 
 // Home: shows landing for guests, app for signed-in users

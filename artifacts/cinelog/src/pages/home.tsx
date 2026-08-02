@@ -85,10 +85,18 @@ export default function Home() {
   const [firstName, setFirstName] = useState<string | null>(null);
   const greeting = useGreeting();
 
+  // Onboarding guard: if the user has no username yet (e.g. signed up via
+  // Google and landed at "/" instead of "/welcome"), send them to the welcome form.
   useEffect(() => {
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : null)
-      .then(p => { if (p?.firstName) setFirstName(p.firstName); })
+      .then(p => {
+        if (!p || !p.username) {
+          setLocation('/welcome');
+          return;
+        }
+        if (p.firstName) setFirstName(p.firstName);
+      })
       .catch(() => {});
   }, []);
 
