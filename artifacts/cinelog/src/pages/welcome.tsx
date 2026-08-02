@@ -154,7 +154,7 @@ export default function Welcome() {
       </div>
 
       {/* Flexible spacer — pushes button + bottom illustrations down */}
-      <div style={{ height: 30 }} />
+      <div style={{ height: 18 }} />
 
       {/* ═══════════════════════════════════════════════════════════════
           BOTTOM — couch Spud left, small pill button in the empty
@@ -163,7 +163,7 @@ export default function Welcome() {
       {/* Container tall enough to show the full couch image without clipping the hat */}
       <div
         className="relative flex-shrink-0"
-        style={{ height: 224 }}
+        style={{ height: 224, marginBottom: 28 }}
       >
         {/* Couch Spud — left edge aligned with logo/text margin */}
         <img
