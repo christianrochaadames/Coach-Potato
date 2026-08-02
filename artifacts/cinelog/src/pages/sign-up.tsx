@@ -1,9 +1,10 @@
-import { SignUp, useSignUp } from "@clerk/react";
+import { SignUp } from "@clerk/react";
+import { useLocation } from "wouter";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-// We render our own OAuth buttons and hide the ones Clerk bakes into <SignUp>.
-// Using useSignUp (not useSignIn) so signUp is always defined on this page.
+// Hide Clerk's built-in OAuth buttons — we use our own below that route through
+// the sign-in page (where OAuth is proven to work in Clerk's dev environment).
 const hideBuiltinSocial = {
   elements: {
     socialButtonsRoot: { display: "none" as const },
@@ -12,19 +13,14 @@ const hideBuiltinSocial = {
 };
 
 export default function SignUpPage() {
-  const { signUp, isLoaded } = useSignUp();
+  const [, setLocation] = useLocation();
 
-  const handleOAuth = async (strategy: "oauth_google" | "oauth_apple") => {
-    if (!isLoaded || !signUp) return;
-    try {
-      await signUp.authenticateWithRedirect({
-        strategy,
-        redirectUrl: `${basePath}/sign-up/sso-callback`,
-        redirectUrlComplete: `${basePath}/welcome`,
-      });
-    } catch (err) {
-      console.error("OAuth error", err);
-    }
+  // Navigate to sign-in with an SSO intent query param.
+  // The sign-in page detects the param and auto-triggers OAuth immediately —
+  // single tap, no extra click needed. New Google/Apple accounts are created
+  // automatically by Clerk when a new identity signs in for the first time.
+  const handleOAuth = (provider: "google" | "apple") => {
+    setLocation(`/sign-in?sso=${provider}`);
   };
 
   return (
@@ -32,7 +28,7 @@ export default function SignUpPage() {
       className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
       style={{ background: "#FFF3E8" }}
     >
-      {/* Branding */}
+      {/* Branding: logo left, Spud (clapping) right */}
       <div
         className="flex items-center justify-between mb-5"
         style={{ width: "100%", maxWidth: 440 }}
@@ -49,21 +45,20 @@ export default function SignUpPage() {
           }}
         />
         <img
-          src="/spud.png"
-          alt="Spud"
+          src="/spud-clapping.png"
+          alt="Spud clapping"
           draggable={false}
-          style={{ height: 96, width: "auto", objectFit: "contain" }}
+          style={{ height: 110, width: "auto", objectFit: "contain" }}
         />
       </div>
 
-      {/* Custom OAuth buttons */}
+      {/* Custom OAuth buttons — navigate to sign-in which auto-fires the OAuth */}
       <div style={{ width: "100%", maxWidth: 440 }} className="mb-3 space-y-2">
 
         {/* Google — white with border */}
         <button
-          onClick={() => handleOAuth("oauth_google")}
-          disabled={!isLoaded}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm transition-opacity active:opacity-70 disabled:opacity-40 cursor-pointer"
+          onClick={() => handleOAuth("google")}
+          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm transition-opacity active:opacity-70 cursor-pointer"
           style={{
             border: "1.5px solid #E2D9CE",
             background: "#ffffff",
@@ -80,11 +75,10 @@ export default function SignUpPage() {
           Continue with Google
         </button>
 
-        {/* Apple — black per Apple HIG (only active in Production with Apple credentials) */}
+        {/* Apple — black per Apple HIG */}
         <button
-          onClick={() => handleOAuth("oauth_apple")}
-          disabled={!isLoaded}
-          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm transition-opacity active:opacity-70 disabled:opacity-40 cursor-pointer"
+          onClick={() => handleOAuth("apple")}
+          className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm transition-opacity active:opacity-70 cursor-pointer"
           style={{
             border: "1.5px solid #000000",
             background: "#000000",
@@ -105,7 +99,7 @@ export default function SignUpPage() {
         </div>
       </div>
 
-      {/* Clerk SignUp — email/password only (social section hidden above) */}
+      {/* Clerk SignUp — email/password only */}
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}
