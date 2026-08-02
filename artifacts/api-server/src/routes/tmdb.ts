@@ -150,7 +150,7 @@ router.get("/tmdb/popular", async (req, res) => {
   }
 });
 
-// GET /tmdb/top-rated — all-time classics for onboarding picker
+// GET /tmdb/top-rated — hand-curated all-time iconic titles for onboarding picker
 router.get("/tmdb/top-rated", async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -158,16 +158,60 @@ router.get("/tmdb/top-rated", async (req, res) => {
     return;
   }
   try {
-    const [moviesRes, showsRes] = await Promise.all([
-      fetch(`${TMDB_BASE}/movie/top_rated?api_key=${apiKey}&language=en-US&page=1`),
-      fetch(`${TMDB_BASE}/tv/top_rated?api_key=${apiKey}&language=en-US&page=1`),
+    // The most universally recognised movies and TV shows ever made
+    const movieIds = [
+      278,    // The Shawshank Redemption (1994)
+      238,    // The Godfather (1972)
+      155,    // The Dark Knight (2008)
+      680,    // Pulp Fiction (1994)
+      13,     // Forrest Gump (1994)
+      27205,  // Inception (2010)
+      597,    // Titanic (1997)
+      329,    // Jurassic Park (1993)
+      424,    // Schindler's List (1993)
+      550,    // Fight Club (1999)
+      157336, // Interstellar (2014)
+      19404,  // Dilwale Dulhania Le Jayenge — swapped for Home Alone
+    ];
+    // Use Home Alone instead of that last one
+    const finalMovieIds = [278, 238, 155, 680, 13, 27205, 597, 329, 424, 550, 157336, 771];
+
+    const showIds = [
+      1668,   // Friends
+      1396,   // Breaking Bad
+      1435,   // The Sopranos
+      1399,   // Game of Thrones
+      66732,  // Stranger Things
+      2316,   // The Office (US)
+      1400,   // Seinfeld
+      1438,   // The Wire
+      63351,  // Succession
+      87108,  // Chernobyl
+      4809,   // Lost
+      1412,   // Grey's Anatomy
+    ];
+
+    const [movieResults, showResults] = await Promise.all([
+      Promise.all(
+        finalMovieIds.map((id) =>
+          fetch(`${TMDB_BASE}/movie/${id}?api_key=${apiKey}&language=en-US`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => (d ? mapItem(d as Record<string, unknown>, "movie") : null))
+            .catch(() => null)
+        )
+      ),
+      Promise.all(
+        showIds.map((id) =>
+          fetch(`${TMDB_BASE}/tv/${id}?api_key=${apiKey}&language=en-US`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((d) => (d ? mapItem(d as Record<string, unknown>, "tv") : null))
+            .catch(() => null)
+        )
+      ),
     ]);
-    const [moviesData, showsData] = await Promise.all([
-      moviesRes.json() as Promise<{ results?: Record<string, unknown>[] }>,
-      showsRes.json() as Promise<{ results?: Record<string, unknown>[] }>,
-    ]);
-    const movies: TmdbResult[] = (moviesData.results ?? []).slice(0, 12).map((i) => mapItem(i, "movie"));
-    const shows: TmdbResult[] = (showsData.results ?? []).slice(0, 12).map((i) => mapItem(i, "tv"));
+
+    const movies = movieResults.filter(Boolean) as TmdbResult[];
+    const shows  = showResults.filter(Boolean) as TmdbResult[];
     res.json({ movies, shows });
   } catch (err) {
     req.log.error({ err }, "tmdb top-rated error");

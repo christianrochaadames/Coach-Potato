@@ -59,23 +59,24 @@ const clerkAppearance = {
     colorForeground: "#111111",
     colorMutedForeground: "#7E7A73",
     colorDanger: "#DC2626",
-    colorBackground: "#FFF3E8",
+    colorBackground: "#ffffff",   // White so form card is visually distinct from page bg
     colorInput: "#ffffff",
     colorInputForeground: "#111111",
-    colorNeutral: "#E2D9CE",
+    colorNeutral: "#D1D5DB",      // Slightly darker for clearly visible input borders
     fontFamily: "Manrope, system-ui, sans-serif",
     borderRadius: "14px",
   },
   elements: {
     devModeNotice: {
       background: "#4B5563",
+      backgroundImage: "none",   // Kill the orange dot gradient Clerk adds in dev mode
       color: "#E5E7EB",
       borderColor: "#6B7280",
     },
     rootBox: "w-full flex justify-center",
-    cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden",
-    card: "!shadow-none !border-0 !bg-transparent !rounded-none",
-    footer: "!shadow-none !border-0 !bg-transparent !rounded-none",
+    cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden shadow-sm",
+    card: "!shadow-none !border-0 !bg-white !rounded-none",
+    footer: "!shadow-none !border-0 !bg-white !rounded-none",
     headerTitle: "font-bold",
     headerSubtitle: "text-sm",
     socialButtonsBlockButtonText: "font-semibold text-sm",
@@ -91,13 +92,15 @@ const clerkAppearance = {
     socialButtonsBlockButton: "border rounded-xl bg-white !text-gray-900",
     socialButtonsBlockButtonText: "font-semibold text-sm !text-gray-900",
     formButtonPrimary: "rounded-xl font-bold",
-    formFieldInput: "rounded-xl border bg-white",
+    formFieldInput: "rounded-xl border-2 bg-white",
     footerAction: "text-center",
     dividerLine: "bg-gray-200",
     alert: "rounded-xl",
-    otpCodeFieldInput: "rounded-xl border",
+    otpCodeFieldInput: "rounded-xl border-2",
     formFieldRow: "gap-2",
     main: "gap-4",
+    // "Last used" pill → bright blue so it stands out
+    badge: "!bg-blue-500 !text-white !border-0",
   },
 };
 
