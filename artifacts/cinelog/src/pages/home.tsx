@@ -164,7 +164,7 @@ export default function Home() {
         >
           {/* Avatar circle */}
           <div
-            className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center"
+            className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center"
             style={{ background: '#EFE4D2' }}
           >
             {avatarUrl ? (
@@ -173,10 +173,10 @@ export default function Home() {
               <img
                 src={`/spud-avatar-${avatarId}.png`}
                 alt="Spud"
-                className="w-full h-full object-contain p-0.5"
+                className="w-full h-full object-contain p-1"
               />
             ) : (
-              <SpudMascot pose="relaxed" size={56} round={false} />
+              <SpudMascot pose="relaxed" size={80} round={false} />
             )}
           </div>
           {/* Yellow Edit Profile pill */}
