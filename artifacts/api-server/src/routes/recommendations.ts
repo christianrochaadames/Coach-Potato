@@ -37,8 +37,10 @@ function mapRec(item: Record<string, unknown>, mediaType: "movie" | "tv") {
     posterUrl: posterPath ? `${POSTER_BASE}${posterPath}` : null,
     overview: (item.overview as string) || null,
     genres: genreIds.map((id) => GENRE_MAP[id]).filter(Boolean) as string[],
-    // Track original_language so we can filter non-matching content
     originalLanguage: (item.original_language as string | null) ?? null,
+    // For mainstream + recency filtering
+    voteCount:  (item.vote_count  as number | null) ?? 0,
+    popularity: (item.popularity  as number | null) ?? 0,
   };
 }
 
@@ -52,6 +54,10 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     res.status(503).json({ error: "TMDB_API_KEY not configured" });
     return;
   }
+
+  // Current year (for the recency filter)
+  const CURRENT_YEAR = new Date().getFullYear();
+  const RECENCY_CUTOFF = CURRENT_YEAR - 5; // e.g. 2021 when running in 2026
 
   try {
     // ── 1. Seeds: most recent + highest-rated entries, deduplicated by tmdb_id ──
@@ -83,6 +89,19 @@ router.get("/recommendations", requireAuth, async (req, res) => {
        LIMIT 12`,
       [req.userId]
     );
+
+    // ── 1b. Detect if this user is a vintage watcher ──
+    // If the median year of their completed library is older than RECENCY_CUTOFF,
+    // they clearly enjoy older content → skip the recency filter for them.
+    const { rows: yearRows } = await pool.query<{ median_year: number | null }>(
+      `SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY year) AS median_year
+       FROM entries
+       WHERE status = 'completed' AND year IS NOT NULL AND user_id = $1`,
+      [req.userId]
+    );
+    const medianYear = yearRows[0]?.median_year ?? CURRENT_YEAR;
+    // Vintage fan = more than half their library is older than the cutoff
+    const isVintageFan = medianYear < RECENCY_CUTOFF;
 
     // ── 2. Full collection set (to exclude already-seen titles from results) ──
     const { rows: allRows } = await pool.query<{ tmdb_id: number }>(
@@ -161,16 +180,21 @@ router.get("/recommendations", requireAuth, async (req, res) => {
         .slice(0, 3)
         .join(",");
 
+      // Year-range params: skip for vintage fans so they still get older content
+      const movieYearParam = isVintageFan ? "" : `&primary_release_date.gte=${RECENCY_CUTOFF}-01-01`;
+      const tvYearParam    = isVintageFan ? "" : `&first_air_date.gte=${RECENCY_CUTOFF}-01-01`;
+
       const baseDiscover = `api_key=${apiKey}&language=en-US`
         + `&with_original_language=${preferredLang}`
-        + `&sort_by=vote_average.desc`
-        + `&vote_count.gte=300`
+        + `&sort_by=popularity.desc`   // popularity > vote_average for "mainstream" feel
+        + `&vote_count.gte=500`        // minimum mainstream threshold
+        + `&popularity.gte=20`         // weed out niche/indie with tiny audiences
         + (topGenreIds ? `&with_genres=${topGenreIds}` : "");
 
       await Promise.all([
         (async () => {
           try {
-            const r = await fetch(`${TMDB_BASE}/discover/movie?${baseDiscover}`);
+            const r = await fetch(`${TMDB_BASE}/discover/movie?${baseDiscover}${movieYearParam}`);
             if (!r.ok) return;
             const d = (await r.json()) as { results?: Record<string, unknown>[] };
             for (const item of d.results ?? []) {
@@ -181,7 +205,7 @@ router.get("/recommendations", requireAuth, async (req, res) => {
         })(),
         (async () => {
           try {
-            const r = await fetch(`${TMDB_BASE}/discover/tv?${baseDiscover}`);
+            const r = await fetch(`${TMDB_BASE}/discover/tv?${baseDiscover}${tvYearParam}`);
             if (!r.ok) return;
             const d = (await r.json()) as { results?: Record<string, unknown>[] };
             for (const item of d.results ?? []) {
@@ -203,16 +227,34 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     const genreBonus = (genres: string[]) =>
       genres.filter((g) => topGenres.includes(g)).length * 0.6;
 
+    // Popularity bonus: mainstream/popular titles score up to 2 extra points lower (better).
+    // Capped at popularity=300 (blockbuster level) to prevent one mega-hit dominating.
+    const popularityBonus = (pop: number) => Math.min(pop / 300, 1) * 2.0;
+
     const dedupMap = new Map<
       number,
       { item: MappedRec; bestScore: number; count: number }
     >();
 
     for (const rec of allRecs) {
-      // Skip titles in languages the user doesn't watch
+      // ── Hard filters ──
+
+      // 1. Language: skip content the user doesn't watch
       if (rec.originalLanguage && !allowedLangs.has(rec.originalLanguage)) continue;
 
-      const score = rec.recencyRank * ratingMult(rec.seedRating) - genreBonus(rec.genres);
+      // 2. Recency: skip titles older than 5 years unless the user is a vintage fan.
+      //    Year-unknown titles pass through (don't penalise missing metadata).
+      if (!isVintageFan && rec.year !== null && rec.year < RECENCY_CUTOFF) continue;
+
+      // 3. Mainstream floor: skip very low-profile titles (indie / festival / obscure).
+      //    vote_count < 150  →  not enough audience to be considered mainstream.
+      //    popularity  < 5   →  TMDB's own signal that the title has negligible reach.
+      if (rec.voteCount < 150 || rec.popularity < 5) continue;
+
+      const score =
+        rec.recencyRank * ratingMult(rec.seedRating)
+        - genreBonus(rec.genres)
+        - popularityBonus(rec.popularity);
       const existing = dedupMap.get(rec.tmdbId);
       if (!existing) {
         const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
