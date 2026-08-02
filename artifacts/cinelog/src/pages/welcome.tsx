@@ -115,7 +115,7 @@ export default function Welcome() {
       {/* ═══════════════════════════════════════════════════════════════
           TEXT CONTENT — nudged up by reducing top margin
       ════════════════════════════════════════════════════════════════ */}
-      <div className="flex flex-col px-7" style={{ gap: 0, marginTop: -4 }}>
+      <div className="flex flex-col px-7" style={{ gap: 0, marginTop: 6 }}>
 
         {/* "Welcome!" — dominant heading */}
         <h1
@@ -154,7 +154,7 @@ export default function Welcome() {
       </div>
 
       {/* Flexible spacer — pushes button + bottom illustrations down */}
-      <div className="flex-1" />
+      <div style={{ height: 30 }} />
 
       {/* ═══════════════════════════════════════════════════════════════
           BOTTOM — couch Spud left, small pill button in the empty
