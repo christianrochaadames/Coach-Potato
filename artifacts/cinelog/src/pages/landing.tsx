@@ -8,25 +8,24 @@ export default function Landing() {
       className="min-h-[100dvh] flex flex-col"
       style={{ background: "#FFF3E8", overflow: "hidden" }}
     >
-      {/* ── Logo — left-aligned, flush so JPEG whitespace aligns with text px-6 ── */}
-      <div className="pt-10 flex justify-start">
+      {/* ── Logo — transparent PNG, left-aligned with same px-6 as body text ── */}
+      <div className="pt-10 px-6 flex justify-start">
         <img
-          src="/logo.jpeg"
+          src="/logo-text.png"
           alt="Couch Potato"
           draggable={false}
           style={{
-            height: 128,
+            height: 148,
             width: "auto",
             objectFit: "contain",
-            mixBlendMode: "multiply",
           }}
         />
       </div>
 
       {/* ── Hero: text left / Spud right ── */}
-      <div className="relative flex-1 mt-10" style={{ minHeight: 380 }}>
+      <div className="relative flex-1 mt-5" style={{ minHeight: 380 }}>
 
-        {/* Spud — smaller, tucked into bottom-right corner */}
+        {/* Spud — tucked into bottom-right corner */}
         <img
           src="/spud.png"
           alt="Spud"
@@ -35,7 +34,7 @@ export default function Landing() {
             position: "absolute",
             right: 0,
             bottom: 0,
-            width: 220,
+            width: 252,
             objectFit: "contain",
             pointerEvents: "none",
             userSelect: "none",
