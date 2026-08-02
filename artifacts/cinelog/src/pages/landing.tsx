@@ -16,7 +16,7 @@ export default function Landing() {
           alt="Couch Potato"
           draggable={false}
           style={{
-            height: 148,
+            height: 132,
             width: "auto",
             objectFit: "contain",
             marginLeft: -10,
@@ -52,19 +52,19 @@ export default function Landing() {
             className="leading-snug"
             style={{ color: "#116149", fontSize: 22, fontWeight: 400 }}
           >
-            Everything you're <strong>watching</strong>
+            All the TV shows and movies you're <strong>watching</strong>
           </p>
           <p
             className="leading-snug"
             style={{ color: "#116149", fontSize: 22, fontWeight: 400 }}
           >
-            What you've already <strong>watched</strong>
+            The ones you've already <strong>watched</strong>
           </p>
           <p
             className="leading-snug"
             style={{ color: "#116149", fontSize: 22, fontWeight: 400 }}
           >
-            What you'll <strong>watch</strong> next
+            And what you'll <strong>watch</strong> next
           </p>
           <p
             className="font-bold leading-snug"
