@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Plus, Bookmark, X } from 'lucide-react';
+import { Plus, Bookmark, X, RefreshCw } from 'lucide-react';
 import {
   useListEntries,
   useCreateEntry,
@@ -54,7 +54,8 @@ function useRecommendations() {
 
   useEffect(() => {
     setLoading(true);
-    fetch('/api/recommendations')
+    // Pass _ts so the browser never serves a stale cached response on refresh
+    fetch(`/api/recommendations?_ts=${Date.now()}`, { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : { results: [] }))
       .then((d) => { setResults(d.results ?? []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -178,10 +179,10 @@ export default function Home() {
               <SpudMascot pose="relaxed" size={56} round={false} />
             )}
           </div>
-          {/* Hot-pink Edit Profile pill */}
+          {/* Yellow Edit Profile pill */}
           <span
             className="px-2.5 py-0.5 rounded-full text-[10px] font-bold leading-none"
-            style={{ background: '#FF3B9A', color: '#ffffff' }}
+            style={{ background: '#FFD34D', color: '#111111' }}
           >
             Edit Profile
           </span>
@@ -286,7 +287,8 @@ export default function Home() {
               className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold active:opacity-60 mt-0.5"
               style={{ background: '#EFE4D2', color: '#116149' }}
             >
-              ↻ Refresh
+              <RefreshCw className="w-3 h-3" />
+              Refresh
             </button>
           </div>
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">

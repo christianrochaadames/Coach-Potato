@@ -1,15 +1,4 @@
 @layer theme, base, clerk, components, utilities;
-
-/* ── Clerk dev-mode: kill orange dot decorations that appear near "Development mode" ── */
-@layer clerk {
-  [class*="cl-devModeNotice"] { background-image: none !important; }
-  [class*="cl-devModeNotice"]::before,
-  [class*="cl-devModeNotice"]::after { display: none !important; }
-  /* Hide any radial-gradient dot sprite Clerk injects via child spans */
-  [class*="cl-devModeNotice"] > span[aria-hidden],
-  [class*="cl-devModeNotice"] > *[class*="dot"],
-  [class*="cl-devModeNotice"] > *[class*="indicator"] { display: none !important; }
-}
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";

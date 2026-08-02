@@ -67,16 +67,16 @@ const clerkAppearance = {
     borderRadius: "14px",
   },
   elements: {
-    devModeNotice: {
-      background: "#4B5563",
-      backgroundImage: "none",   // Kill the orange dot gradient Clerk adds in dev mode
-      color: "#E5E7EB",
-      borderColor: "#6B7280",
-    },
+    // Hide dev-mode banner entirely — inline style beats all CSS, including Clerk's own
+    devModeNotice: { display: "none" } as React.CSSProperties,
+    // Force the footer area fully white via inline styles so it never reverts to the page cream
+    footer:      { backgroundColor: "#ffffff", backgroundImage: "none" } as React.CSSProperties,
+    footerPages: { backgroundColor: "#ffffff", backgroundImage: "none" } as React.CSSProperties,
+    footerAction: { backgroundColor: "#ffffff", textAlign: "center" } as React.CSSProperties,
+
     rootBox: "w-full flex justify-center",
     cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden shadow-sm",
     card: "!shadow-none !border-0 !bg-white !rounded-none",
-    footer: "!shadow-none !border-0 !bg-white !rounded-none",
     headerTitle: "font-bold",
     headerSubtitle: "text-sm",
     formFieldLabel: "font-medium text-sm",
@@ -92,7 +92,6 @@ const clerkAppearance = {
     socialButtonsBlockButtonText: "font-semibold text-sm !text-gray-900",
     formButtonPrimary: "rounded-xl font-bold",
     formFieldInput: "rounded-xl border-2 bg-white",
-    footerAction: "text-center",
     dividerLine: "bg-gray-200",
     alert: "rounded-xl",
     otpCodeFieldInput: "rounded-xl border-2",
@@ -106,31 +105,72 @@ const clerkAppearance = {
 // Recolors Clerk's orange "Development mode" notice to neutral gray at runtime
 function ClerkDevModeNeutralizer() {
   useEffect(() => {
-    const gray = "#9CA3AF";
-    const neutralize = () => {
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      let node: Text | null;
-      while ((node = walker.nextNode() as Text | null)) {
-        if (node.textContent?.trim().toLowerCase() === "development mode") {
-          // Walk up 6 levels, forcing gray with !important on every ancestor
-          let el: HTMLElement | null = node.parentElement;
-          for (let i = 0; i < 6 && el && el !== document.body; i++) {
-            el.style.setProperty("color", gray, "important");
-            el.style.setProperty("background", "transparent", "important");
-            el.style.setProperty("background-color", "transparent", "important");
-            el.style.setProperty("border-color", "#E5E7EB", "important");
-            el = el.parentElement;
+    // 1. Inject a <style> tag that bypasses CSS layers entirely.
+    //    Uses both the standard class-substring selector AND attribute selectors
+    //    so it matches regardless of Clerk's hashed suffix on class names.
+    const style = document.createElement("style");
+    style.dataset.clerkFix = "1";
+    style.innerHTML = `
+      /* Hide the dev-mode banner completely */
+      [class*="cl-devModeNotice"] { display: none !important; }
+      /* Force every part of the Clerk footer white */
+      [class*="cl-footer"],
+      [class*="cl-footer"] > *,
+      [class*="cl-footerPages"],
+      [class*="cl-footerAction"],
+      [class*="cl-footerActionText"],
+      [class*="cl-footerActionLink"] {
+        background-color: #ffffff !important;
+        background-image: none !important;
+      }
+      /* White card body throughout */
+      [class*="cl-card"] {
+        background-color: #ffffff !important;
+        background-image: none !important;
+      }
+    `;
+    if (!document.querySelector("[data-clerk-fix]")) {
+      document.head.appendChild(style);
+    }
+
+    // 2. querySelector sweep: find every element whose *own trimmed text* is
+    //    exactly "development mode" and hide it plus up to 2 wrapper ancestors
+    //    that still contain only that text (so we grab the whole banner row
+    //    without accidentally hiding the "Don't have an account?" link above it).
+    const hideDevMode = () => {
+      document.querySelectorAll<HTMLElement>("*").forEach((el) => {
+        // Only consider elements with no element children (or 1 icon child)
+        if (el.children.length > 2) return;
+        const own = (el.textContent ?? "").trim().toLowerCase();
+        if (own !== "development mode") return;
+
+        // Walk up and hide the highest ancestor that still contains ONLY the dev-mode text
+        let target: HTMLElement = el;
+        for (let i = 0; i < 4; i++) {
+          const parent = target.parentElement;
+          if (!parent || parent === document.body) break;
+          const parentOwn = (parent.textContent ?? "").trim().toLowerCase();
+          // Keep climbing while the parent's full text is still just the dev-mode notice
+          if (parentOwn === "development mode" || parentOwn.replace(/\s/g, "") === "developmentmode") {
+            target = parent;
+          } else {
+            break;
           }
         }
-      }
+        target.style.setProperty("display", "none", "important");
+      });
     };
-    neutralize();
-    // Retry for 6 s in case Clerk renders asynchronously after mount
-    const interval = setInterval(neutralize, 300);
-    const cleanup = setTimeout(() => clearInterval(interval), 6000);
-    const observer = new MutationObserver(neutralize);
+    hideDevMode();
+    const interval = setInterval(hideDevMode, 500);
+    const cleanup = setTimeout(() => clearInterval(interval), 10000);
+    const observer = new MutationObserver(hideDevMode);
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => { observer.disconnect(); clearInterval(interval); clearTimeout(cleanup); };
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+      clearTimeout(cleanup);
+      style.remove();
+    };
   }, []);
   return null;
 }
