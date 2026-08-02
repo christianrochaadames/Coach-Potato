@@ -52,7 +52,7 @@ export default function Landing() {
             className="leading-snug"
             style={{ color: "#116149", fontSize: 22, fontWeight: 400 }}
           >
-            All the TV shows and movies you're <strong>watching</strong>
+            The TV shows and movies you're <strong>watching</strong>
           </p>
           <p
             className="leading-snug"
