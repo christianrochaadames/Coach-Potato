@@ -3,7 +3,7 @@
  *
  * Reachable via:
  *  • FAB on the home screen
- *  • Deep link:  cinelog-mobile://log-entry
+ *  • Deep link:  couchpotato://log-entry
  *  • iOS quick action: "Log Entry" (long-press app icon in native build)
  *
  * Lets the user search TMDB, pick a title, choose a status,
@@ -64,7 +64,7 @@ function useTmdbSearch(query: string) {
       try {
         const domain = process.env.EXPO_PUBLIC_DOMAIN;
         if (!domain) {
-          console.error('[CineLog] EXPO_PUBLIC_DOMAIN not set — TMDB search will not work on native.');
+          console.error('[CouchPotato] EXPO_PUBLIC_DOMAIN not set — TMDB search will not work on native.');
           setResults([]);
           setLoading(false);
           return;

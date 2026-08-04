@@ -27,7 +27,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 if (!domain) {
   console.error(
-    '[CineLog] EXPO_PUBLIC_DOMAIN is not set. ' +
+    '[CouchPotato] EXPO_PUBLIC_DOMAIN is not set. ' +
     'API calls will fail on native. ' +
     'Set EXPO_PUBLIC_DOMAIN=$REPLIT_DEV_DOMAIN in your dev script.'
   );

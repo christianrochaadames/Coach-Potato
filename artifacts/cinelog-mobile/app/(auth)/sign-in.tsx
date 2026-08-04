@@ -148,7 +148,7 @@ export default function SignInScreen() {
           </View>
           <Text style={[styles.title, { color: colors.foreground }]}>Welcome back</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-            Sign in to your CineLog account
+            Sign in to your CouchPotato account
           </Text>
         </View>
 
