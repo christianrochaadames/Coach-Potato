@@ -1,17 +1,15 @@
 /**
- * Patches react-native's spm.rb to add a nil-guard in add_spm_to_target.
+ * Patches react-native's spm.rb to add nil-guards in SPMManager.
  *
- * Root cause: @clerk/expo declares ClerkKit + ClerkKitUI as SPM dependencies
- * via spm_dependency() in ClerkExpo.podspec. SPMManager.apply_on_post_install
- * then looks for a Pods project target whose name matches the pod_name
- * ("ClerkExpo"). ClerkExpo has no separate Pods build target (it's an Expo
- * module compiled into ExpoModulesCore), so project.targets.find returns nil.
- * The next call target.package_product_dependencies crashes with:
- *   undefined method `package_product_dependencies' for nil:NilClass
+ * Root cause: @clerk/expo registers ClerkKit + ClerkKitUI as SPM dependencies
+ * but has no separate Pods build target. SPMManager.apply_on_post_install calls
+ * project.targets.find twice (lines ~27 and ~33) and passes/stores the result
+ * without nil-checking. When the target doesn't exist both calls return nil and
+ * the subsequent method calls crash:
+ *   Line ~80: target.package_product_dependencies  (inside add_spm_to_target)
+ *   Line ~34: target.build_configurations           (Swift-package workaround)
  *
- * Fix: find all spm.rb files in node_modules and add `return if target.nil?`
- * at the top of add_spm_to_target. This is safe — a nil target means no
- * Pods project target to attach the SPM dependency to, so skipping is correct.
+ * Fix: patch BOTH sites in spm.rb with early-return / next guards.
  */
 
 const { withDangerousMod } = require('expo/config-plugins');
@@ -21,25 +19,42 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 const PATCH_MARKER = '# nil-target-fix-applied';
-const OLD_LINE =
-  '  def add_spm_to_target(project, target, url, requirement, products)';
-const NEW_LINE =
+
+// ── Patch 1 ───────────────────────────────────────────────────────────────────
+// Adds `return if target.nil?` at the top of add_spm_to_target so that
+// target.package_product_dependencies is never called on nil.
+const P1_OLD = '  def add_spm_to_target(project, target, url, requirement, products)';
+const P1_NEW =
   '  def add_spm_to_target(project, target, url, requirement, products)\n' +
   '    return ' + PATCH_MARKER + ' if target.nil?';
+
+// ── Patch 2 ───────────────────────────────────────────────────────────────────
+// The "Swift package not found workaround" block re-finds the target and calls
+// target.build_configurations.each without a nil check. Add `next if nil`.
+//
+// Original lines (indented with 8 spaces):
+//   target = project.targets.find { |t| t.name == pod_name}
+//   target.build_configurations.each do |config|
+const P2_OLD =
+  '        target = project.targets.find { |t| t.name == pod_name}\n' +
+  '        target.build_configurations.each do |config|';
+const P2_NEW =
+  '        target = project.targets.find { |t| t.name == pod_name}\n' +
+  '        next ' + PATCH_MARKER + ' if target.nil?\n' +
+  '        target.build_configurations.each do |config|';
 
 module.exports = function withSpmFix(config) {
   return withDangerousMod(config, [
     'ios',
-    (config) => {
-      const projectRoot = config.modRequest.projectRoot;
+    (modConfig) => {
+      const projectRoot = modConfig.modRequest.projectRoot;
 
       // In the EAS pnpm monorepo the workspace root is two levels above the app
       // (workspace/artifacts/cinelog-mobile → workspace/).
-      // We also check one level up and the project root itself as fallbacks.
       const searchRoots = [
         path.join(projectRoot, '..', '..'), // workspace root  ← primary
-        path.join(projectRoot, '..'),        // one level up
-        projectRoot,                          // app-level node_modules
+        path.join(projectRoot, '..'),
+        projectRoot,
       ];
 
       let spmFiles = [];
@@ -58,8 +73,8 @@ module.exports = function withSpmFix(config) {
       spmFiles = [...new Set(spmFiles)];
 
       if (spmFiles.length === 0) {
-        console.warn('[with-spm-fix] No spm.rb files found — skipping patch');
-        return config;
+        console.warn('[with-spm-fix] No spm.rb files found — skipping');
+        return modConfig;
       }
 
       let patched = 0;
@@ -73,22 +88,36 @@ module.exports = function withSpmFix(config) {
           continue;
         }
 
-        if (!content.includes(OLD_LINE)) {
-          console.warn(`[with-spm-fix] Signature not found in ${spmPath} — skipping`);
-          continue;
+        let changed = false;
+
+        if (content.includes(P1_OLD)) {
+          content = content.replace(P1_OLD, P1_NEW);
+          changed = true;
+          console.log(`[with-spm-fix] Applied patch 1 (add_spm_to_target nil guard)`);
+        } else {
+          console.warn(`[with-spm-fix] Patch 1 signature not found in ${spmPath}`);
         }
 
-        content = content.replace(OLD_LINE, NEW_LINE);
-        fs.writeFileSync(spmPath, content);
-        console.log(`[with-spm-fix] Patched spm.rb at: ${spmPath}`);
-        patched++;
+        if (content.includes(P2_OLD)) {
+          content = content.replace(P2_OLD, P2_NEW);
+          changed = true;
+          console.log(`[with-spm-fix] Applied patch 2 (build_configurations nil guard)`);
+        } else {
+          console.warn(`[with-spm-fix] Patch 2 signature not found in ${spmPath}`);
+        }
+
+        if (changed) {
+          fs.writeFileSync(spmPath, content);
+          console.log(`[with-spm-fix] Wrote patched spm.rb: ${spmPath}`);
+          patched++;
+        }
       }
 
       if (patched === 0) {
         console.error('[with-spm-fix] No spm.rb files were patched!');
       }
 
-      return config;
+      return modConfig;
     },
   ]);
 };
