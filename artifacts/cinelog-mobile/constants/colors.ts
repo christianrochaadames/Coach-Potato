@@ -1,4 +1,4 @@
-// CineLog brand palette — synced from artifacts/cinelog/src/index.css
+// CouchPotato brand palette — synced from artifacts/cinelog/src/index.css
 
 export const Colors = {
   light: {
