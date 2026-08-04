@@ -14,12 +14,7 @@
  * Pods project target to attach the SPM dependency to, so skipping is correct.
  */
 
-let withDangerousMod;
-try {
-  ({ withDangerousMod } = require('@expo/config-plugins'));
-} catch {
-  ({ withDangerousMod } = require('expo/config-plugins'));
-}
+const { withDangerousMod } = require('expo/config-plugins');
 
 const path = require('path');
 const fs = require('fs');
