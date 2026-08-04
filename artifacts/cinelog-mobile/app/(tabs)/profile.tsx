@@ -1,4 +1,13 @@
-import { View, Text, StyleSheet, Platform, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Platform,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+  Image,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
@@ -6,6 +15,9 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useUser, useClerk } from '@clerk/expo';
 import { useListEntries } from '@workspace/api-client-react';
+import { useFacebook, type FbFriend } from '@/hooks/useFacebook';
+
+const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 export default function ProfileScreen() {
   const colors = useColors();
@@ -36,10 +48,22 @@ export default function ProfileScreen() {
     initials = email[0].toUpperCase();
   }
 
+  const fb = useFacebook(API_BASE);
+
   async function handleSignOut() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     await signOut();
     router.replace('/(auth)/sign-in' as any);
+  }
+
+  async function handleFacebookConnect() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await fb.connect();
+  }
+
+  async function handleFacebookDisconnect() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await fb.disconnect();
   }
 
   return (
@@ -104,6 +128,95 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* ── Facebook Social Section ── */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>SOCIAL</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {!fb.isConfigured ? (
+            /* Facebook not configured in this build */
+            <View style={styles.fbRow}>
+              <View style={[styles.fbIconBox, { backgroundColor: '#1877F2' }]}>
+                <Text style={styles.fbIconText}>f</Text>
+              </View>
+              <View style={styles.fbInfo}>
+                <Text style={[styles.fbTitle, { color: colors.foreground }]}>Facebook Friends</Text>
+                <Text style={[styles.fbSub, { color: colors.mutedForeground }]}>
+                  Coming soon
+                </Text>
+              </View>
+            </View>
+          ) : fb.isConnected ? (
+            <>
+              {/* Connected state */}
+              <View style={[styles.fbRow, styles.fbRowBorder, { borderBottomColor: colors.border }]}>
+                <View style={[styles.fbIconBox, { backgroundColor: '#1877F2' }]}>
+                  <Text style={styles.fbIconText}>f</Text>
+                </View>
+                <View style={styles.fbInfo}>
+                  <Text style={[styles.fbTitle, { color: colors.foreground }]}>Facebook connected</Text>
+                  <Text style={[styles.fbSub, { color: colors.mutedForeground }]}>
+                    {fb.friends.length > 0
+                      ? `${fb.friends.length} friend${fb.friends.length !== 1 ? 's' : ''} on CouchPotato`
+                      : 'No friends on CouchPotato yet'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={handleFacebookDisconnect}
+                  disabled={fb.isLoading}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Feather name="x" size={18} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Friends list */}
+              {fb.isLoading ? (
+                <View style={styles.fbLoading}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                </View>
+              ) : fb.friends.length > 0 ? (
+                fb.friends.map((friend) => (
+                  <FriendRow key={friend.userId} friend={friend} colors={colors} />
+                ))
+              ) : (
+                <View style={styles.fbEmpty}>
+                  <Text style={[styles.fbEmptyText, { color: colors.mutedForeground }]}>
+                    None of your Facebook friends are on CouchPotato yet. Invite them!
+                  </Text>
+                </View>
+              )}
+            </>
+          ) : (
+            /* Not connected */
+            <TouchableOpacity
+              style={styles.fbRow}
+              onPress={handleFacebookConnect}
+              disabled={fb.isLoading}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.fbIconBox, { backgroundColor: '#1877F2' }]}>
+                {fb.isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.fbIconText}>f</Text>
+                )}
+              </View>
+              <View style={styles.fbInfo}>
+                <Text style={[styles.fbTitle, { color: colors.foreground }]}>Connect Facebook</Text>
+                <Text style={[styles.fbSub, { color: colors.mutedForeground }]}>
+                  See which friends are also on CouchPotato
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
+
+          {fb.error ? (
+            <Text style={[styles.fbError, { color: '#e53e3e' }]}>{fb.error}</Text>
+          ) : null}
+        </View>
+      </View>
+
       {/* Account Section */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>ACCOUNT</Text>
@@ -122,6 +235,42 @@ export default function ProfileScreen() {
     </ScrollView>
   );
 }
+
+// ── Friend row sub-component ──────────────────────────────────────────────────
+
+function FriendRow({ friend, colors }: { friend: FbFriend; colors: ReturnType<typeof import('@/hooks/useColors').useColors> }) {
+  const name = friend.fbName ?? [friend.firstName, friend.lastName].filter(Boolean).join(' ') ?? friend.username ?? 'CouchPotato user';
+  const initials = name
+    .split(' ')
+    .slice(0, 2)
+    .map((w: string) => w[0])
+    .join('')
+    .toUpperCase();
+
+  return (
+    <View style={[styles.friendRow, { borderTopColor: colors.border }]}>
+      {friend.fbPicture ? (
+        <Image source={{ uri: friend.fbPicture }} style={styles.friendAvatar} />
+      ) : (
+        <View style={[styles.friendAvatar, styles.friendAvatarFallback, { backgroundColor: colors.primary }]}>
+          <Text style={[styles.friendInitials, { color: '#fff' }]}>{initials}</Text>
+        </View>
+      )}
+      <View style={styles.friendInfo}>
+        <Text style={[styles.friendName, { color: colors.foreground }]} numberOfLines={1}>
+          {name}
+        </Text>
+        {friend.username ? (
+          <Text style={[styles.friendUsername, { color: colors.mutedForeground }]} numberOfLines={1}>
+            @{friend.username}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -205,6 +354,99 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
+
+  // Facebook section
+  fbRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    gap: 12,
+  },
+  fbRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  fbIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  fbIconText: {
+    color: '#fff',
+    fontSize: 18,
+    fontFamily: 'Manrope_700Bold',
+    lineHeight: 22,
+  },
+  fbInfo: {
+    flex: 1,
+  },
+  fbTitle: {
+    fontSize: 14,
+    fontFamily: 'Manrope_600SemiBold',
+  },
+  fbSub: {
+    fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
+    marginTop: 2,
+  },
+  fbLoading: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  fbEmpty: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  fbEmptyText: {
+    fontSize: 13,
+    fontFamily: 'Manrope_400Regular',
+    lineHeight: 19,
+  },
+  fbError: {
+    fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
+    paddingHorizontal: 14,
+    paddingBottom: 10,
+  },
+
+  // Friend rows
+  friendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  friendAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  friendAvatarFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  friendInitials: {
+    fontSize: 13,
+    fontFamily: 'Manrope_700Bold',
+  },
+  friendInfo: {
+    flex: 1,
+  },
+  friendName: {
+    fontSize: 14,
+    fontFamily: 'Manrope_600SemiBold',
+  },
+  friendUsername: {
+    fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
+    marginTop: 1,
+  },
+
+  // Account section
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',

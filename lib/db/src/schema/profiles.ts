@@ -10,6 +10,8 @@ export const profilesTable = pgTable("profiles", {
   avatarId: text("avatar_id"),
   /** base64 data-URL of a custom uploaded photo. Takes priority over avatarId. */
   avatarUrl: text("avatar_url"),
+  /** Facebook user ID — set when user connects their Facebook account for friends discovery. */
+  facebookId: text("facebook_id"),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

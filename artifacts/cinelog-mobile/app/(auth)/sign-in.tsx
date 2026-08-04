@@ -32,7 +32,7 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [ssoLoading, setSsoLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState<'google' | 'facebook' | null>(null);
   const [verifyCode, setVerifyCode] = useState('');
 
   // Warm up browser on Android for faster OAuth
@@ -70,7 +70,7 @@ export default function SignInScreen() {
   };
 
   const handleGoogleSignIn = useCallback(async () => {
-    setSsoLoading(true);
+    setSsoLoading('google');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const { createdSessionId, setActive } = await startSSOFlow({
@@ -89,7 +89,31 @@ export default function SignInScreen() {
     } catch (err) {
       console.error(err);
     } finally {
-      setSsoLoading(false);
+      setSsoLoading(null);
+    }
+  }, [startSSOFlow, router]);
+
+  const handleFacebookSignIn = useCallback(async () => {
+    setSsoLoading('facebook');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy: 'oauth_facebook',
+        redirectUrl: AuthSession.makeRedirectUri(),
+      });
+      if (createdSessionId) {
+        await setActive!({
+          session: createdSessionId,
+          navigate: async ({ decorateUrl }) => {
+            const url = decorateUrl('/');
+            if (!url.startsWith('http')) router.replace(url as any);
+          },
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSsoLoading(null);
     }
   }, [startSSOFlow, router]);
 
@@ -159,13 +183,32 @@ export default function SignInScreen() {
           disabled={ssoLoading}
           activeOpacity={0.8}
         >
-          {ssoLoading ? (
+          {ssoLoading === 'google' ? (
             <ActivityIndicator color={colors.foreground} />
           ) : (
             <>
               <Text style={styles.googleIcon}>G</Text>
               <Text style={[styles.googleBtnText, { color: colors.foreground }]}>
                 Continue with Google
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Facebook SSO */}
+        <TouchableOpacity
+          style={[styles.googleBtn, { backgroundColor: '#1877F2', borderColor: '#1877F2' }]}
+          onPress={handleFacebookSignIn}
+          disabled={!!ssoLoading}
+          activeOpacity={0.8}
+        >
+          {ssoLoading === 'facebook' ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text style={styles.fbIcon}>f</Text>
+              <Text style={[styles.googleBtnText, { color: '#fff' }]}>
+                Continue with Facebook
               </Text>
             </>
           )}
@@ -262,6 +305,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, borderRadius: 12, borderWidth: 1, gap: 10,
   },
   googleIcon: { fontSize: 18, fontWeight: '700', color: '#4285F4' },
+  fbIcon: { fontSize: 18, fontWeight: '700', color: '#fff' },
   googleBtnText: { fontSize: 15, fontFamily: 'Manrope_600SemiBold' },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
   dividerLine: { flex: 1, height: 1 },

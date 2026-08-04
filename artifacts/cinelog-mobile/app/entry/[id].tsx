@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -82,6 +83,30 @@ export default function EntryDetailScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       Alert.alert('Error', 'Failed to save changes. Please try again.');
+    }
+  }
+
+  // ── Share handler ───────────────────────────────────────────────────────────
+
+  async function handleShare() {
+    if (!entry) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const yearText = entry.year ? ` (${entry.year})` : '';
+    const ratingText = entry.rating ? ` ${'⭐'.repeat(entry.rating)}` : '';
+    const actionText =
+      entry.status === 'watching'
+        ? 'watching'
+        : entry.status === 'plan_to_watch'
+          ? 'planning to watch'
+          : 'watched';
+    const typeText = entry.type === 'movie' ? 'movie' : 'show';
+    try {
+      await Share.share({
+        message: `I just ${actionText} the ${typeText} "${entry.title}"${yearText}${ratingText}\n\nTracked on CouchPotato 🥔`,
+        title: entry.title,
+      });
+    } catch {
+      // user cancelled or share failed — no-op
     }
   }
 
@@ -162,8 +187,18 @@ export default function EntryDetailScreen() {
         {/* Title */}
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Details</Text>
 
-        {/* Right action */}
-        <View style={styles.headerSide}>
+        {/* Right actions */}
+        <View style={styles.headerActions}>
+          {/* Share */}
+          {!editing && (
+            <TouchableOpacity
+              onPress={handleShare}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="share-2" size={20} color={colors.foreground} />
+            </TouchableOpacity>
+          )}
+          {/* Edit / Save */}
           {editing ? (
             <TouchableOpacity
               onPress={handleSave}
@@ -385,6 +420,13 @@ const styles = StyleSheet.create({
     width: 48,
     alignItems: 'flex-start',
     justifyContent: 'center',
+  },
+  headerActions: {
+    width: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 16,
   },
   headerTitle: {
     flex: 1,

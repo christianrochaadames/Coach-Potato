@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,16 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from 'react-native';
-import { useSignUp } from '@clerk/expo';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+import { useSignUp, useSSO } from '@clerk/expo';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function SignUpScreen() {
   const colors = useColors();
@@ -23,15 +27,48 @@ export default function SignUpScreen() {
   const router = useRouter();
 
   const { signUp, errors, fetchStatus } = useSignUp();
+  const { startSSOFlow } = useSSO();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState('');
+  const [ssoLoading, setSsoLoading] = useState<'google' | 'facebook' | null>(null);
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
   const isFetching = fetchStatus === 'fetching';
+
+  // Warm up browser on Android for faster OAuth
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    void WebBrowser.warmUpAsync();
+    return () => { void WebBrowser.coolDownAsync(); };
+  }, []);
+
+  const handleSSOSignUp = useCallback(async (provider: 'oauth_google' | 'oauth_facebook') => {
+    setSsoLoading(provider === 'oauth_google' ? 'google' : 'facebook');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const { createdSessionId, setActive } = await startSSOFlow({
+        strategy: provider,
+        redirectUrl: AuthSession.makeRedirectUri(),
+      });
+      if (createdSessionId) {
+        await setActive!({
+          session: createdSessionId,
+          navigate: async ({ decorateUrl }) => {
+            const url = decorateUrl('/');
+            if (!url.startsWith('http')) router.replace(url as any);
+          },
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSsoLoading(null);
+    }
+  }, [startSSOFlow, router]);
 
   const handleSignUp = async () => {
     if (!email || !password) return;
@@ -120,6 +157,47 @@ export default function SignUpScreen() {
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
             Start tracking what you watch
           </Text>
+        </View>
+
+        {/* Google SSO */}
+        <TouchableOpacity
+          style={[styles.ssoBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => handleSSOSignUp('oauth_google')}
+          disabled={!!ssoLoading}
+          activeOpacity={0.8}
+        >
+          {ssoLoading === 'google' ? (
+            <ActivityIndicator color={colors.foreground} />
+          ) : (
+            <>
+              <Text style={styles.googleIcon}>G</Text>
+              <Text style={[styles.ssoBtnText, { color: colors.foreground }]}>Continue with Google</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Facebook SSO */}
+        <TouchableOpacity
+          style={[styles.ssoBtn, { backgroundColor: '#1877F2', borderColor: '#1877F2' }]}
+          onPress={() => handleSSOSignUp('oauth_facebook')}
+          disabled={!!ssoLoading}
+          activeOpacity={0.8}
+        >
+          {ssoLoading === 'facebook' ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Text style={styles.fbIcon}>f</Text>
+              <Text style={[styles.ssoBtnText, { color: '#fff' }]}>Continue with Facebook</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>or</Text>
+          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
         </View>
 
         <Text style={[styles.label, { color: colors.mutedForeground }]}>Email</Text>
