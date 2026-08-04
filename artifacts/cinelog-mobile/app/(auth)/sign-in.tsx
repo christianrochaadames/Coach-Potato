@@ -180,7 +180,7 @@ export default function SignInScreen() {
         <TouchableOpacity
           style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={handleGoogleSignIn}
-          disabled={ssoLoading}
+          disabled={!!ssoLoading}
           activeOpacity={0.8}
         >
           {ssoLoading === 'google' ? (
