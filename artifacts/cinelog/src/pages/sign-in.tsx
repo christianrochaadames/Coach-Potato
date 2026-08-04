@@ -13,9 +13,9 @@ export default function SignInPage() {
     if (!isLoaded || !signIn) return;
     const params = new URLSearchParams(window.location.search);
     const sso = params.get("sso");
-    if (sso === "google" || sso === "apple") {
+    if (sso === "google" || sso === "apple" || sso === "facebook") {
       signIn.authenticateWithRedirect({
-        strategy: `oauth_${sso}` as "oauth_google" | "oauth_apple",
+        strategy: `oauth_${sso}` as "oauth_google" | "oauth_apple" | "oauth_facebook",
         redirectUrl: `${basePath}/sign-in/sso-callback`,
         redirectUrlComplete: `${basePath}/`,
       });
