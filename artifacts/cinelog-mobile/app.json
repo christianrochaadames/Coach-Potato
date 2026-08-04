@@ -1,28 +1,30 @@
 {
   "expo": {
-    "name": "CineLog",
+    "name": "CouchPotato",
     "slug": "cinelog-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "cinelog-mobile",
+    "scheme": "couchpotato",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.replit.cinelog",
+      "bundleIdentifier": "com.couchpotato.app",
+      "buildNumber": "1",
       "infoPlist": {
+        "NSPrivacyAccessedAPITypes": [],
         "UIApplicationShortcutItems": [
           {
             "UIApplicationShortcutItemTitle": "Log Entry",
             "UIApplicationShortcutItemSubtitle": "Log a movie or show",
-            "UIApplicationShortcutItemType": "com.replit.cinelog.logentry",
+            "UIApplicationShortcutItemType": "com.couchpotato.app.logentry",
             "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeAdd"
           },
           {
             "UIApplicationShortcutItemTitle": "My Watchlist",
             "UIApplicationShortcutItemSubtitle": "View your watchlist",
-            "UIApplicationShortcutItemType": "com.replit.cinelog.watchlist",
+            "UIApplicationShortcutItemType": "com.couchpotato.app.watchlist",
             "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeBookmark"
           }
         ]
@@ -33,7 +35,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#116149"
       },
-      "package": "com.replit.cinelog"
+      "package": "com.couchpotato.app",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",

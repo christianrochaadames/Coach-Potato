@@ -21,6 +21,7 @@ import SignInPage from "@/pages/sign-in";
 import SignUpPage from "@/pages/sign-up";
 import Onboarding from "@/pages/onboarding";
 import Welcome from "@/pages/welcome";
+import Privacy from "@/pages/privacy";
 
 const queryClient = new QueryClient();
 
@@ -255,6 +256,7 @@ function Router() {
           <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
           <Route path="/entry/:id" component={() => <ProtectedRoute component={EntryDetail} />} />
           <Route path="/add" component={() => <ProtectedRoute component={AddEntry} />} />
+          <Route path="/privacy" component={Privacy} />
           <Route component={NotFound} />
         </Switch>
       </main>
