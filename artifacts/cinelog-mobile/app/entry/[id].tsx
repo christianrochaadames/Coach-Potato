@@ -12,7 +12,8 @@ import {
   TextInput,
   Share,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, Redirect } from 'expo-router';
+import { useAuth } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -43,6 +44,12 @@ export default function EntryDetailScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const queryClient = useQueryClient();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Guard: deep-link cold-starts bypass the tabs layout auth guard
+  if (isLoaded && !isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
   const { data: entry, isLoading } = useGetEntry(Number(id));
 

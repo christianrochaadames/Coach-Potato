@@ -14,11 +14,11 @@ import {
 } from '@expo-google-fonts/manrope';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
-import { ClerkProvider, ClerkLoaded } from '@clerk/expo';
+import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { useQuickActionCallback } from 'expo-quick-actions/hooks';
 import * as QuickActions from 'expo-quick-actions';
-import { setBaseUrl } from '@workspace/api-client-react';
+import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // ── Configure API base URL ──────────────────────────────────────────────────
@@ -48,6 +48,19 @@ const queryClient = new QueryClient({
 
 // ── Keep splash screen visible while fonts load ─────────────────────────────
 SplashScreen.preventAutoHideAsync();
+
+// ── Auth token sync ──────────────────────────────────────────────────────────
+// Wires the Clerk session token into the API client so every request carries
+// an Authorization: Bearer header. Lives here — not only in (tabs)/_layout —
+// so deep-link cold-starts (e.g. couchpotato://log-entry) are also covered.
+function AuthTokenSync() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return null;
+}
 
 // ── Deep-link handler ────────────────────────────────────────────────────────
 // expo-router auto-resolves scheme-based deep links via file routes.
@@ -121,6 +134,7 @@ export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
       <ClerkLoaded>
+        <AuthTokenSync />
         <ErrorBoundary>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaProvider>

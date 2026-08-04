@@ -23,11 +23,12 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@clerk/expo';
 import {
   useCreateEntry,
   getListEntriesQueryKey,
@@ -102,6 +103,12 @@ export default function LogEntryScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const createEntry = useCreateEntry();
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Guard: deep-link cold-starts bypass the tabs layout auth guard
+  if (isLoaded && !isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<TmdbItem | null>(null);
