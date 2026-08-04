@@ -278,6 +278,16 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 26, fontFamily: 'Manrope_700Bold', letterSpacing: -0.5 },
   subtitle: { fontSize: 14, fontFamily: 'Manrope_400Regular', textAlign: 'center' },
+  ssoBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 14, borderRadius: 12, borderWidth: 1, gap: 10,
+  },
+  googleIcon: { fontSize: 18, fontWeight: '700', color: '#4285F4' },
+  fbIcon: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  ssoBtnText: { fontSize: 15, fontFamily: 'Manrope_600SemiBold' },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { fontSize: 13, fontFamily: 'Manrope_400Regular' },
   label: { fontSize: 12, fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.4, marginBottom: -4 },
   input: {
     borderRadius: 12, borderWidth: 1,
