@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   TextInput,
   Share,
+  FlatList,
 } from 'react-native';
 import { useLocalSearchParams, router, Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
@@ -26,6 +27,53 @@ import {
   getGetEntryQueryKey,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+
+// ── TMDB detail types ─────────────────────────────────────────────────────────
+
+interface CastMember {
+  name: string;
+  character: string;
+  profileUrl: string | null;
+  order: number;
+}
+
+interface TmdbDetail {
+  title: string;
+  overview: string | null;
+  cast: CastMember[];
+  directors: { name: string; job: string; profileUrl: string | null }[];
+  runtime: number | null;
+  releaseYear: number | null;
+  voteAverage: number | null;
+  genres: string[];
+}
+
+// ── useTmdbDetail hook ────────────────────────────────────────────────────────
+
+function useTmdbDetail(tmdbId: number | null | undefined, type: string | undefined) {
+  const [detail, setDetail] = useState<TmdbDetail | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!tmdbId || !type) return;
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    if (!domain) return;
+
+    const mediaType = type === 'movie' ? 'movie' : 'tv';
+    const url = `https://${domain}/api/tmdb/${mediaType}/${tmdbId}`;
+
+    setLoading(true);
+    fetch(url)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: TmdbDetail | null) => {
+        if (data) setDetail(data);
+      })
+      .catch(() => {/* silently ignore */})
+      .finally(() => setLoading(false));
+  }, [tmdbId, type]);
+
+  return { detail, loading };
+}
 
 // ── Status chip config ────────────────────────────────────────────────────────
 
@@ -52,6 +100,10 @@ export default function EntryDetailScreen() {
   }
 
   const { data: entry, isLoading } = useGetEntry(Number(id));
+  const { detail: tmdbDetail, loading: tmdbLoading } = useTmdbDetail(
+    entry?.tmdbId,
+    entry?.type
+  );
 
   const [editing, setEditing] = useState(false);
   const [editStatus, setEditStatus] = useState<string>('');
@@ -376,17 +428,82 @@ export default function EntryDetailScreen() {
           )}
         </View>
 
-        {/* E) Synopsis — view only */}
-        {entry.synopsis ? (
-          <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SYNOPSIS</Text>
-            <Text style={[styles.synopsisText, { color: colors.mutedForeground }]}>
-              {entry.synopsis}
-            </Text>
-          </View>
-        ) : null}
+        {/* E) Plot summary — TMDB overview preferred, entry.synopsis as fallback */}
+        {(() => {
+          const plot = tmdbDetail?.overview || entry.synopsis;
+          if (!plot && !tmdbLoading) return null;
+          return (
+            <View style={styles.section}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PLOT SUMMARY</Text>
+              {tmdbLoading && !plot ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+              ) : (
+                <Text style={[styles.synopsisText, { color: colors.mutedForeground }]}>
+                  {plot}
+                </Text>
+              )}
+            </View>
+          );
+        })()}
 
-        {/* F) Delete button */}
+        {/* F) Cast — from TMDB */}
+        {(tmdbLoading || (tmdbDetail && tmdbDetail.cast.length > 0)) && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CAST</Text>
+            {tmdbLoading && !tmdbDetail ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+            ) : (
+              <FlatList
+                data={tmdbDetail?.cast ?? []}
+                keyExtractor={(item, i) => `${item.name}-${i}`}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.castList}
+                renderItem={({ item }) => (
+                  <View style={styles.castCard}>
+                    {item.profileUrl ? (
+                      <Image
+                        source={{ uri: item.profileUrl }}
+                        style={[styles.castPhoto, { backgroundColor: colors.muted }]}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.castPhoto, styles.castPhotoPlaceholder, { backgroundColor: colors.muted }]}>
+                        <Feather name="user" size={22} color={colors.mutedForeground} />
+                      </View>
+                    )}
+                    <Text style={[styles.castName, { color: colors.foreground }]} numberOfLines={2}>
+                      {item.name}
+                    </Text>
+                    {item.character ? (
+                      <Text style={[styles.castCharacter, { color: colors.mutedForeground }]} numberOfLines={2}>
+                        {item.character}
+                      </Text>
+                    ) : null}
+                  </View>
+                )}
+              />
+            )}
+          </View>
+        )}
+
+        {/* G) Directors / Creators — from TMDB */}
+        {tmdbDetail && tmdbDetail.directors.length > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+              {entry.type === 'movie' ? 'DIRECTOR' : 'CREATOR'}
+            </Text>
+            <View style={styles.directorRow}>
+              {tmdbDetail.directors.map((d, i) => (
+                <Text key={i} style={[styles.directorName, { color: colors.foreground }]}>
+                  {d.name}
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* H) Delete button */}
         <TouchableOpacity
           style={[styles.deleteButton, { borderColor: '#e53e3e' }]}
           onPress={confirmDelete}
@@ -560,11 +677,54 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 
-  // Synopsis
+  // Synopsis / plot
   synopsisText: {
     fontSize: 14,
     fontFamily: 'Manrope_400Regular',
     lineHeight: 21,
+  },
+
+  // Cast
+  castList: {
+    gap: 14,
+    paddingVertical: 4,
+  },
+  castCard: {
+    width: 80,
+    alignItems: 'center',
+    gap: 6,
+  },
+  castPhoto: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+  },
+  castPhotoPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  castName: {
+    fontSize: 12,
+    fontFamily: 'Manrope_600SemiBold',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  castCharacter: {
+    fontSize: 11,
+    fontFamily: 'Manrope_400Regular',
+    textAlign: 'center',
+    lineHeight: 15,
+  },
+
+  // Directors
+  directorRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  directorName: {
+    fontSize: 14,
+    fontFamily: 'Manrope_500Medium',
   },
 
   // Delete
