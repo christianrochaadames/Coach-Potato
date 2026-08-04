@@ -237,7 +237,7 @@ export default function Welcome() {
                 <input
                   value={firstName}
                   onChange={e => { setFirstName(e.target.value); setErrors(p => ({ ...p, firstName: "" })); }}
-                  placeholder="Spot"
+                  placeholder="Spud"
                   style={inputStyle(!!errors.firstName)}
                   autoCapitalize="words"
                   autoCorrect="off"
@@ -279,7 +279,7 @@ export default function Welcome() {
                   <input
                     value={username}
                     onChange={e => { setUsername(e.target.value.replace(/\s/g, "")); setErrors(p => ({ ...p, username: "" })); }}
-                    placeholder="SpotThePotato"
+                    placeholder="SpudThePotato"
                     style={{ ...inputStyle(!!errors.username), paddingLeft: 32 }}
                     autoCapitalize="none"
                     autoCorrect="off"
