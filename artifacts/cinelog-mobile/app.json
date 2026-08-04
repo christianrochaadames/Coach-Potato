@@ -59,11 +59,17 @@
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {},
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bc31d5b4-2663-48ac-8ba0-1dc22c618d1f"
+      }
+    },
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#FFF3E8"
-    }
+    },
+    "owner": "chrisrianrochaadames"
   }
 }
