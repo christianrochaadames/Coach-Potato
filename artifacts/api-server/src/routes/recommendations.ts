@@ -47,6 +47,28 @@ function mapRec(item: Record<string, unknown>, mediaType: "movie" | "tv") {
 type MappedRec = ReturnType<typeof mapRec>;
 type TaggedRec = MappedRec & { recencyRank: number; seedRating: number | null };
 
+// POST /api/recommendations/feedback — record like or skip signal
+router.post("/recommendations/feedback", requireAuth, async (req, res) => {
+  const { tmdbId, signal } = req.body as { tmdbId: unknown; signal: unknown };
+  if (!tmdbId || (signal !== "like" && signal !== "skip")) {
+    res.status(400).json({ error: "tmdbId and signal ('like'|'skip') required" });
+    return;
+  }
+  try {
+    // Upsert: if the user already gave feedback on this title, update the signal
+    await pool.query(
+      `INSERT INTO recommendation_feedback (user_id, tmdb_id, signal)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, tmdb_id) DO UPDATE SET signal = EXCLUDED.signal`,
+      [req.userId, Number(tmdbId), signal]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "feedback write error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/recommendations
 router.get("/recommendations", requireAuth, async (req, res) => {
   const apiKey = process.env.TMDB_API_KEY;
@@ -118,6 +140,15 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       [req.userId]
     );
     const alreadyShown = new Set(histRows.map((r) => r.tmdb_id));
+
+    // 2c. User feedback: skipped titles are permanently excluded; liked titles
+    //     are used to amplify genre scoring toward content they signalled interest in.
+    const { rows: feedbackRows } = await pool.query<{ tmdb_id: number; signal: string }>(
+      `SELECT tmdb_id, signal FROM recommendation_feedback WHERE user_id = $1`,
+      [req.userId]
+    );
+    const skippedIds = new Set(feedbackRows.filter(r => r.signal === "skip").map(r => r.tmdb_id));
+    const likedIds   = new Set(feedbackRows.filter(r => r.signal === "like").map(r => r.tmdb_id));
 
     // ── 3. Fetch /recommendations AND /similar for each seed in parallel ──
     const allRecs: TaggedRec[] = [];
@@ -228,6 +259,17 @@ router.get("/recommendations", requireAuth, async (req, res) => {
 
     // ── 6. Deduplicate, filter by language, then score ──
 
+    // Collect genres of liked titles from allRecs so we can boost similar content.
+    // likedGenres is built from any rec whose tmdbId was explicitly liked.
+    const likedGenreFreq = new Map<string, number>();
+    for (const rec of allRecs) {
+      if (likedIds.has(rec.tmdbId)) {
+        for (const g of rec.genres) {
+          likedGenreFreq.set(g, (likedGenreFreq.get(g) ?? 0) + 1);
+        }
+      }
+    }
+
     // Rating multiplier: 5★ seed → 0.6 (strong signal), 1★ → 1.4 (weak), null → 1.0
     const ratingMult = (r: number | null) =>
       r === null ? 1.0 : Math.max(0.4, 1.6 - r * 0.2);
@@ -235,6 +277,11 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     // Genre overlap bonus: how many of this title's genres are in the user's top genres
     const genreBonus = (genres: string[]) =>
       genres.filter((g) => topGenres.includes(g)).length * 0.6;
+
+    // Liked-genre bonus: extra boost for genres explicitly signalled via "like" feedback.
+    // Capped at 2.0 so it doesn't totally overshadow the seed-based scoring.
+    const likedGenreBonus = (genres: string[]) =>
+      Math.min(genres.reduce((sum, g) => sum + (likedGenreFreq.get(g) ?? 0), 0) * 0.4, 2.0);
 
     // Popularity bonus: mainstream/popular titles score up to 2 extra points lower (better).
     // Capped at popularity=300 (blockbuster level) to prevent one mega-hit dominating.
@@ -248,8 +295,11 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     for (const rec of allRecs) {
       // ── Hard filters ──
 
-      // 0. Already shown in a previous session or refresh → skip
+      // 0a. Already shown in a previous session or refresh → skip
       if (alreadyShown.has(rec.tmdbId)) continue;
+
+      // 0b. User explicitly skipped this title → never show again
+      if (skippedIds.has(rec.tmdbId)) continue;
 
       // 1. Language: skip content the user doesn't watch
       if (rec.originalLanguage && !allowedLangs.has(rec.originalLanguage)) continue;
@@ -266,6 +316,7 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       const score =
         rec.recencyRank * ratingMult(rec.seedRating)
         - genreBonus(rec.genres)
+        - likedGenreBonus(rec.genres)   // extra pull toward genres the user liked
         - popularityBonus(rec.popularity);
       const existing = dedupMap.get(rec.tmdbId);
       if (!existing) {
@@ -304,12 +355,14 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       // Actually dedupMap was built AFTER the alreadyShown filter, so re-run from allRecs:
       dedupMap.clear();
       for (const rec of allRecs) {
+        if (skippedIds.has(rec.tmdbId)) continue; // still respect skip signals after reset
         if (rec.originalLanguage && !allowedLangs.has(rec.originalLanguage)) continue;
         if (!isVintageFan && rec.year !== null && rec.year < RECENCY_CUTOFF) continue;
         if (rec.voteCount < 150 || rec.popularity < 5) continue;
         const score =
           rec.recencyRank * ratingMult(rec.seedRating)
           - genreBonus(rec.genres)
+          - likedGenreBonus(rec.genres)
           - popularityBonus(rec.popularity);
         const existing = dedupMap.get(rec.tmdbId);
         if (!existing) {
