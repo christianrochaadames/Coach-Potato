@@ -30,8 +30,8 @@ export default function Stats() {
   const { data: yearSummaries } = useListYears();
   const { data: stats, isLoading } = useGetStats({ year: selectedYear });
 
-  // Fetch ALL completed entries to build genre chart (not year-filtered)
-  const { data: allEntries } = useListEntries({ status: 'completed' } as any);
+  // Fetch completed entries for the selected year to build genre/platform charts
+  const { data: allEntries } = useListEntries({ status: 'completed', year: selectedYear } as any);
 
   const years = useMemo(() => {
     if (!yearSummaries) return [currentYear];
@@ -211,7 +211,7 @@ export default function Stats() {
             >
               <p className="font-bold mb-1" style={{ color: '#111111' }}>Platform Breakdown</p>
               <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
-                Tap a platform to highlight · based on all watched titles
+                Tap a platform to highlight · {selectedYear}
               </p>
               <div className="space-y-2.5">
                 {platformData.map(({ platform, count, pct }, idx) => {
@@ -264,7 +264,7 @@ export default function Stats() {
             >
               <p className="font-bold mb-1" style={{ color: '#111111' }}>Genre Breakdown</p>
               <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
-                Tap a genre to highlight · based on all watched titles
+                Tap a genre to highlight · {selectedYear}
               </p>
               <div className="space-y-2.5">
                 {genreData.map(({ genre, count, pct }, idx) => {
