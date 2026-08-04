@@ -43,6 +43,8 @@ https://<your-deployed-web-app-domain>/cinelog/privacy
 ```
 The `/privacy` page is already live on the web app. Use its deployed URL.
 
+> 📋 See `STORE_LISTING.md` in this directory for ready-to-paste description, keywords, age rating answers, and a full submission checklist.
+
 ---
 
 ## Step 3 — Trigger your first production build
