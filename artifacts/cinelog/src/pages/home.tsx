@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Plus, Bookmark, X, RefreshCw, ThumbsUp } from 'lucide-react';
+import { Plus, Bookmark, X, RefreshCw } from 'lucide-react';
 import {
   useListEntries,
   useCreateEntry,
@@ -126,19 +126,14 @@ export default function Home() {
   const yearGroups = groupByYear(completed ?? []);
   const { results: recs, loading: recsLoading, refetch: refetchRecs } = useRecommendations();
 
-  // Like / skip feedback ─────────────────────────────────────────────────────
+  // Skip feedback ─────────────────────────────────────────────────────────────
   const [skippedIds, setSkippedIds] = useState<Set<number>>(new Set());
-  const [likedIds,   setLikedIds]   = useState<Set<number>>(new Set());
 
-  const sendFeedback = (tmdbId: number, signal: 'like' | 'skip') => {
-    // Optimistic UI: hide skipped cards immediately, mark liked ones
-    if (signal === 'skip') {
-      setSkippedIds(prev => new Set([...prev, tmdbId]));
-      // If the skip-target is the open sheet, close it
-      if (addingRec?.tmdbId === tmdbId) { setAddingRec(null); setPickingYear(false); }
-    } else {
-      setLikedIds(prev => new Set([...prev, tmdbId]));
-    }
+  const sendFeedback = (tmdbId: number, signal: 'skip') => {
+    // Optimistic UI: hide skipped cards immediately
+    setSkippedIds(prev => new Set([...prev, tmdbId]));
+    // If the skip-target is the open sheet, close it
+    if (addingRec?.tmdbId === tmdbId) { setAddingRec(null); setPickingYear(false); }
     // Persist to server (fire-and-forget — non-critical)
     fetch('/api/recommendations/feedback', {
       method: 'POST',
@@ -338,7 +333,6 @@ export default function Home() {
         {!recsLoading && recs.length > 0 && (
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
             {recs.filter(r => !skippedIds.has(r.tmdbId)).map((rec) => {
-              const isLiked = likedIds.has(rec.tmdbId);
               return (
                 <div key={rec.tmdbId} className="flex-shrink-0 w-28">
                   {/* Poster — tappable to open the add sheet */}
@@ -355,23 +349,8 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* Like / Skip overlay — bottom corners */}
-                    <div className="absolute bottom-1.5 left-1.5 right-1.5 flex justify-between pointer-events-none">
-                      {/* Like button — bottom-left */}
-                      <button
-                        className="pointer-events-auto w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90"
-                        style={{
-                          background: isLiked ? '#116149' : 'rgba(0,0,0,0.55)',
-                          backdropFilter: 'blur(4px)',
-                        }}
-                        onClick={(e) => { e.stopPropagation(); sendFeedback(rec.tmdbId, 'like'); }}
-                        aria-label="Like this recommendation"
-                        title="Like"
-                      >
-                        <ThumbsUp className="w-3.5 h-3.5 text-white" />
-                      </button>
-
-                      {/* Skip button — bottom-right */}
+                    {/* Skip overlay — bottom-right */}
+                    <div className="absolute bottom-1.5 right-1.5 pointer-events-none">
                       <button
                         className="pointer-events-auto w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90"
                         style={{
