@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 const TMDB_BASE = "https://api.themoviedb.org/3";
@@ -50,7 +51,7 @@ function mapItem(item: Record<string, unknown>, mediaType: "movie" | "tv"): Tmdb
 }
 
 // GET /tmdb/search?q=...
-router.get("/tmdb/search", async (req, res) => {
+router.get("/tmdb/search", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured. Add it as a Replit Secret." });
@@ -87,7 +88,7 @@ router.get("/tmdb/search", async (req, res) => {
 });
 
 // GET /tmdb/trending
-router.get("/tmdb/trending", async (req, res) => {
+router.get("/tmdb/trending", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured. Add it as a Replit Secret." });
@@ -118,7 +119,7 @@ router.get("/tmdb/trending", async (req, res) => {
 });
 
 // GET /tmdb/popular
-router.get("/tmdb/popular", async (req, res) => {
+router.get("/tmdb/popular", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured. Add it as a Replit Secret." });
@@ -151,7 +152,7 @@ router.get("/tmdb/popular", async (req, res) => {
 });
 
 // GET /tmdb/top-rated — hand-curated all-time iconic titles for onboarding picker
-router.get("/tmdb/top-rated", async (req, res) => {
+router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured." });
@@ -220,7 +221,7 @@ router.get("/tmdb/top-rated", async (req, res) => {
 });
 
 // GET /tmdb/show/:id — season count for TV shows
-router.get("/tmdb/show/:id", async (req, res) => {
+router.get("/tmdb/show/:id", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured" });
@@ -302,7 +303,7 @@ function mapCredits(credits: {
 }
 
 // GET /tmdb/movie/:id — movie details with cast and director
-router.get("/tmdb/movie/:id", async (req, res) => {
+router.get("/tmdb/movie/:id", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured" });
@@ -356,7 +357,7 @@ router.get("/tmdb/movie/:id", async (req, res) => {
 });
 
 // GET /tmdb/tv/:id — TV show details with cast and creator
-router.get("/tmdb/tv/:id", async (req, res) => {
+router.get("/tmdb/tv/:id", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
     res.status(503).json({ error: "TMDB_API_KEY not configured" });
