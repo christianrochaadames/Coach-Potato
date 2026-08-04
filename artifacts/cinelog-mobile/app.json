@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.couchpotato.app",
       "buildNumber": "1",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSPrivacyAccessedAPITypes": [],
         "UIApplicationShortcutItems": [
           {
