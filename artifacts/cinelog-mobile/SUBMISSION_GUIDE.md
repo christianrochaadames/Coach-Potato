@@ -33,7 +33,7 @@ Enter your Expo username and password when prompted.
 3. Fill in:
    - Platform: **iOS**
    - Name: **CouchPotato**
-   - Bundle ID: **com.couchpotato.app** ← register this first at developer.apple.com → Identifiers
+   - Bundle ID: **com.couchpotato.ios** ← register this first at developer.apple.com → Identifiers
    - SKU: `couchpotato-ios` (any unique string)
 4. Save — Apple will assign an **App ID number** (you'll need it for `eas submit` later)
 
@@ -103,7 +103,7 @@ npx eas-cli@latest submit --platform ios --profile production
 
 | Platform | Identifier |
 |----------|-----------|
-| iOS | `com.couchpotato.app` |
-| Android | `com.couchpotato.app` |
+| iOS | `com.couchpotato.ios` |
+| Android | `com.couchpotato.ios` |
 
-Register `com.couchpotato.app` at [developer.apple.com/account/resources/identifiers](https://developer.apple.com/account/resources/identifiers) before running your first build.
+Register `com.couchpotato.ios` at [developer.apple.com/account/resources/identifiers](https://developer.apple.com/account/resources/identifiers) before running your first build.

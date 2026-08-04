@@ -10,7 +10,7 @@ Everything below is ready to copy-paste into App Store Connect.
 |---|---|
 | **App Name** | CouchPotato |
 | **Subtitle** | Movie & TV Show Tracker |
-| **Bundle ID** | com.couchpotato.app |
+| **Bundle ID** | com.couchpotato.ios |
 | **SKU** | couchpotato-ios |
 | **Primary Language** | English (U.S.) |
 | **Primary Category** | Entertainment |

@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.couchpotato.app",
+      "bundleIdentifier": "com.couchpotato.ios",
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -19,13 +19,13 @@
           {
             "UIApplicationShortcutItemTitle": "Log Entry",
             "UIApplicationShortcutItemSubtitle": "Log a movie or show",
-            "UIApplicationShortcutItemType": "com.couchpotato.app.logentry",
+            "UIApplicationShortcutItemType": "com.couchpotato.ios.logentry",
             "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeAdd"
           },
           {
             "UIApplicationShortcutItemTitle": "My Watchlist",
             "UIApplicationShortcutItemSubtitle": "View your watchlist",
-            "UIApplicationShortcutItemType": "com.couchpotato.app.watchlist",
+            "UIApplicationShortcutItemType": "com.couchpotato.ios.watchlist",
             "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeBookmark"
           }
         ]
@@ -36,7 +36,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#116149"
       },
-      "package": "com.couchpotato.app",
+      "package": "com.couchpotato.ios",
       "versionCode": 1
     },
     "web": {

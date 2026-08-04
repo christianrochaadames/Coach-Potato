@@ -8,7 +8,7 @@
  *
  * Requires EXPO_PUBLIC_FACEBOOK_APP_ID to be set.
  * The corresponding Facebook App must have the "Friends List" permission
- * approved and the bundle ID com.couchpotato.app registered.
+ * approved and the bundle ID com.couchpotato.ios registered.
  */
 
 import { useCallback, useEffect, useState } from 'react';
