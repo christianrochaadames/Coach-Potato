@@ -54,7 +54,7 @@ export default function Stats() {
     count: m.count,
   })) ?? [];
 
-  // Build genre breakdown from all entries' tags
+  // Build genre breakdown from entries filtered to selectedYear
   const genreData = useMemo(() => {
     if (!allEntries) return [];
     const counts = new Map<string, number>();
@@ -74,7 +74,7 @@ export default function Stats() {
 
   const maxGenreCount = genreData[0]?.count ?? 1;
 
-  // Build platform breakdown from all entries' platform field
+  // Build platform breakdown from entries filtered to selectedYear
   const platformData = useMemo(() => {
     if (!allEntries) return [];
     const counts = new Map<string, number>();
@@ -262,9 +262,9 @@ export default function Stats() {
               className="rounded-2xl p-5"
               style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
             >
-              <p className="font-bold mb-1" style={{ color: '#111111' }}>Genre Breakdown</p>
+              <p className="font-bold mb-1" style={{ color: '#111111' }}>Genre Breakdown · {selectedYear}</p>
               <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
-                Tap a genre to highlight · {selectedYear}
+                Tap a genre to highlight · based on titles watched in {selectedYear}
               </p>
               <div className="space-y-2.5">
                 {genreData.map(({ genre, count, pct }, idx) => {
