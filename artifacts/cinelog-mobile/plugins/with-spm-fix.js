@@ -1,4 +1,10 @@
-const { withDangerousMod } = require('@expo/config-plugins');
+// Resolve config-plugins from expo's own deps to avoid pnpm hoisting issues
+let withDangerousMod;
+try {
+  ({ withDangerousMod } = require('@expo/config-plugins'));
+} catch {
+  ({ withDangerousMod } = require('expo/config-plugins'));
+}
 const path = require('path');
 const fs = require('fs');
 
