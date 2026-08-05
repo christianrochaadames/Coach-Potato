@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,9 +6,13 @@ import {
   ScrollView,
   Platform,
   TouchableOpacity,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { useGetStats, useListYears, useListEntries } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 
@@ -22,6 +26,256 @@ const PLATFORM_COLORS = [
 ];
 const MONTH_LABELS = ['J','F','M','A','M','J','J','A','S','O','N','D'];
 
+// ── Stats Share Card ──────────────────────────────────────────────────────────
+// Fixed-size card captured by react-native-view-shot and shared as an image.
+
+const CARD_W = 320;
+const CARD_H = 480;
+
+interface StatsShareCardProps {
+  year: number | null;
+  totalWatched: number;
+  totalMovies: number;
+  totalShows: number;
+  avgRating: number | null;
+  topGenre: string | null;
+  topPlatform: string | null;
+}
+
+function StatsShareCard({
+  year,
+  totalWatched,
+  totalMovies,
+  totalShows,
+  avgRating,
+  topGenre,
+  topPlatform,
+}: StatsShareCardProps) {
+  const heading = year ? `${year} in Review` : 'All-Time Stats';
+
+  return (
+    <View style={cardStyles.root}>
+      {/* Decorative background orbs */}
+      <View style={cardStyles.orb1} />
+      <View style={cardStyles.orb2} />
+      <View style={cardStyles.orb3} />
+
+      {/* Branding */}
+      <View style={cardStyles.topRow}>
+        <Text style={cardStyles.logo}>🥔</Text>
+        <Text style={cardStyles.appName}>CouchPotato</Text>
+      </View>
+
+      {/* Heading */}
+      <Text style={cardStyles.heading}>{heading}</Text>
+
+      {/* Main stat — total watched */}
+      <View style={cardStyles.mainStatBox}>
+        <Text style={cardStyles.mainStatNum}>{totalWatched}</Text>
+        <Text style={cardStyles.mainStatLabel}>
+          {year ? `titles watched in ${year}` : 'titles tracked'}
+        </Text>
+      </View>
+
+      {/* Movies vs Shows row */}
+      <View style={cardStyles.mvRow}>
+        <View style={cardStyles.mvBox}>
+          <Text style={cardStyles.mvEmoji}>🎬</Text>
+          <Text style={cardStyles.mvNum}>{totalMovies}</Text>
+          <Text style={cardStyles.mvLabel}>Movies</Text>
+        </View>
+        <View style={cardStyles.mvDivider} />
+        <View style={cardStyles.mvBox}>
+          <Text style={cardStyles.mvEmoji}>📺</Text>
+          <Text style={cardStyles.mvNum}>{totalShows}</Text>
+          <Text style={cardStyles.mvLabel}>Shows</Text>
+        </View>
+        <View style={cardStyles.mvDivider} />
+        <View style={cardStyles.mvBox}>
+          <Text style={cardStyles.mvEmoji}>⭐</Text>
+          <Text style={cardStyles.mvNum}>{avgRating != null ? avgRating.toFixed(1) : '—'}</Text>
+          <Text style={cardStyles.mvLabel}>Avg Rating</Text>
+        </View>
+      </View>
+
+      {/* Badges row */}
+      <View style={cardStyles.badgesRow}>
+        {topGenre ? (
+          <View style={cardStyles.badge}>
+            <Text style={cardStyles.badgeTitle}>TOP GENRE</Text>
+            <Text style={cardStyles.badgeValue}>{topGenre}</Text>
+          </View>
+        ) : null}
+        {topPlatform ? (
+          <View style={[cardStyles.badge, { backgroundColor: 'rgba(155,214,255,0.18)' }]}>
+            <Text style={cardStyles.badgeTitle}>TOP PLATFORM</Text>
+            <Text style={cardStyles.badgeValue}>{topPlatform}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* Mascot / decorative potato */}
+      <Text style={cardStyles.bigPotato}>🥔</Text>
+
+      {/* Footer */}
+      <Text style={cardStyles.footer}>couch potato · track what you watch</Text>
+    </View>
+  );
+}
+
+const cardStyles = StyleSheet.create({
+  root: {
+    width: CARD_W,
+    height: CARD_H,
+    backgroundColor: '#116149',
+    borderRadius: 24,
+    padding: 28,
+    overflow: 'hidden',
+    justifyContent: 'flex-start',
+    gap: 0,
+  },
+  // Background orbs
+  orb1: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(255,243,232,0.07)',
+    top: -80,
+    right: -60,
+  },
+  orb2: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(155,214,255,0.1)',
+    bottom: 60,
+    left: -40,
+  },
+  orb3: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,211,77,0.1)',
+    top: 160,
+    right: 20,
+  },
+  // Branding
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 18,
+  },
+  logo: { fontSize: 20 },
+  appName: {
+    fontSize: 13,
+    fontFamily: 'Manrope_700Bold',
+    color: 'rgba(255,243,232,0.8)',
+    letterSpacing: 0.5,
+  },
+  // Heading
+  heading: {
+    fontSize: 28,
+    fontFamily: 'Manrope_700Bold',
+    color: '#FFF3E8',
+    letterSpacing: -0.5,
+    lineHeight: 34,
+    marginBottom: 20,
+  },
+  // Main stat
+  mainStatBox: {
+    marginBottom: 20,
+  },
+  mainStatNum: {
+    fontSize: 64,
+    fontFamily: 'Manrope_700Bold',
+    color: '#FFD34D',
+    letterSpacing: -3,
+    lineHeight: 68,
+  },
+  mainStatLabel: {
+    fontSize: 13,
+    fontFamily: 'Manrope_500Medium',
+    color: 'rgba(255,243,232,0.7)',
+    marginTop: 2,
+  },
+  // Movies / shows / rating row
+  mvRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,243,232,0.08)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    marginBottom: 16,
+  },
+  mvBox: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+  },
+  mvDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: 'rgba(255,243,232,0.15)',
+  },
+  mvEmoji: { fontSize: 18 },
+  mvNum: {
+    fontSize: 20,
+    fontFamily: 'Manrope_700Bold',
+    color: '#FFF3E8',
+    letterSpacing: -0.5,
+  },
+  mvLabel: {
+    fontSize: 10,
+    fontFamily: 'Manrope_500Medium',
+    color: 'rgba(255,243,232,0.6)',
+  },
+  // Badges
+  badgesRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 'auto' as any,
+  },
+  badge: {
+    flex: 1,
+    backgroundColor: 'rgba(255,211,77,0.15)',
+    borderRadius: 10,
+    padding: 10,
+    gap: 3,
+  },
+  badgeTitle: {
+    fontSize: 9,
+    fontFamily: 'Manrope_700Bold',
+    color: '#FFD34D',
+    letterSpacing: 1,
+  },
+  badgeValue: {
+    fontSize: 13,
+    fontFamily: 'Manrope_600SemiBold',
+    color: '#FFF3E8',
+  },
+  // Big potato mascot
+  bigPotato: {
+    fontSize: 52,
+    textAlign: 'right',
+    marginTop: 'auto' as any,
+    marginBottom: 4,
+  },
+  // Footer
+  footer: {
+    fontSize: 10,
+    fontFamily: 'Manrope_400Regular',
+    color: 'rgba(255,243,232,0.45)',
+    letterSpacing: 0.3,
+  },
+});
+
+// ── Main Screen ────────────────────────────────────────────────────────────────
+
 export default function StatsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -30,6 +284,10 @@ export default function StatsScreen() {
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number | null>(currentYear);
+  const [sharing, setSharing] = useState(false);
+
+  // ref for the off-screen share card
+  const cardRef = useRef<View>(null);
 
   // ── Year list ─────────────────────────────────────────────────────────────
   const { data: yearSummaries } = useListYears();
@@ -120,11 +378,71 @@ export default function StatsScreen() {
 
   const isEmpty = totalWatched === 0 && genreData.length === 0;
 
+  // ── Top genre / platform for card ─────────────────────────────────────────
+  const topGenre = genreData[0]?.genre ?? null;
+  const topPlatform = platformData[0]?.platform === 'Other' && platformData.length > 1
+    ? platformData[1]?.platform ?? null
+    : platformData[0]?.platform ?? null;
+
+  // ── Share handler ─────────────────────────────────────────────────────────
+  async function handleShareStats() {
+    if (!cardRef.current || isEmpty) return;
+    setSharing(true);
+    try {
+      const uri = await captureRef(cardRef, {
+        format: 'jpg',
+        quality: 0.92,
+        result: 'tmpfile',
+      });
+      await Sharing.shareAsync(uri, {
+        mimeType: 'image/jpeg',
+        UTI: 'public.jpeg',
+        dialogTitle: 'Share your CouchPotato stats',
+      });
+    } catch {
+      Alert.alert('Error', 'Could not generate your stats card. Please try again.');
+    } finally {
+      setSharing(false);
+    }
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
+
+      {/* ── Off-screen share card (captured by react-native-view-shot) ── */}
+      <View
+        ref={cardRef}
+        collapsable={false}
+        style={styles.offScreen}
+      >
+        <StatsShareCard
+          year={selectedYear}
+          totalWatched={totalWatched}
+          totalMovies={totalMovies}
+          totalShows={totalShows}
+          avgRating={avgRating}
+          topGenre={topGenre}
+          topPlatform={topPlatform}
+        />
+      </View>
+
+      {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Stats</Text>
+        {!isEmpty && (
+          <TouchableOpacity
+            onPress={handleShareStats}
+            disabled={sharing}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.shareBtn}
+          >
+            {sharing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Feather name="share-2" size={20} color={colors.foreground} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Year filter pills */}
@@ -357,8 +675,29 @@ export default function StatsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 20, paddingBottom: 8 },
+
+  // Off-screen card container (captured by react-native-view-shot)
+  offScreen: {
+    position: 'absolute',
+    top: -9999,
+    left: -9999,
+  },
+
+  // Header
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: { fontSize: 26, fontFamily: 'Manrope_700Bold', letterSpacing: -0.5 },
+  shareBtn: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   // Year pills
   yearPillsRow: { flexGrow: 0 },
