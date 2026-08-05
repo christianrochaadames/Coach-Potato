@@ -518,13 +518,16 @@ export default function EntryDetail() {
 
         {/* ── Ratings: TMDB + Your Stars ── */}
         <div className="rounded-2xl p-4 mb-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
-          {/* TMDB community score — always shown once loaded */}
+          {/* Audience score from TMDB */}
           <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #EFE4D2' }}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#7E7A73' }}>TMDB Rating</p>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#7E7A73' }}>Audience Rating</p>
             <p className="text-xl font-bold" style={{ color: tmdbDetail?.voteAverage ? '#111111' : '#B0A99E' }}>
               {tmdbDetail?.voteAverage != null
                 ? `${tmdbDetail.voteAverage.toFixed(1)} / 10`
                 : (tmdbDetailLoading ? '—' : 'N/A')}
+            </p>
+            <p className="text-[10px] font-light mt-0.5" style={{ color: '#B0A99E' }}>
+              Source: The Movie Database (TMDB)
             </p>
           </div>
           {/* Your rating */}
