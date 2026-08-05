@@ -164,7 +164,7 @@ export default function EntryDetail() {
     if (!entry || entry.type !== 'show' || !entry.tmdbId) { setSeasonCount(null); return; }
     fetch(`/api/tmdb/show/${entry.tmdbId}`)
       .then(r => r.ok ? r.json() : {})
-      .then(d => setSeasonCount(d.numberOfSeasons ?? null))
+      .then((d: { numberOfSeasons?: number }) => setSeasonCount(d.numberOfSeasons ?? null))
       .catch(() => {});
   }, [entry?.tmdbId, entry?.type]);
 
