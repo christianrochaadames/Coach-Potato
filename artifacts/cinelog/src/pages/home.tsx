@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Plus, Bookmark, X, RefreshCw } from 'lucide-react';
+import { Plus, Bookmark, X, RefreshCw, Play } from 'lucide-react';
 import {
   useListEntries,
   useCreateEntry,
@@ -148,7 +148,7 @@ export default function Home() {
       },
       {
         onSuccess: () => {
-          const label = status === 'completed' ? '✓ Logged!' : status === 'watching' ? '▶ Now watching' : '🔖 Added to watchlist';
+          const label = status === 'completed' ? 'Logged!' : status === 'watching' ? 'Now Watching' : 'Added to Watchlist';
           toast({ title: label, description: rec.title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
@@ -251,7 +251,7 @@ export default function Home() {
         <div className="mx-5 mb-6 rounded-2xl px-4 py-3 flex items-center gap-3"
           style={{ background: '#EFE4D2', border: '1px solid #E2D9CE' }}
         >
-          <span className="text-xl">▶️</span>
+          <Play className="w-5 h-5 flex-shrink-0" style={{ color: '#7E7A73' }} />
           <div className="flex-1">
             <p className="text-sm font-bold" style={{ color: '#111111' }}>Nothing on right now</p>
             <p className="text-xs" style={{ color: '#7E7A73' }}>Mark a title as "Watching" from My Shows</p>
@@ -491,7 +491,7 @@ export default function Home() {
                     className="py-3.5 rounded-full font-bold text-sm text-white disabled:opacity-50"
                     style={{ background: '#116149' }}
                   >
-                    ✓ Confirm
+                    Confirm
                   </button>
                 </div>
               </div>
@@ -503,7 +503,7 @@ export default function Home() {
                   className="w-full py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
                   style={{ background: '#116149' }}
                 >
-                  ▶ Currently Watching
+                  Currently Watching
                 </button>
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -512,7 +512,7 @@ export default function Home() {
                     className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
                     style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
                   >
-                    🔖 Watchlist
+                    Watchlist
                   </button>
                   <button
                     onClick={() => setPickingYear(true)}
@@ -520,30 +520,11 @@ export default function Home() {
                     className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
                     style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
                   >
-                    ✓ Mark Watched
+                    Watched
                   </button>
                 </div>
               </div>
             )}
-            <button
-              onClick={() => {
-                const p = new URLSearchParams({
-                  tmdbId: String(addingRec.tmdbId),
-                  title: addingRec.title,
-                  type: addingRec.type,
-                  year: String(addingRec.year ?? ''),
-                  poster: addingRec.posterUrl ?? '',
-                  overview: addingRec.overview ?? '',
-                });
-                setAddingRec(null);
-                setPickingYear(false);
-                setLocation(`/add?${p.toString()}`);
-              }}
-              className="w-full text-center text-sm font-semibold"
-              style={{ color: '#7E7A73' }}
-            >
-              Log with full details →
-            </button>
           </div>
         </div>
       )}

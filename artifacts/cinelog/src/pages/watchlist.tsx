@@ -28,7 +28,7 @@ export default function Watchlist() {
       { id, data: { status: 'watching' } as any },
       {
         onSuccess: () => {
-          toast({ title: '▶ Started watching', description: title });
+          toast({ title: 'Now Watching', description: title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
         },
       }
@@ -41,7 +41,7 @@ export default function Watchlist() {
       { id, data: { status: 'completed', dateWatched: today } as any },
       {
         onSuccess: () => {
-          toast({ title: '✓ Marked as watched', description: title });
+          toast({ title: 'Marked as Watched', description: title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
         },

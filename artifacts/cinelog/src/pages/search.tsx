@@ -66,6 +66,7 @@ export default function SearchPage() {
   const [, setLocation] = useLocation();
   const [addingItem, setAddingItem] = useState<TmdbItem | null>(null);
   const [quickAddYear, setQuickAddYear] = useState(new Date().getFullYear());
+  const [watchedStep, setWatchedStep] = useState(false); // true = show year picker after clicking Watched
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Streaming providers for the selected TV show
@@ -74,8 +75,23 @@ export default function SearchPage() {
     if (!addingItem || addingItem.type !== 'show') { setStreamingProviders([]); return; }
     fetch(`/api/tmdb/tv/${addingItem.tmdbId}/providers?region=US`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => setStreamingProviders(d?.streaming ?? []))
+      .then(d => {
+        const raw: { providerId: number; providerName: string; logoUrl: string }[] = d?.streaming ?? [];
+        // Dedup by name
+        const deduped = [...new Map(raw.map(p => [p.providerName, p])).values()];
+        setStreamingProviders(deduped);
+      })
       .catch(() => setStreamingProviders([]));
+  }, [addingItem?.tmdbId]);
+
+  // RT score for the selected item
+  const [sheetOmdb, setSheetOmdb] = useState<{ rtScore: string | null } | null>(null);
+  useEffect(() => {
+    if (!addingItem) { setSheetOmdb(null); return; }
+    fetch(`/api/omdb/ratings?title=${encodeURIComponent(addingItem.title)}${addingItem.year ? `&year=${addingItem.year}` : ''}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setSheetOmdb({ rtScore: d.rtScore ?? null }))
+      .catch(() => {});
   }, [addingItem?.tmdbId]);
 
   // Auto-focus when arriving from the FAB
@@ -107,6 +123,8 @@ export default function SearchPage() {
 
   const noKey = searchNoKey || popularNoKey;
 
+  const closeSheet = () => { setAddingItem(null); setWatchedStep(false); setSheetOmdb(null); };
+
   const markWatching = (item: TmdbItem) => {
     createEntry.mutate(
       {
@@ -122,9 +140,9 @@ export default function SearchPage() {
       },
       {
         onSuccess: () => {
-          toast({ title: '▶ Now Watching', description: item.title });
+          toast({ title: 'Now Watching', description: item.title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
-          setAddingItem(null);
+          closeSheet();
         },
         onError: () => toast({ title: 'Error', description: 'Could not mark as watching', variant: 'destructive' }),
       }
@@ -146,9 +164,9 @@ export default function SearchPage() {
       },
       {
         onSuccess: () => {
-          toast({ title: '🔖 Added to Watchlist', description: item.title });
+          toast({ title: 'Added to Watchlist', description: item.title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
-          setAddingItem(null);
+          closeSheet();
         },
         onError: () => toast({ title: 'Error', description: 'Could not add to watchlist', variant: 'destructive' }),
       }
@@ -171,10 +189,10 @@ export default function SearchPage() {
       },
       {
         onSuccess: () => {
-          toast({ title: '✓ Logged!', description: `${item.title} added to collection` });
+          toast({ title: 'Logged!', description: `${item.title} added to collection` });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
-          setAddingItem(null);
+          closeSheet();
         },
         onError: () => toast({ title: 'Error', description: 'Could not log entry', variant: 'destructive' }),
       }
@@ -271,7 +289,7 @@ export default function SearchPage() {
           className="mx-5 mb-4 p-4 rounded-2xl"
           style={{ background: '#FFD34D20', border: '1px solid #FFD34D' }}
         >
-          <p className="text-sm font-bold" style={{ color: '#111111' }}>⚠️ TMDB API Key Missing</p>
+          <p className="text-sm font-bold" style={{ color: '#111111' }}>TMDB API Key Missing</p>
           <p className="text-xs mt-1" style={{ color: '#7E7A73' }}>
             Add TMDB_API_KEY as a Replit Secret to enable search. Get a free key at themoviedb.org.
           </p>
@@ -310,7 +328,7 @@ export default function SearchPage() {
         <div
           className="fixed inset-0 z-[60] flex items-end"
           style={{ background: 'rgba(0,0,0,0.4)' }}
-          onClick={() => setAddingItem(null)}
+          onClick={closeSheet}
         >
           <div
             className="w-full rounded-t-3xl p-6 space-y-5"
@@ -326,27 +344,30 @@ export default function SearchPage() {
                   className="w-20 h-28 object-cover rounded-2xl flex-shrink-0"
                 />
               )}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="font-bold text-lg leading-snug" style={{ color: '#111111' }}>
                   {addingItem.title}
                 </p>
                 <p className="text-sm mt-0.5" style={{ color: '#7E7A73' }}>
                   {addingItem.year ?? '—'} · {addingItem.type === 'movie' ? 'Movie' : 'TV Show'}
                 </p>
-                {addingItem.overview && (
-                  <p className="text-xs mt-2 line-clamp-3" style={{ color: '#7E7A73' }}>
-                    {addingItem.overview}
-                  </p>
+                {/* RT score */}
+                {sheetOmdb?.rtScore && (
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="text-base leading-none">🍅</span>
+                    <span className="text-sm font-bold" style={{ color: '#111111' }}>{sheetOmdb.rtScore}</span>
+                    <span className="text-xs" style={{ color: '#7E7A73' }}>Rotten Tomatoes</span>
+                  </div>
                 )}
               </div>
             </div>
+
             {/* Duplicate warning */}
             {inCollection.has(addingItem.tmdbId) && (
               <div
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl"
                 style={{ background: '#FFFBEB', border: '1.5px solid #FFD34D' }}
               >
-                <span className="text-lg flex-shrink-0">⚠️</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold" style={{ color: '#111111' }}>Already in your collection</p>
                   <button
@@ -354,7 +375,7 @@ export default function SearchPage() {
                     style={{ color: '#116149' }}
                     onClick={() => {
                       const match = getCollectionEntry(addingItem.tmdbId);
-                      if (match) { setAddingItem(null); setLocation(`/entry/${match.id}`); }
+                      if (match) { closeSheet(); setLocation(`/entry/${match.id}`); }
                     }}
                   >
                     View it in your collection →
@@ -362,27 +383,14 @@ export default function SearchPage() {
                 </div>
               </div>
             )}
-            {/* Year picker */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-bold flex-shrink-0" style={{ color: '#7E7A73' }}>Year watched:</span>
-              <select
-                value={quickAddYear}
-                onChange={e => setQuickAddYear(Number(e.target.value))}
-                className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold focus:outline-none"
-                style={{ border: '1.5px solid #E2D9CE', background: '#FFF3E8', color: '#111111' }}
-              >
-                {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
+
             {/* Where to watch — TV shows only, auto-fetched */}
             {addingItem.type === 'show' && streamingProviders.length > 0 && (
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Where to Watch</p>
                 <div className="flex flex-wrap gap-2 items-center">
                   {streamingProviders.map(p => (
-                    <div key={p.providerId} className="flex items-center gap-1.5">
+                    <div key={p.providerName} className="flex items-center gap-1.5">
                       <img src={p.logoUrl} alt={p.providerName} className="w-7 h-7 rounded-lg" />
                       <span className="text-xs font-semibold" style={{ color: '#111111' }}>{p.providerName}</span>
                     </div>
@@ -390,44 +398,72 @@ export default function SearchPage() {
                 </div>
               </div>
             )}
-            {/* Actions */}
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => markWatching(addingItem)}
-                disabled={createEntry.isPending}
-                className="w-full py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
-                style={{ background: '#116149' }}
-              >
-                ▶ Currently Watching
-              </button>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => addToWatchlist(addingItem)}
-                  disabled={createEntry.isPending}
-                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
-                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
-                >
-                  🔖 Watchlist
-                </button>
-                <button
-                  onClick={() => markWatched(addingItem)}
-                  disabled={createEntry.isPending}
-                  className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
-                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
-                >
-                  ✓ Mark Watched
-                </button>
+
+            {/* Year picker — only shown after tapping Watched */}
+            {watchedStep ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold flex-shrink-0" style={{ color: '#7E7A73' }}>Year watched:</span>
+                  <select
+                    value={quickAddYear}
+                    onChange={e => setQuickAddYear(Number(e.target.value))}
+                    className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold focus:outline-none"
+                    style={{ border: '1.5px solid #E2D9CE', background: '#FFF3E8', color: '#111111' }}
+                  >
+                    {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setWatchedStep(false)}
+                    className="flex-1 py-3.5 rounded-full font-bold text-sm"
+                    style={{ border: '2px solid #E2D9CE', color: '#7E7A73', background: 'transparent' }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => markWatched(addingItem)}
+                    disabled={createEntry.isPending}
+                    className="flex-1 py-3.5 rounded-full font-bold text-sm text-white disabled:opacity-50"
+                    style={{ background: '#116149' }}
+                  >
+                    {createEntry.isPending ? 'Saving…' : 'Confirm'}
+                  </button>
+                </div>
               </div>
-            </div>
-            <button
-              onClick={() => setLocation(
-                `/add?tmdbId=${addingItem.tmdbId}&title=${encodeURIComponent(addingItem.title)}&type=${addingItem.type}&year=${addingItem.year ?? ''}&poster=${encodeURIComponent(addingItem.posterUrl ?? '')}&overview=${encodeURIComponent(addingItem.overview ?? '')}&genres=${encodeURIComponent((addingItem.genres ?? []).join(','))}`
-              )}
-              className="w-full text-center text-sm font-semibold"
-              style={{ color: '#7E7A73' }}
-            >
-              Log with full details →
-            </button>
+            ) : (
+              /* Actions */
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => markWatching(addingItem)}
+                  disabled={createEntry.isPending}
+                  className="w-full py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-50"
+                  style={{ background: '#116149' }}
+                >
+                  Currently Watching
+                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => addToWatchlist(addingItem)}
+                    disabled={createEntry.isPending}
+                    className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                    style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                  >
+                    Watchlist
+                  </button>
+                  <button
+                    onClick={() => setWatchedStep(true)}
+                    disabled={createEntry.isPending}
+                    className="py-3.5 rounded-full font-bold text-sm transition-opacity disabled:opacity-50"
+                    style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                  >
+                    Watched
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

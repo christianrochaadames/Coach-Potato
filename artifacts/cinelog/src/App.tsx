@@ -15,7 +15,6 @@ import Watchlist from "@/pages/watchlist";
 import Stats from "@/pages/stats";
 import Profile from "@/pages/profile";
 import EntryDetail from "@/pages/entry-detail";
-import AddEntry from "@/pages/add-entry";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
 import SignInPage from "@/pages/sign-in";
@@ -302,7 +301,6 @@ function Router() {
           <Route path="/stats" component={() => <ProtectedRoute component={Stats} />} />
           <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
           <Route path="/entry/:id" component={() => <ProtectedRoute component={EntryDetail} />} />
-          <Route path="/add" component={() => <ProtectedRoute component={AddEntry} />} />
           <Route path="/privacy" component={Privacy} />
           <Route component={NotFound} />
         </Switch>

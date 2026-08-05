@@ -116,7 +116,6 @@ export default function EntryDetail() {
   // ── Editable state ──────────────────────────────────────────────────────────
   const [rating, setRating] = useState<number | null>(null);
   const [dateWatched, setDateWatched] = useState('');      // stored YYYY-MM-01
-  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // ── Season / episode state ──────────────────────────────────────────────────
@@ -479,34 +478,43 @@ export default function EntryDetail() {
                   {entry.type === 'movie' ? <Film className="w-5 h-5" style={{ color: '#7E7A73' }} /> : <Tv className="w-5 h-5" style={{ color: '#7E7A73' }} />}
                 </div>
               )}
-            {omdbData?.rtScore && (
-              <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-lg text-[10px] font-bold leading-tight" style={{ background: 'rgba(0,0,0,0.78)', color: '#ffffff' }}>
-                <div>🍅 {omdbData.rtScore}</div>
-                <div style={{ opacity: 0.75, fontSize: 8 }}>Rotten Tomatoes</div>
-              </div>
-            )}
           </div>
 
           <div className="flex-1 min-w-0 pt-1 flex flex-col gap-2">
             <div className="flex flex-wrap gap-1.5">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                 style={entry.type === 'movie' ? { background: '#9BD6FF', color: '#116149' } : { background: '#FF4BAE', color: '#ffffff' }}>
-                {entry.type === 'movie' ? '🎬 Movie' : '📺 Show'}
+                {entry.type === 'movie' ? 'Movie' : 'TV Show'}
               </span>
               {omdbData?.imdbRating && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#F5C518', color: '#000000' }}>
-                  ⭐ {omdbData.imdbRating}
+                  IMDb {omdbData.imdbRating}
                 </span>
               )}
             </div>
             <h1 className="text-xl font-bold leading-snug" style={{ color: '#111111' }} data-testid="text-entry-title">{entry.title}</h1>
             {entry.year && <p className="text-xs" style={{ color: '#7E7A73' }}>{entry.year}</p>}
-            <StarRating
-              rating={rating}
-              onRatingChange={r => { setRating(r); autosave({ rating: r }, 'Rating saved'); }}
-              size="md"
-            />
           </div>
+        </div>
+
+        {/* ── Ratings: RT + Your Stars ── */}
+        <div className="rounded-2xl p-4 mb-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
+          {/* RT always shown */}
+          <div className="flex items-center gap-3 pb-3 mb-3" style={{ borderBottom: '1px solid #EFE4D2' }}>
+            <span className="text-2xl leading-none">🍅</span>
+            <div>
+              <p className="text-xl font-bold leading-none" style={{ color: omdbData?.rtScore ? '#111111' : '#B0A99E' }}>
+                {omdbData?.rtScore ?? (omdbData ? 'N/A' : '—')}
+              </p>
+              <p className="text-[10px] font-semibold mt-0.5" style={{ color: '#7E7A73' }}>Rotten Tomatoes</p>
+            </div>
+          </div>
+          <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Your Rating</p>
+          <StarRating
+            rating={rating}
+            onRatingChange={r => { setRating(r); autosave({ rating: r }, 'Rating saved'); }}
+            size="md"
+          />
         </div>
 
         {/* ── Status chips — no emojis ── */}
@@ -516,7 +524,7 @@ export default function EntryDetail() {
             {([
               { key: 'completed', label: 'Watched', activeBg: '#116149', activeColor: '#ffffff' },
               { key: 'watching', label: 'Watching', activeBg: '#9BD6FF', activeColor: '#116149' },
-              { key: 'plan_to_watch', label: 'Wishlist', activeBg: '#BDECC8', activeColor: '#116149' },
+              { key: 'plan_to_watch', label: 'Watchlist', activeBg: '#BDECC8', activeColor: '#116149' },
             ] as const).map(({ key, label, activeBg, activeColor }) => (
               <button
                 key={key}
@@ -718,8 +726,8 @@ export default function EntryDetail() {
               <>
                 {watchProviders.streaming.length > 0 ? (
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {watchProviders.streaming.map(p => (
-                      <div key={p.providerId} title={p.providerName}>
+                    {[...new Map(watchProviders.streaming.map(p => [p.providerName, p])).values()].map(p => (
+                      <div key={p.providerName} title={p.providerName}>
                         <img src={p.logoUrl} alt={p.providerName} className="w-10 h-10 rounded-xl object-cover" style={{ border: '1px solid #E2D9CE' }}
                           onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
                       </div>
@@ -729,10 +737,8 @@ export default function EntryDetail() {
                   <>
                     <p className="text-xs mb-2" style={{ color: '#7E7A73' }}>Not on streaming — available to rent/buy</p>
                     <div className="flex flex-wrap gap-2">
-                      {[...watchProviders.rent, ...watchProviders.buy]
-                        .filter((p, i, arr) => arr.findIndex(x => x.providerId === p.providerId) === i)
-                        .map(p => (
-                          <div key={p.providerId} title={p.providerName}>
+                      {[...new Map([...watchProviders.rent, ...watchProviders.buy].map(p => [p.providerName, p])).values()].map(p => (
+                          <div key={p.providerName} title={p.providerName}>
                             <img src={p.logoUrl} alt={p.providerName} className="w-10 h-10 rounded-xl object-cover"
                               style={{ border: '1px solid #E2D9CE', opacity: 0.7 }}
                               onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
