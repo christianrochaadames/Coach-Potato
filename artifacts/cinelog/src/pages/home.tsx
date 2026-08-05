@@ -423,7 +423,7 @@ export default function Home() {
           setLocation('/search');
         }}
         className="fixed bottom-20 right-5 w-14 h-14 rounded-full flex items-center justify-center shadow-lg z-40 active:scale-95 transition-transform"
-        style={{ background: '#FF4BAE' }}
+        style={{ background: '#4A78FF' }}
         aria-label="Log new entry"
       >
         <Plus className="w-7 h-7 text-white" />
