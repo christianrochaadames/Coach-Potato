@@ -70,10 +70,15 @@ export default function SearchPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const prev = document.body.style.background;
+    const prevBody = document.body.style.background;
+    const main = document.querySelector('main') as HTMLElement | null;
+    const prevMain = main?.style.background ?? '';
     document.body.style.background = '#FFD34D';
-    return () => { document.body.style.background = prev; };
-    return () => { document.body.style.background = prev; };
+    if (main) main.style.background = '#FFD34D';
+    return () => {
+      document.body.style.background = prevBody;
+      if (main) main.style.background = prevMain;
+    };
   }, []);
 
   // Streaming providers for the selected TV show
