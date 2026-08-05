@@ -198,37 +198,37 @@ export default function Home() {
 
       {/* ── Hero stats card ── */}
       <div
-        className="mx-5 mb-5 rounded-3xl p-5 text-white"
-        style={{ background: '#116149' }}
+        className="mx-5 mb-5 rounded-3xl p-5"
+        style={{ background: '#4A1020' }}
       >
-        <p className="text-xl font-bold" style={{ marginBottom: 2 }}>
+        <p className="text-xl font-bold" style={{ marginBottom: 2, color: '#FFD6E7' }}>
           {greeting}{firstName ? `, ${firstName}` : ''}
         </p>
-        <p className="text-sm opacity-70 mb-4">Welcome back to your personal TV &amp; movie library.</p>
+        <p className="text-sm mb-4" style={{ color: '#FFD6E7', opacity: 0.7 }}>Welcome back to your personal TV &amp; movie library.</p>
         <div className="flex gap-4">
           <div
             className="flex-1 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
-            style={{ background: 'rgba(255,255,255,0.12)' }}
+            style={{ background: '#FFD6E7' }}
             onClick={() => document.getElementById('section-watched')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            <p className="text-2xl font-bold">{watchedCount}</p>
-            <p className="text-xs opacity-70 mt-0.5">Watched</p>
+            <p className="text-2xl font-bold" style={{ color: '#4A1020' }}>{watchedCount}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#4A1020', opacity: 0.7 }}>Watched</p>
           </div>
           <div
             className="flex-1 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
-            style={{ background: 'rgba(255,255,255,0.12)' }}
+            style={{ background: '#FFD6E7' }}
             onClick={() => document.getElementById('section-watching')?.scrollIntoView({ behavior: 'smooth' })}
           >
-            <p className="text-2xl font-bold">{watchingCount}</p>
-            <p className="text-xs opacity-70 mt-0.5">Watching</p>
+            <p className="text-2xl font-bold" style={{ color: '#4A1020' }}>{watchingCount}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#4A1020', opacity: 0.7 }}>Watching</p>
           </div>
           <div
             className="flex-1 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
-            style={{ background: 'rgba(255,255,255,0.12)' }}
+            style={{ background: '#FFD6E7' }}
             onClick={() => setLocation('/watchlist')}
           >
-            <p className="text-2xl font-bold">{queueCount}</p>
-            <p className="text-xs opacity-70 mt-0.5">Watchlist</p>
+            <p className="text-2xl font-bold" style={{ color: '#4A1020' }}>{queueCount}</p>
+            <p className="text-xs mt-0.5" style={{ color: '#4A1020', opacity: 0.7 }}>Watchlist</p>
           </div>
         </div>
       </div>
