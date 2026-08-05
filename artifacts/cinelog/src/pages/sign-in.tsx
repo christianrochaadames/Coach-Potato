@@ -90,6 +90,13 @@ export default function SignInPage() {
               '&:hover': { backgroundColor: '#4A3FC0' },
               '&:focus': { backgroundColor: '#4A3FC0' },
             },
+            socialButtonsBlockButton: {
+              border: 'none',
+              boxShadow: 'none',
+            },
+            socialButtonsBlockButtonText: {
+              border: 'none',
+            },
           },
         }}
       />
