@@ -71,7 +71,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     const prev = document.body.style.background;
-    document.body.style.background = '#EFE4D2'; // shows below rounded corners
+    document.body.style.background = '#FFD34D';
     return () => { document.body.style.background = prev; };
   }, []);
 
@@ -271,7 +271,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div style={{ background: '#C5B8FF', borderRadius: '0 0 28px 28px', marginBottom: 100 }}>
+    <div style={{ background: '#FFF3E8', borderRadius: '0 0 28px 28px', marginBottom: 100 }}>
       <div className="px-5 pt-8 pb-4">
         <h1 className="text-2xl font-bold mb-4" style={{ color: '#111111' }}>Search</h1>
         {/* Search bar */}
