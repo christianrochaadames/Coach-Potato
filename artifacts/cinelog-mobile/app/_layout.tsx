@@ -19,6 +19,7 @@ import { tokenCache } from '@clerk/expo/token-cache';
 import { useQuickActionCallback } from 'expo-quick-actions/hooks';
 import * as QuickActions from 'expo-quick-actions';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
+import { setRawFetchTokenGetter } from '@/utils/authFetch';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // ── Configure API base URL ──────────────────────────────────────────────────
@@ -57,7 +58,11 @@ function AuthTokenSync() {
   const { getToken } = useAuth();
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
-    return () => setAuthTokenGetter(null);
+    setRawFetchTokenGetter(() => getToken());
+    return () => {
+      setAuthTokenGetter(null);
+      setRawFetchTokenGetter(null);
+    };
   }, [getToken]);
   return null;
 }

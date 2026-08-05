@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import {
   getGetEntryQueryKey,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { authFetch } from '@/utils/authFetch';
 
 // ── TMDB detail types ─────────────────────────────────────────────────────────
 
@@ -63,7 +64,7 @@ function useTmdbDetail(tmdbId: number | null | undefined, type: string | undefin
     const url = `https://${domain}/api/tmdb/${mediaType}/${tmdbId}`;
 
     setLoading(true);
-    fetch(url)
+    authFetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: TmdbDetail | null) => {
         if (data) setDetail(data);
@@ -74,6 +75,127 @@ function useTmdbDetail(tmdbId: number | null | undefined, type: string | undefin
 
   return { detail, loading };
 }
+
+// ── useSeasonCount hook ───────────────────────────────────────────────────────
+
+function useSeasonCount(tmdbId: number | null | undefined, type: string | undefined) {
+  const [seasonCount, setSeasonCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!tmdbId || type !== 'show') { setSeasonCount(null); return; }
+    const domain = process.env.EXPO_PUBLIC_DOMAIN;
+    if (!domain) return;
+
+    authFetch(`https://${domain}/api/tmdb/show/${tmdbId}`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((d: { numberOfSeasons?: number }) => setSeasonCount(d.numberOfSeasons ?? null))
+      .catch(() => {});
+  }, [tmdbId, type]);
+
+  return seasonCount;
+}
+
+// ── Season types ──────────────────────────────────────────────────────────────
+
+interface Season {
+  number: number;
+  status: string;
+  dateWatched?: string | null;
+  rating?: number | null;
+}
+
+// ── SeasonRow component ───────────────────────────────────────────────────────
+
+interface SeasonRowProps {
+  num: number;
+  season: Season | undefined;
+  onToggle: (num: number) => void;
+  onRate: (num: number, rating: number | null) => void;
+  colors: ReturnType<typeof import('@/hooks/useColors').useColors>;
+  isPending: boolean;
+}
+
+function SeasonRow({ num, season, onToggle, onRate, colors, isPending }: SeasonRowProps) {
+  const isWatched = season?.status === 'watched';
+  const currentRating = season?.rating ?? 0;
+
+  return (
+    <View style={[seasonStyles.row, { borderColor: colors.border }]}>
+      {/* Season number + toggle */}
+      <TouchableOpacity
+        style={[
+          seasonStyles.toggleBtn,
+          { backgroundColor: isWatched ? colors.primary : colors.muted },
+        ]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          onToggle(num);
+        }}
+        disabled={isPending}
+        hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+      >
+        <Feather
+          name={isWatched ? 'check' : 'circle'}
+          size={16}
+          color={isWatched ? colors.primaryForeground : colors.mutedForeground}
+        />
+      </TouchableOpacity>
+
+      <Text style={[seasonStyles.label, { color: isWatched ? colors.foreground : colors.mutedForeground }]}>
+        Season {num}
+      </Text>
+
+      {/* Star rating — only visible when watched */}
+      {isWatched && (
+        <View style={seasonStyles.stars}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <TouchableOpacity
+              key={star}
+              onPress={() => {
+                Haptics.selectionAsync();
+                onRate(num, currentRating === star ? null : star);
+              }}
+              hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+              disabled={isPending}
+            >
+              <Feather
+                name="star"
+                size={18}
+                color={star <= currentRating ? colors.primary : colors.border}
+              />
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
+const seasonStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  toggleBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Manrope_500Medium',
+  },
+  stars: {
+    flexDirection: 'row',
+    gap: 3,
+  },
+});
 
 // ── Status chip config ────────────────────────────────────────────────────────
 
@@ -104,6 +226,7 @@ export default function EntryDetailScreen() {
     entry?.tmdbId,
     entry?.type
   );
+  const seasonCount = useSeasonCount(entry?.tmdbId, entry?.type);
 
   const [editing, setEditing] = useState(false);
   const [editStatus, setEditStatus] = useState<string>('');
@@ -112,6 +235,36 @@ export default function EntryDetailScreen() {
 
   const updateEntry = useUpdateEntry();
   const deleteEntry = useDeleteEntry();
+
+  // ── Season handlers ─────────────────────────────────────────────────────────
+
+  const getSeasonsArray = useCallback((): Season[] => {
+    return ((entry as any)?.seasons ?? []) as Season[];
+  }, [entry]);
+
+  function toggleSeason(num: number) {
+    if (!entry) return;
+    const seasons = getSeasonsArray();
+    const isWatched = seasons.some((s) => s.number === num && s.status === 'watched');
+    const today = new Date().toISOString().split('T')[0];
+    const updated = isWatched
+      ? seasons.filter((s) => s.number !== num)
+      : [...seasons.filter((s) => s.number !== num), { number: num, status: 'watched', dateWatched: today }];
+    updateEntry.mutate(
+      { id: Number(id), data: { seasons: updated } as any },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(Number(id)) }) }
+    );
+  }
+
+  function rateSeasonFn(num: number, rating: number | null) {
+    if (!entry) return;
+    const seasons = getSeasonsArray();
+    const updated = seasons.map((s) => s.number === num ? { ...s, rating } : s);
+    updateEntry.mutate(
+      { id: Number(id), data: { seasons: updated } as any },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(Number(id)) }) }
+    );
+  }
 
   // ── Start editing ───────────────────────────────────────────────────────────
 
@@ -503,7 +656,36 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* H) Delete button */}
+        {/* H) Season Tracker — shows only */}
+        {entry.type === 'show' && seasonCount != null && seasonCount > 0 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+              SEASONS
+            </Text>
+            <View style={[styles.seasonsContainer, { borderColor: colors.border }]}>
+              {Array.from({ length: seasonCount }, (_, i) => i + 1).map((num) => {
+                const seasons = getSeasonsArray();
+                const seasonData = seasons.find((s) => s.number === num);
+                return (
+                  <SeasonRow
+                    key={num}
+                    num={num}
+                    season={seasonData}
+                    onToggle={toggleSeason}
+                    onRate={rateSeasonFn}
+                    colors={colors}
+                    isPending={updateEntry.isPending}
+                  />
+                );
+              })}
+            </View>
+            <Text style={[styles.seasonsProgress, { color: colors.mutedForeground }]}>
+              {getSeasonsArray().filter((s) => s.status === 'watched').length} of {seasonCount} watched
+            </Text>
+          </View>
+        )}
+
+        {/* I) Delete button */}
         <TouchableOpacity
           style={[styles.deleteButton, { borderColor: '#e53e3e' }]}
           onPress={confirmDelete}
@@ -725,6 +907,16 @@ const styles = StyleSheet.create({
   directorName: {
     fontSize: 14,
     fontFamily: 'Manrope_500Medium',
+  },
+
+  // Seasons
+  seasonsContainer: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  seasonsProgress: {
+    fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
+    marginTop: 4,
   },
 
   // Delete
