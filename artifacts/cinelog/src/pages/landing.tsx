@@ -6,11 +6,11 @@ export default function Landing() {
   return (
     <div
       className="min-h-[100dvh] flex flex-col"
-      style={{ background: "#FFBC4D", overflow: "hidden" }}
+      style={{ background: "#D4CCFF", overflow: "hidden" }}
     >
       {/* ── Logo — transparent PNG. marginLeft nudges out the PNG's internal padding
            so the visible letter edge aligns exactly with the text below (px-6). ── */}
-      <div className="pt-10 px-4 flex justify-start">
+      <div className="pt-10 px-6 flex justify-start">
         <img
           src="/spud-logo.png"
           alt="Spud"
@@ -19,8 +19,6 @@ export default function Landing() {
             height: 115,
             width: "auto",
             objectFit: "contain",
-            mixBlendMode: "multiply",
-            marginLeft: -8,
           }}
         />
       </div>
@@ -82,9 +80,9 @@ export default function Landing() {
           onClick={() => setLocation("/sign-up")}
           className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
           style={{
-            border: "2px solid #C5B8FF",
-            color: "#6B46C1",
-            background: "#C5B8FF",
+            border: "2px solid #5B50D0",
+            color: "#ffffff",
+            background: "#5B50D0",
           }}
         >
           Get started free
@@ -93,8 +91,8 @@ export default function Landing() {
           onClick={() => setLocation("/sign-in")}
           className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
           style={{
-            border: "2px solid #6B46C1",
-            color: "#6B46C1",
+            border: "2px solid #5B50D0",
+            color: "#5B50D0",
             background: "transparent",
           }}
         >
