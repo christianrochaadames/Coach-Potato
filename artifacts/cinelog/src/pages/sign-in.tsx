@@ -6,18 +6,26 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export default function SignInPage() {
   const { signIn, isLoaded } = useSignIn();
 
+  // Read an optional ?returnTo=<path> set by the session-expiry handler so
+  // we can restore the user to the page they were on before their session expired.
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get("returnTo") ?? null;
+  // forceRedirectUrl makes Clerk always land on the saved path after sign-in.
+  // Only set it when returnTo is present — otherwise fall back to the default.
+  const forceRedirectUrl = returnTo ?? undefined;
+
   // Auto-trigger OAuth when the page is reached with ?sso=google or ?sso=apple.
   // This lets the sign-up page's Google/Apple buttons redirect here and have the
   // OAuth fire immediately — avoiding Clerk's sign-up SSO callback issue.
   useEffect(() => {
     if (!isLoaded || !signIn) return;
-    const params = new URLSearchParams(window.location.search);
     const sso = params.get("sso");
     if (sso === "google" || sso === "apple" || sso === "facebook") {
       signIn.authenticateWithRedirect({
         strategy: `oauth_${sso}` as "oauth_google" | "oauth_apple" | "oauth_facebook",
         redirectUrl: `${basePath}/sign-in/sso-callback`,
-        redirectUrlComplete: `${basePath}/`,
+        // Honour the saved return path for OAuth sign-ins too
+        redirectUrlComplete: returnTo ?? `${basePath}/`,
       });
     }
   }, [isLoaded, signIn]);
@@ -56,6 +64,7 @@ export default function SignInPage() {
         path={`${basePath}/sign-in`}
         signUpUrl={`${basePath}/sign-up`}
         fallbackRedirectUrl={`${basePath}/`}
+        forceRedirectUrl={forceRedirectUrl}
       />
     </div>
   );

@@ -225,56 +225,26 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
-// Handles two concerns in one component so both share the same Clerk listener:
-//
-// 1. 401 interception: listens for `auth:unauthorized` events fired by
-//    customFetch, saves the current path, shows a toast, signs the user
-//    out, and redirects to /sign-in.
-//
-// 2. Return-to redirect: when the Clerk listener detects the user going
-//    from signed-out → signed-in it checks sessionStorage for a saved path
-//    and navigates there immediately — before any page-level redirect can
-//    overwrite the destination.
+// Intercepts 401 events fired by customFetch.  On expiry it:
+//   1. Shows a "Session expired" toast.
+//   2. Signs the user out.
+//   3. Redirects to /sign-in?returnTo=<current-path> so the SignIn page
+//      can pass the saved destination as Clerk's forceRedirectUrl — letting
+//      Clerk's own redirect machinery handle the return, which is more
+//      reliable than any post-sign-in listener approach.
 function SessionExpiryHandler() {
-  const { signOut, addListener } = useClerk();
+  const { signOut } = useClerk();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const handlingRef = useRef(false);
-  const wasSignedOutRef = useRef(false);
 
-  // Watch for the user signing back in and restore the saved path
-  useEffect(() => {
-    const unsubscribe = addListener(({ user }) => {
-      const userId = user?.id ?? null;
-      if (wasSignedOutRef.current && userId) {
-        wasSignedOutRef.current = false;
-        const returnTo = sessionStorage.getItem("auth:returnTo");
-        if (returnTo) {
-          sessionStorage.removeItem("auth:returnTo");
-          const path = returnTo.startsWith(basePath)
-            ? returnTo.slice(basePath.length) || "/"
-            : returnTo;
-          if (path && path !== "/") setLocation(path);
-        }
-      } else if (!userId) {
-        wasSignedOutRef.current = true;
-      }
-    });
-    return unsubscribe;
-  }, [addListener, setLocation]);
-
-  // Intercept 401 responses from customFetch
   useEffect(() => {
     const handle = () => {
       if (handlingRef.current) return; // ignore duplicate 401 bursts
       handlingRef.current = true;
 
-      // Save where the user was so we can return them there after sign-in
       const returnPath = window.location.pathname + window.location.search;
       const signInPath = `${basePath}/sign-in`;
-      if (!returnPath.startsWith(signInPath)) {
-        sessionStorage.setItem("auth:returnTo", returnPath);
-      }
 
       toast({
         title: "Session expired",
@@ -283,7 +253,13 @@ function SessionExpiryHandler() {
       });
 
       signOut().then(() => {
-        setLocation("/sign-in");
+        // Include the saved path in the URL so the sign-in page can pass it
+        // to Clerk's forceRedirectUrl — survives the full OAuth/callback cycle.
+        if (!returnPath.startsWith(signInPath)) {
+          setLocation(`/sign-in?returnTo=${encodeURIComponent(returnPath)}`);
+        } else {
+          setLocation("/sign-in");
+        }
         handlingRef.current = false;
       });
     };
