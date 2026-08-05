@@ -134,7 +134,7 @@ export default function Watchlist() {
                       className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-50"
                       style={{ background: '#116149' }}
                     >
-                      ✓ Seen it
+                      ✓ Watched
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(entry.id)}

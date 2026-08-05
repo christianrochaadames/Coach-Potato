@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { Search as SearchIcon, X, Film, Tv } from 'lucide-react';
-import { PLATFORMS } from '@/lib/platforms';
 import {
   useCreateEntry,
   useListEntries,
@@ -67,8 +66,17 @@ export default function SearchPage() {
   const [, setLocation] = useLocation();
   const [addingItem, setAddingItem] = useState<TmdbItem | null>(null);
   const [quickAddYear, setQuickAddYear] = useState(new Date().getFullYear());
-  const [quickAddPlatform, setQuickAddPlatform] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Streaming providers for the selected TV show
+  const [streamingProviders, setStreamingProviders] = useState<{ providerId: number; providerName: string; logoUrl: string }[]>([]);
+  useEffect(() => {
+    if (!addingItem || addingItem.type !== 'show') { setStreamingProviders([]); return; }
+    fetch(`/api/tmdb/tv/${addingItem.tmdbId}/providers?region=US`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => setStreamingProviders(d?.streaming ?? []))
+      .catch(() => setStreamingProviders([]));
+  }, [addingItem?.tmdbId]);
 
   // Auto-focus when arriving from the FAB
   useEffect(() => {
@@ -99,11 +107,6 @@ export default function SearchPage() {
 
   const noKey = searchNoKey || popularNoKey;
 
-  // Reset platform selection whenever the sheet opens for a new item
-  useEffect(() => {
-    setQuickAddPlatform('');
-  }, [addingItem?.tmdbId]);
-
   const markWatching = (item: TmdbItem) => {
     createEntry.mutate(
       {
@@ -115,7 +118,6 @@ export default function SearchPage() {
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
           tags: item.genres ?? [],
-          platform: quickAddPlatform || undefined,
         } as any,
       },
       {
@@ -140,7 +142,6 @@ export default function SearchPage() {
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
           tags: item.genres ?? [],
-          platform: quickAddPlatform || undefined,
         } as any,
       },
       {
@@ -166,7 +167,6 @@ export default function SearchPage() {
           synopsis: item.overview ?? undefined,
           tmdbId: item.tmdbId,
           tags: item.genres ?? [],
-          platform: quickAddPlatform || undefined,
         } as any,
       },
       {
@@ -376,35 +376,20 @@ export default function SearchPage() {
                 ))}
               </select>
             </div>
-            {/* Platform picker */}
-            <div className="space-y-2">
-              <p className="text-sm font-bold" style={{ color: '#111111' }}>
-                Platform{' '}
-                <span style={{ color: '#7E7A73', fontWeight: 400 }}>
-                  {quickAddPlatform ? '' : '— pick one to keep your stats accurate'}
-                </span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {PLATFORMS.map(p => {
-                  const selected = quickAddPlatform === p;
-                  return (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setQuickAddPlatform(selected ? '' : p)}
-                      className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
-                      style={
-                        selected
-                          ? { background: '#4A78FF', color: '#ffffff' }
-                          : { background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }
-                      }
-                    >
-                      {p}
-                    </button>
-                  );
-                })}
+            {/* Where to watch — TV shows only, auto-fetched */}
+            {addingItem.type === 'show' && streamingProviders.length > 0 && (
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Where to Watch</p>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {streamingProviders.map(p => (
+                    <div key={p.providerId} className="flex items-center gap-1.5">
+                      <img src={p.logoUrl} alt={p.providerName} className="w-7 h-7 rounded-lg" />
+                      <span className="text-xs font-semibold" style={{ color: '#111111' }}>{p.providerName}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
             {/* Actions */}
             <div className="flex flex-col gap-3">
               <button
@@ -436,7 +421,7 @@ export default function SearchPage() {
             </div>
             <button
               onClick={() => setLocation(
-                `/add?tmdbId=${addingItem.tmdbId}&title=${encodeURIComponent(addingItem.title)}&type=${addingItem.type}&year=${addingItem.year ?? ''}&poster=${encodeURIComponent(addingItem.posterUrl ?? '')}&overview=${encodeURIComponent(addingItem.overview ?? '')}&genres=${encodeURIComponent((addingItem.genres ?? []).join(','))}&platform=${encodeURIComponent(quickAddPlatform)}`
+                `/add?tmdbId=${addingItem.tmdbId}&title=${encodeURIComponent(addingItem.title)}&type=${addingItem.type}&year=${addingItem.year ?? ''}&poster=${encodeURIComponent(addingItem.posterUrl ?? '')}&overview=${encodeURIComponent(addingItem.overview ?? '')}&genres=${encodeURIComponent((addingItem.genres ?? []).join(','))}`
               )}
               className="w-full text-center text-sm font-semibold"
               style={{ color: '#7E7A73' }}

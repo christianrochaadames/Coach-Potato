@@ -480,8 +480,9 @@ export default function EntryDetail() {
                 </div>
               )}
             {omdbData?.rtScore && (
-              <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-lg text-[10px] font-bold" style={{ background: 'rgba(0,0,0,0.75)', color: '#ffffff' }}>
-                🍅 {omdbData.rtScore}
+              <div className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded-lg text-[10px] font-bold leading-tight" style={{ background: 'rgba(0,0,0,0.78)', color: '#ffffff' }}>
+                <div>🍅 {omdbData.rtScore}</div>
+                <div style={{ opacity: 0.75, fontSize: 8 }}>Rotten Tomatoes</div>
               </div>
             )}
           </div>
@@ -513,7 +514,7 @@ export default function EntryDetail() {
           <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: '#7E7A73' }}>Status</p>
           <div className="flex gap-2">
             {([
-              { key: 'completed', label: 'Seen it', activeBg: '#116149', activeColor: '#ffffff' },
+              { key: 'completed', label: 'Watched', activeBg: '#116149', activeColor: '#ffffff' },
               { key: 'watching', label: 'Watching', activeBg: '#9BD6FF', activeColor: '#116149' },
               { key: 'plan_to_watch', label: 'Wishlist', activeBg: '#BDECC8', activeColor: '#116149' },
             ] as const).map(({ key, label, activeBg, activeColor }) => (
@@ -645,18 +646,11 @@ export default function EntryDetail() {
           </div>
         )}
 
-        {/* ── About ── */}
+        {/* ── About ── always visible ── */}
         {entry.synopsis && (
-          <div className="rounded-2xl mb-4 overflow-hidden" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
-            <button className="w-full px-4 py-3.5 flex items-center justify-between" onClick={() => setSynopsisExpanded(v => !v)} aria-expanded={synopsisExpanded}>
-              <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>About</p>
-              <ChevronRight className={`w-4 h-4 flex-shrink-0 transition-transform ${synopsisExpanded ? 'rotate-90' : ''}`} style={{ color: '#7E7A73' }} />
-            </button>
-            {synopsisExpanded && (
-              <div className="px-4 pb-4">
-                <p className="text-sm leading-relaxed" style={{ color: '#111111' }}>{entry.synopsis}</p>
-              </div>
-            )}
+          <div className="rounded-2xl mb-4 p-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>About</p>
+            <p className="text-sm leading-relaxed" style={{ color: '#111111' }}>{entry.synopsis}</p>
           </div>
         )}
 

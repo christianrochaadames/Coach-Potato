@@ -12,7 +12,6 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { StarRating } from '@/components/star-rating';
 import { useToast } from '@/hooks/use-toast';
-import { PLATFORMS } from '@/lib/platforms';
 
 // ---------- TMDB types & hook ----------
 
@@ -58,7 +57,6 @@ const formSchema = z.object({
   dateWatched: z.string().optional(),
   notes: z.string().optional(),
   tags: z.string().optional(),
-  platform: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -84,7 +82,6 @@ export default function AddEntry() {
   const prefillOverview = urlParams.get('overview') ?? '';
   const prefillTmdbId = urlParams.get('tmdbId') ? Number(urlParams.get('tmdbId')) : undefined;
   const prefillGenres = urlParams.get('genres') ?? '';
-  const prefillPlatform = urlParams.get('platform') ?? '';
 
   // Inline TMDB search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,7 +123,6 @@ export default function AddEntry() {
       dateWatched: new Date().toISOString().split('T')[0],
       notes: '',
       tags: prefillGenres, // auto-populated from TMDB genre_ids
-      platform: prefillPlatform,
     },
   });
 
@@ -172,7 +168,6 @@ export default function AddEntry() {
           notes: data.notes || overview || undefined,
           synopsis: overview || undefined,
           tmdbId: selectedTmdb?.tmdbId || prefillTmdbId,
-          platform: data.platform || undefined,
           tags,
         } as any,
       },
@@ -485,33 +480,6 @@ export default function AddEntry() {
             onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
             data-testid="input-notes"
           />
-        </div>
-
-        {/* Platform */}
-        <div className="space-y-2">
-          <label className="text-sm font-bold" style={{ color: '#111111' }}>
-            Platform <span style={{ color: '#7E7A73', fontWeight: 400 }}>(pick one to keep your stats accurate)</span>
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {PLATFORMS.map(p => {
-              const selected = form.watch('platform') === p;
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => form.setValue('platform', selected ? '' : p)}
-                  className="px-3 py-1.5 rounded-full text-xs font-bold transition-all"
-                  style={
-                    selected
-                      ? { background: '#4A78FF', color: '#ffffff' }
-                      : { background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }
-                  }
-                >
-                  {p}
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Tags */}
