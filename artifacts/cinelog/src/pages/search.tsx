@@ -274,7 +274,7 @@ export default function SearchPage() {
           <input
             ref={searchInputRef}
             type="search"
-            placeholder="Search movies & TV shows..."
+            placeholder="Search Movies & TV Shows..."
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full pl-10 pr-10 py-3.5 rounded-full font-semibold focus:outline-none"
@@ -326,7 +326,7 @@ export default function SearchPage() {
           <>
             <p className="text-xs font-bold uppercase tracking-wider pb-1" style={{ color: '#7E7A73' }}>Popular Movies</p>
             {popular.movies.map((item, i) => renderItem(item, i))}
-            <p className="text-xs font-bold uppercase tracking-wider pb-1 pt-3" style={{ color: '#7E7A73' }}>Popular Shows</p>
+            <p className="text-xs font-bold uppercase tracking-wider pb-1 pt-3" style={{ color: '#7E7A73' }}>Popular TV Shows</p>
             {popular.shows.map((item, i) => renderItem(item, i))}
           </>
         ) : !noKey && popularLoading ? (
