@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   Dimensions,
-  Image,
   FlatList,
   TouchableOpacity,
   NativeSyntheticEvent,
@@ -20,19 +19,25 @@ const { width: W } = Dimensions.get('window');
 const SLIDES = [
   {
     key: 'welcome',
-    image: require('../assets/spud-hero.png'),
+    emoji: '🥔',
+    bg: '#E8F5EF',
+    accent: '#116149',
     title: 'Your movie memory,\nall in one place',
     body: 'CouchPotato keeps track of every film and show you watch — so you never forget what you loved.',
   },
   {
     key: 'log',
-    image: require('../assets/spud-phone.png'),
+    emoji: '⭐',
+    bg: '#FFF3E8',
+    accent: '#E08020',
     title: 'Log movies, rate\nshows, track seasons',
     body: 'Quick-add a title in seconds, give it a star rating, and keep notes on every season.',
   },
   {
     key: 'recs',
-    image: require('../assets/spud-couch.png'),
+    emoji: '🛋️',
+    bg: '#E8F0FF',
+    accent: '#2255CC',
     title: 'Discover what to\nwatch next',
     body: 'Personalised picks based on your taste. Like, skip, or save titles straight to your watchlist.',
   },
@@ -106,11 +111,9 @@ export default function OnboardingScreen() {
         style={styles.flatList}
         renderItem={({ item }) => (
           <View style={styles.slideImg}>
-            <Image
-              source={item.image}
-              style={styles.img}
-              resizeMode="contain"
-            />
+            <View style={[styles.emojiCircle, { backgroundColor: item.bg }]}>
+              <Text style={styles.emojiLarge}>{item.emoji}</Text>
+            </View>
           </View>
         )}
       />
@@ -190,9 +193,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 40,
   },
-  img: {
-    width: '100%',
-    height: '100%',
+  emojiCircle: {
+    width: W * 0.55,
+    height: W * 0.55,
+    borderRadius: W * 0.275,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emojiLarge: {
+    fontSize: W * 0.22,
   },
   // Bottom panel fills remaining space
   bottom: {
