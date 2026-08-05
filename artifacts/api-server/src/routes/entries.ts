@@ -109,6 +109,28 @@ router.post("/entries", requireAuth, async (req, res) => {
 
   const year = dateWatched ? Number(dateWatched.split("-")[0]) : null;
 
+  // Auto-populate genre tags from TMDB when a tmdbId is provided but the
+  // caller sent no tags (e.g. manual quick-add or entries created via the API).
+  let resolvedTags = tags ?? [];
+  if (tmdbId && resolvedTags.length === 0 && process.env.TMDB_API_KEY) {
+    try {
+      const tmdbEndpoint = type === "movie"
+        ? `https://api.themoviedb.org/3/movie/${tmdbId}`
+        : `https://api.themoviedb.org/3/tv/${tmdbId}`;
+      const tmdbRes = await fetch(
+        `${tmdbEndpoint}?api_key=${process.env.TMDB_API_KEY}&language=en-US`
+      );
+      if (tmdbRes.ok) {
+        const tmdbData = (await tmdbRes.json()) as { genres?: { name: string }[] };
+        if (tmdbData.genres?.length) {
+          resolvedTags = tmdbData.genres.map((g) => g.name);
+        }
+      }
+    } catch {
+      // Non-fatal — entry is still saved, just without auto-filled genres
+    }
+  }
+
   try {
     const [row] = await db
       .insert(entriesTable)
@@ -124,7 +146,7 @@ router.post("/entries", requireAuth, async (req, res) => {
         notes: notes ?? null,
         synopsis: synopsis ?? null,
         tmdbId: tmdbId ?? null,
-        tags: tags ?? [],
+        tags: resolvedTags,
         platform: platform ?? null,
         seasons: seasons ?? [],
       } as any)
