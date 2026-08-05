@@ -206,20 +206,24 @@ export default function Home() {
         </p>
         <p className="text-sm opacity-70 mb-4">Welcome back to your personal TV &amp; movie library.</p>
         <div className="flex gap-4">
-          <div className="flex-1 rounded-2xl p-3" style={{ background: 'rgba(255,255,255,0.12)' }}>
+          <div
+            className="flex-1 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
+            style={{ background: 'rgba(255,255,255,0.12)' }}
+            onClick={() => document.getElementById('section-watched')?.scrollIntoView({ behavior: 'smooth' })}
+          >
             <p className="text-2xl font-bold">{watchedCount}</p>
             <p className="text-xs opacity-70 mt-0.5">Watched</p>
           </div>
           <div
-            className="flex-1 rounded-2xl p-3 cursor-pointer"
+            className="flex-1 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
             style={{ background: 'rgba(255,255,255,0.12)' }}
-            onClick={() => setLocation('/my-shows')}
+            onClick={() => document.getElementById('section-watching')?.scrollIntoView({ behavior: 'smooth' })}
           >
             <p className="text-2xl font-bold">{watchingCount}</p>
             <p className="text-xs opacity-70 mt-0.5">Watching</p>
           </div>
           <div
-            className="flex-1 rounded-2xl p-3 cursor-pointer"
+            className="flex-1 rounded-2xl p-3 cursor-pointer active:opacity-70 transition-opacity"
             style={{ background: 'rgba(255,255,255,0.12)' }}
             onClick={() => setLocation('/watchlist')}
           >
@@ -231,7 +235,7 @@ export default function Home() {
 
       {/* ── Currently Watching ── */}
       {watchingCount > 0 ? (
-        <section className="mb-6">
+        <section id="section-watching" className="mb-6">
           <div className="px-5 mb-3">
             <h2 className="text-base font-bold" style={{ color: '#111111' }}>Currently Watching</h2>
           </div>
@@ -350,7 +354,7 @@ export default function Home() {
       </section>
 
       {/* ── Watched — grouped by year ── */}
-      <section className="px-5 mb-10">
+      <section id="section-watched" className="px-5 mb-10">
         <div className="mb-4">
           <h2 className="text-base font-bold" style={{ color: '#111111' }}>Watched</h2>
         </div>

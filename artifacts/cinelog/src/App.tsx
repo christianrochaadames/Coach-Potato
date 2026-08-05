@@ -9,7 +9,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { BottomNav } from "@/components/bottom-nav";
 import Home from "@/pages/home";
-import MyShows from "@/pages/my-shows";
 import Search from "@/pages/search";
 import Watchlist from "@/pages/watchlist";
 import Stats from "@/pages/stats";
@@ -296,7 +295,6 @@ function Router() {
           <Route path="/sign-up/*?" component={SignUpPage} />
           <Route path="/welcome" component={() => <ProtectedRoute component={Welcome} />} />
           <Route path="/onboarding" component={() => <ProtectedRoute component={Onboarding} />} />
-          <Route path="/my-shows" component={() => <ProtectedRoute component={MyShows} />} />
           <Route path="/search" component={() => <ProtectedRoute component={Search} />} />
           <Route path="/watchlist" component={() => <ProtectedRoute component={Watchlist} />} />
           <Route path="/stats" component={() => <ProtectedRoute component={Stats} />} />
