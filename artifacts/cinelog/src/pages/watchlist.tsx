@@ -73,7 +73,6 @@ export default function Watchlist() {
     <div className="min-h-screen" style={{ background: '#C5B8FF', borderRadius: '0 0 28px 28px', marginBottom: 100 }}>
       <div className="px-5 pt-8 pb-4">
         <div className="flex items-center gap-2 mb-1">
-          <Bookmark className="w-5 h-5" style={{ color: '#4A1020' }} />
           <h1 className="text-2xl font-bold" style={{ color: '#4A1020' }}>Watchlist</h1>
         </div>
         <p className="text-sm font-medium" style={{ color: '#7E7A73' }}>
