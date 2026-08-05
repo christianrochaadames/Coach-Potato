@@ -224,18 +224,20 @@ export default function Stats() {
             </ResponsiveContainer>
           </div>
 
-          {/* Platform breakdown — always renders when entries exist for this year so
-              the user sees a helpful message instead of the section silently vanishing. */}
-          {allEntries !== undefined && allEntries.length > 0 && (
-            <div
-              className="rounded-2xl p-5"
-              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
-            >
-              <p className="font-bold mb-1" style={{ color: '#111111' }}>Platform Breakdown</p>
-              {platformData.length > 0 ? (() => {
-                const trackedRows = platformData.filter(d => !d.untracked);
-                const untrackedRow = platformData.find(d => d.untracked);
-                return (
+          {/* Platform breakdown — always renders when completed entries exist for this year.
+              Gated on trackedRows (real platform data) so the empty state is reachable
+              when all entries have no platform set (platformData only has the synthetic
+              "Not tracked" row, meaning trackedRows.length === 0). */}
+          {allEntries !== undefined && allEntries.length > 0 && (() => {
+            const trackedRows = platformData.filter(d => !d.untracked);
+            const untrackedRow = platformData.find(d => d.untracked);
+            return (
+              <div
+                className="rounded-2xl p-5"
+                style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+              >
+                <p className="font-bold mb-1" style={{ color: '#111111' }}>Platform Breakdown</p>
+                {trackedRows.length > 0 ? (
                   <>
                     <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
                       Tap a platform to highlight · {selectedYear}
@@ -283,9 +285,7 @@ export default function Stats() {
                       {/* Untracked row — visually separated, greyed out, non-interactive */}
                       {untrackedRow && (
                         <>
-                          {trackedRows.length > 0 && (
-                            <div className="border-t pt-2.5" style={{ borderColor: '#E2D9CE' }} />
-                          )}
+                          <div className="border-t pt-2.5" style={{ borderColor: '#E2D9CE' }} />
                           <div>
                             <div className="flex items-center justify-between mb-1">
                               <span className="text-xs font-bold" style={{ color: '#B0A99E' }}>
@@ -316,21 +316,22 @@ export default function Stats() {
                       )}
                     </div>
                   </>
-                );
-              })() : (
-                <div className="flex flex-col items-center py-6 gap-2 text-center">
-                  <p className="text-2xl">📺</p>
-                  <p className="text-sm font-semibold" style={{ color: '#111111' }}>
-                    No platform data for {selectedYear}
-                  </p>
-                  <p className="text-xs leading-relaxed" style={{ color: '#7E7A73' }}>
-                    None of your {selectedYear} entries have a streaming platform set.
-                    Open any entry and pick a platform to start tracking where you watch.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  /* Empty state: entries exist for this year but none have a platform set */
+                  <div className="flex flex-col items-center py-6 gap-2 text-center">
+                    <p className="text-2xl">📺</p>
+                    <p className="text-sm font-semibold" style={{ color: '#111111' }}>
+                      No platform data for {selectedYear}
+                    </p>
+                    <p className="text-xs leading-relaxed" style={{ color: '#7E7A73' }}>
+                      None of your {selectedYear} entries have a streaming platform set.
+                      Open any entry and pick a platform to start tracking where you watch.
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Genre breakdown — interactive horizontal bars (bottom of page).
               Always renders when there are completed entries for this year so the
