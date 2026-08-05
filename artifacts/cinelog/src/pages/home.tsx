@@ -424,7 +424,7 @@ export default function Home() {
         }}
         className="fixed bottom-24 right-5 w-14 h-14 z-40 active:scale-95 transition-transform flex items-center justify-center rounded-full border-0"
         aria-label="Log new entry"
-        style={{ background: '#E6F2FF', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
+        style={{ background: '#BDECC8', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
       >
         <Plus className="w-7 h-7" style={{ color: '#1A5FA8' }} />
       </button>
