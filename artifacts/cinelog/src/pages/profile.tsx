@@ -224,6 +224,48 @@ type ProfileData = {
   avatarUrl: string | null;
 };
 
+type FriendProfile = {
+  userId: string;
+  username: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  avatarId: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+};
+
+type FriendsResult = {
+  friends: FriendProfile[];
+  status: "ok" | "not_connected" | "no_friends" | "fb_error" | "error";
+};
+
+// Small avatar for a friend card (same precedence logic as main profile)
+function FriendAvatar({ friend }: { friend: FriendProfile }) {
+  const initials = (() => {
+    const f = friend.firstName?.[0] ?? "";
+    const l = friend.lastName?.[0] ?? "";
+    return ((f + l).toUpperCase()) || friend.username?.[0]?.toUpperCase() || "?";
+  })();
+  return (
+    <div
+      className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
+      style={{ background: "#EFE4D2" }}
+    >
+      {friend.avatarUrl ? (
+        <img src={friend.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+      ) : friend.avatarId ? (
+        <img
+          src={`/spud-avatar-${friend.avatarId}.png`}
+          alt="Spud avatar"
+          className="w-full h-full object-contain p-0.5"
+        />
+      ) : (
+        <span className="text-sm font-bold" style={{ color: "#116149" }}>{initials}</span>
+      )}
+    </div>
+  );
+}
+
 type EditField = "name" | "username" | "bio" | null;
 
 export default function Profile() {
@@ -253,6 +295,10 @@ export default function Profile() {
   const { data: watching }   = useListEntries({ status: "watching" } as any);
   const { data: watchlist }  = useListEntries({ status: "plan_to_watch" } as any);
 
+  // Friends discovery
+  const [friendsResult, setFriendsResult] = useState<FriendsResult | null>(null);
+  const [friendsLoading, setFriendsLoading] = useState(true);
+
   useEffect(() => {
     fetch("/api/profile")
       .then(r => r.json())
@@ -267,6 +313,16 @@ export default function Profile() {
       })
       .catch(() => {});
   }, []);
+
+  // Load friends once after sign-in (non-blocking)
+  useEffect(() => {
+    if (!isLoaded) return;
+    fetch("/api/profile/friends")
+      .then(r => r.json())
+      .then((data: FriendsResult) => setFriendsResult(data))
+      .catch(() => setFriendsResult({ friends: [], status: "error" }))
+      .finally(() => setFriendsLoading(false));
+  }, [isLoaded]);
 
   const startEdit = (field: EditField) => { setEditing(field); setFieldError(""); };
   const cancelEdit = () => {
@@ -639,6 +695,72 @@ export default function Profile() {
           <p className="text-sm leading-relaxed" style={{ color: profile?.bio ? "#111111" : "#7E7A73" }}>
             {profile?.bio ?? "Nothing here yet."}
           </p>
+        )}
+      </div>
+
+      {/* ── Friends on CouchPotato ── */}
+      <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7E7A73" }}>
+          Friends on CouchPotato
+        </p>
+
+        {friendsLoading ? (
+          /* Loading shimmer */
+          <div className="space-y-3">
+            {[0, 1].map(i => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "#EFE4D2" }} />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 rounded-full animate-pulse" style={{ background: "#EFE4D2", width: "55%" }} />
+                  <div className="h-2.5 rounded-full animate-pulse" style={{ background: "#EFE4D2", width: "35%" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : friendsResult?.status === "not_connected" ? (
+          /* Facebook not connected */
+          <div className="text-center py-3">
+            <p className="text-2xl mb-1">👥</p>
+            <p className="text-sm font-semibold" style={{ color: "#111111" }}>Connect Facebook to find friends</p>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
+              Sign in with Facebook to see which of your friends are already on CouchPotato.
+            </p>
+          </div>
+        ) : friendsResult?.friends && friendsResult.friends.length > 0 ? (
+          /* Friend list */
+          <div className="space-y-3">
+            {friendsResult.friends.map(friend => {
+              const name = [friend.firstName, friend.lastName].filter(Boolean).join(" ")
+                || friend.username
+                || "CouchPotato User";
+              return (
+                <div key={friend.userId} className="flex items-center gap-3">
+                  <FriendAvatar friend={friend} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate" style={{ color: "#111111" }}>{name}</p>
+                    {friend.username && (
+                      <p className="text-xs" style={{ color: "#7E7A73" }}>@{friend.username}</p>
+                    )}
+                  </div>
+                  <span
+                    className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                    style={{ background: "#BDECC8", color: "#116149" }}
+                  >
+                    🥔 Here
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* No friends found yet (or permission pending) */
+          <div className="text-center py-3">
+            <p className="text-2xl mb-1">🍿</p>
+            <p className="text-sm font-semibold" style={{ color: "#111111" }}>No friends here yet</p>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
+              None of your Facebook friends have joined CouchPotato yet — invite them!
+            </p>
+          </div>
         )}
       </div>
 
