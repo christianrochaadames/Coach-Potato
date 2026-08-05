@@ -15,7 +15,7 @@ import {
   ActionSheetIOS,
   Linking,
 } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import { Paths, downloadAsync as fsDownload } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams, router, Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
@@ -239,9 +239,17 @@ export default function EntryDetailScreen() {
   const [instagramAvailable, setInstagramAvailable] = useState(false);
 
   useEffect(() => {
-    Linking.canOpenURL('instagram://app')
-      .then(setInstagramAvailable)
-      .catch(() => setInstagramAvailable(false));
+    if (Platform.OS === 'ios') {
+      // iOS: LSApplicationQueriesSchemes in app.json lets us check reliably
+      Linking.canOpenURL('instagram://app')
+        .then(setInstagramAvailable)
+        .catch(() => setInstagramAvailable(false));
+    } else {
+      // Android: canOpenURL for custom schemes needs <queries> manifest entry
+      // which isn't added in managed workflow; shareAsync handles missing apps
+      // gracefully so just enable the option and let the share sheet decide.
+      setInstagramAvailable(true);
+    }
   }, []);
 
   const updateEntry = useUpdateEntry();
@@ -335,9 +343,9 @@ export default function EntryDetailScreen() {
   async function handleShareInstagram() {
     if (!entry?.posterUrl) return;
     try {
-      // Download poster to a local temp file
-      const tmpPath = `${FileSystem.cacheDirectory}poster-${entry.id}.jpg`;
-      const { status } = await FileSystem.downloadAsync(entry.posterUrl, tmpPath);
+      // Download poster to a local temp file (expo-file-system v19 new API)
+      const tmpPath = Paths.join(Paths.cache, `poster-${entry.id}.jpg`);
+      const { status } = await fsDownload(entry.posterUrl, tmpPath);
       if (status !== 200) throw new Error('Download failed');
 
       // Check whether the system can share files (should always be true on iOS/Android)
