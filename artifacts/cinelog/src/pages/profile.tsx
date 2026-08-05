@@ -306,6 +306,11 @@ export default function Profile() {
   const saveName     = () => {
     if (!firstNameVal.trim()) { setFieldError("First name is required"); return; }
     save({ firstName: firstNameVal.trim(), lastName: lastNameVal.trim() || null });
+    // Keep Clerk's user record in sync (best-effort — does not block our DB save)
+    user?.update({
+      firstName: firstNameVal.trim(),
+      lastName:  lastNameVal.trim() || "",
+    }).catch(() => {});
   };
   const saveUsername = () => {
     if (!usernameVal.trim()) { setFieldError("Username is required"); return; }
@@ -354,6 +359,14 @@ export default function Profile() {
   const handleCropConfirm = (dataUrl: string) => {
     setCropSrc(null);
     saveAvatar({ avatarId: null, avatarUrl: dataUrl });
+    // Also push the cropped image to Clerk's profile (best-effort)
+    fetch(dataUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
+        return user?.setProfileImage({ file });
+      })
+      .catch(() => {});
   };
 
   const watched       = (allEntries ?? []).filter((e: any) => e.status === "completed").length;
