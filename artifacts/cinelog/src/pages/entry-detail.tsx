@@ -526,7 +526,7 @@ export default function EntryDetail() {
                 ? `${tmdbDetail.voteAverage.toFixed(1)} / 10`
                 : (tmdbDetailLoading ? '—' : 'N/A')}
             </p>
-            <p className="text-[10px] font-light mt-0.5" style={{ color: '#B0A99E' }}>
+            <p className="text-[10px] font-bold mt-0.5" style={{ color: '#B0A99E' }}>
               Source: The Movie Database (TMDB)
             </p>
           </div>
