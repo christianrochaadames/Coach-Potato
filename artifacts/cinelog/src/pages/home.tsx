@@ -408,7 +408,7 @@ export default function Home() {
         >
           <Bookmark className="w-5 h-5 flex-shrink-0" style={{ color: '#6B46C1' }} />
           <div className="flex-1">
-            <p className="text-sm font-bold" style={{ color: '#4A1020' }}>
+            <p className="text-sm font-bold" style={{ color: '#6B46C1' }}>
               {queueCount} title{queueCount !== 1 ? 's' : ''} in your watchlist
             </p>
             <p className="text-xs" style={{ color: '#6B46C1', opacity: 0.7 }}>Tap to see what's up next →</p>
