@@ -64,7 +64,7 @@ export default function Watchlist() {
   };
 
   return (
-    <div className="min-h-full" style={{ background: '#FFF3E8' }}>
+    <div className="min-h-full" style={{ background: '#C5B8FF' }}>
       <div className="px-5 pt-8 pb-4">
         <div className="flex items-center gap-2 mb-1">
           <Bookmark className="w-5 h-5" style={{ color: '#116149' }} />

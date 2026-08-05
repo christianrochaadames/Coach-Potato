@@ -33,7 +33,7 @@ export default function SignInPage() {
   return (
     <div
       className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
-      style={{ background: "#FFF3E8" }}
+      style={{ background: "#C5B8FF" }}
     >
       {/* Branding: transparent logo left-aligned, Spud right */}
       <div
