@@ -88,8 +88,8 @@ export default function Welcome() {
           style={{
             position: "absolute",
             top: 44,
-            left: 14,
-            height: 80,
+            left: 6,
+            height: 92,
             width: "auto",
             objectFit: "contain",
             mixBlendMode: "multiply",

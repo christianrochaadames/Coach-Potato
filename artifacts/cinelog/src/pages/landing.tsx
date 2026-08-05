@@ -10,16 +10,17 @@ export default function Landing() {
     >
       {/* ── Logo — transparent PNG. marginLeft nudges out the PNG's internal padding
            so the visible letter edge aligns exactly with the text below (px-6). ── */}
-      <div className="pt-10 px-6 flex justify-start">
+      <div className="pt-10 px-4 flex justify-start">
         <img
           src="/spud-logo.png"
           alt="Spud"
           draggable={false}
           style={{
-            height: 100,
+            height: 115,
             width: "auto",
             objectFit: "contain",
             mixBlendMode: "multiply",
+            marginLeft: -8,
           }}
         />
       </div>

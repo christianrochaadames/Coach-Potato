@@ -88,15 +88,18 @@ type EpSheetState = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Strip ad-tier suffixes and dedup providers — prefer base service over "with ads" variant */
+/** Strip tier/ad suffixes and dedup providers — one entry per base platform */
 function dedupeProviders<T extends { providerName: string }>(providers: T[]): T[] {
   const normalize = (name: string) =>
-    name.replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '').trim();
+    name
+      .replace(/\s+(Premium|Essential|Basic|Standard)(?=\s|$)/gi, '')
+      .replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '')
+      .trim();
   const seen = new Map<string, T>();
   for (const p of providers) {
     const key = normalize(p.providerName).toLowerCase();
     const existing = seen.get(key);
-    // Prefer the shorter name (base service > "with ads" variant)
+    // Prefer the shorter (cleaner) name
     if (!existing || p.providerName.length < existing.providerName.length) {
       seen.set(key, p);
     }
@@ -499,7 +502,7 @@ export default function EntryDetail() {
           <div className="flex-1 min-w-0 pt-1 flex flex-col gap-2">
             <div className="flex flex-wrap gap-1.5">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                style={entry.type === 'movie' ? { background: '#9BD6FF', color: '#116149' } : { background: '#FF4BAE', color: '#ffffff' }}>
+                style={entry.type === 'movie' ? { background: '#EDE9FE', color: '#5B21B6' } : { background: '#FF4BAE', color: '#ffffff' }}>
                 {entry.type === 'movie' ? 'Movie' : 'TV Show'}
               </span>
               {omdbData?.imdbRating && (
@@ -513,13 +516,15 @@ export default function EntryDetail() {
           </div>
         </div>
 
-        {/* ── Ratings: RT + Your Stars ── */}
+        {/* ── Ratings: TMDB + Your Stars ── */}
         <div className="rounded-2xl p-4 mb-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
-          {/* RT — always shown */}
+          {/* TMDB community score — always shown once loaded */}
           <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #EFE4D2' }}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#7E7A73' }}>Rotten Tomatoes</p>
-            <p className="text-xl font-bold" style={{ color: omdbData?.rtScore ? '#111111' : '#B0A99E' }}>
-              {omdbData?.rtScore ?? (omdbData ? 'N/A' : '—')}
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#7E7A73' }}>TMDB Rating</p>
+            <p className="text-xl font-bold" style={{ color: tmdbDetail?.voteAverage ? '#111111' : '#B0A99E' }}>
+              {tmdbDetail?.voteAverage != null
+                ? `${tmdbDetail.voteAverage.toFixed(1)} / 10`
+                : (tmdbDetailLoading ? '—' : 'N/A')}
             </p>
           </div>
           {/* Your rating */}

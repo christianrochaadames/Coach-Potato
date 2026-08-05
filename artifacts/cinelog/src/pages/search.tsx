@@ -79,7 +79,10 @@ export default function SearchPage() {
         const raw: { providerId: number; providerName: string; logoUrl: string }[] = d?.streaming ?? [];
         // Dedup: strip ad-tier variants, prefer base service name
         const normalize = (name: string) =>
-          name.replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '').trim();
+          name
+            .replace(/\s+(Premium|Essential|Basic|Standard)(?=\s|$)/gi, '')
+            .replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '')
+            .trim();
         const seen = new Map<string, typeof raw[0]>();
         for (const p of raw) {
           const key = normalize(p.providerName).toLowerCase();
@@ -91,13 +94,16 @@ export default function SearchPage() {
       .catch(() => setStreamingProviders([]));
   }, [addingItem?.tmdbId]);
 
-  // RT score for the selected item
-  const [sheetOmdb, setSheetOmdb] = useState<{ rtScore: string | null } | null>(null);
+  // TMDB community score for the selected item
+  const [sheetTmdbScore, setSheetTmdbScore] = useState<number | null>(null);
   useEffect(() => {
-    if (!addingItem) { setSheetOmdb(null); return; }
-    fetch(`/api/omdb/ratings?title=${encodeURIComponent(addingItem.title)}${addingItem.year ? `&year=${addingItem.year}` : ''}`)
+    if (!addingItem) { setSheetTmdbScore(null); return; }
+    const endpoint = addingItem.type === 'movie'
+      ? `/api/tmdb/movie/${addingItem.tmdbId}`
+      : `/api/tmdb/tv/${addingItem.tmdbId}`;
+    fetch(endpoint)
       .then(r => r.ok ? r.json() : null)
-      .then(d => d && setSheetOmdb({ rtScore: d.rtScore ?? null }))
+      .then(d => setSheetTmdbScore(d?.voteAverage ?? null))
       .catch(() => {});
   }, [addingItem?.tmdbId]);
 
@@ -249,7 +255,7 @@ export default function SearchPage() {
             : { background: '#BDECC8', color: '#116149' }
         }
       >
-        {item.type === 'movie' ? 'Film' : 'Show'}
+        {item.type === 'movie' ? 'Movie' : 'TV Show'}
       </span>
     </div>
   );
@@ -358,11 +364,11 @@ export default function SearchPage() {
                 <p className="text-sm mt-0.5" style={{ color: '#7E7A73' }}>
                   {addingItem.year ?? '—'} · {addingItem.type === 'movie' ? 'Movie' : 'TV Show'}
                 </p>
-                {/* RT score */}
-                {sheetOmdb?.rtScore && (
+                {/* TMDB community score */}
+                {sheetTmdbScore != null && (
                   <div className="mt-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Rotten Tomatoes</p>
-                    <p className="text-sm font-bold" style={{ color: '#111111' }}>{sheetOmdb.rtScore}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>TMDB Rating</p>
+                    <p className="text-sm font-bold" style={{ color: '#111111' }}>{sheetTmdbScore.toFixed(1)} / 10</p>
                   </div>
                 )}
               </div>

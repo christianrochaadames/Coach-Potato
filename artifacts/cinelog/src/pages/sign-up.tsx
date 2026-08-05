@@ -38,10 +38,11 @@ export default function SignUpPage() {
           alt="Spud"
           draggable={false}
           style={{
-            height: 88,
+            height: 101,
             width: "auto",
             objectFit: "contain",
             mixBlendMode: "multiply",
+            marginLeft: -8,
           }}
         />
         <img

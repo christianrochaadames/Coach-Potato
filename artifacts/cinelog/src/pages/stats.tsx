@@ -1,29 +1,39 @@
 import { useState, useMemo } from 'react';
 import { useGetStats, useListYears, useListEntries } from '@workspace/api-client-react';
+import { useLocation } from 'wouter';
 import {
-  PieChart, Pie, Cell,
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis,
 } from 'recharts';
 import { SpudMascot } from '@/components/spud-mascot';
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
-// Genre bar palette — brand-rooted but balanced, no rainbow
 const GENRE_COLORS = [
   '#4A78FF', '#FF4BAE', '#FFD34D', '#FF8B4D', '#9BD6FF',
-  '#6B46C1', '#4A78FF', '#FF4BAE', '#FFD34D', '#FF8B4D',
-  '#9BD6FF', '#6B46C1',
+  '#6B46C1', '#116149', '#FF4BAE', '#FFD34D', '#FF8B4D',
+  '#4A78FF', '#6B46C1',
 ];
+
+function StarDisplay({ rating }: { rating: number }) {
+  return (
+    <span style={{ fontSize: 10, letterSpacing: 1 }}>
+      {[1, 2, 3, 4, 5].map(s => (
+        <span key={s} style={{ color: s <= rating ? '#FFD34D' : '#D6CECC' }}>★</span>
+      ))}
+    </span>
+  );
+}
 
 export default function Stats() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [activeGenre, setActiveGenre] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
 
   const { data: yearSummaries } = useListYears();
   const { data: stats, isLoading } = useGetStats({ year: selectedYear });
 
-  // Fetch completed entries for the selected year to build genre/platform charts
+  // All completed entries for the selected year (for genre chart + top rated)
   const { data: allEntries } = useListEntries({ status: 'completed', year: selectedYear } as any);
 
   const years = useMemo(() => {
@@ -47,7 +57,7 @@ export default function Stats() {
     count: m.count,
   })) ?? [];
 
-  // Build genre breakdown from entries filtered to selectedYear
+  // Genre data for pie chart
   const genreData = useMemo(() => {
     if (!allEntries) return [];
     const counts = new Map<string, number>();
@@ -58,17 +68,24 @@ export default function Stats() {
         if (tag) counts.set(tag, (counts.get(tag) ?? 0) + 1);
       }
     }
-    const total = allEntries.length || 1;
     return [...counts.entries()]
-      .map(([genre, count]) => ({ genre, count, pct: Math.round((count / total) * 100) }))
+      .map(([genre, count]) => ({ genre, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 12);
+      .slice(0, 10);
   }, [allEntries]);
 
-  const maxGenreCount = genreData[0]?.count ?? 1;
+  // Top rated: entries with a rating, sorted desc
+  const topRated = useMemo(() => {
+    if (!allEntries) return [];
+    return [...allEntries]
+      .filter(e => (e.rating ?? 0) > 0)
+      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+      .slice(0, 20);
+  }, [allEntries]);
 
   return (
     <div className="min-h-full pb-8" style={{ background: '#FFF3E8' }}>
+      {/* Header */}
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: '#111111' }}>Stats</h1>
         <select
@@ -89,7 +106,8 @@ export default function Stats() {
         </div>
       ) : stats ? (
         <div className="px-5 space-y-4">
-          {/* Summary cards — 2 cards only, movie/show detail lives in the donut */}
+
+          {/* Summary cards */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl p-5" style={{ background: '#FFD34D' }}>
               <p className="text-3xl font-bold" style={{ color: '#111111' }} data-testid="stat-total">{stats.total}</p>
@@ -103,7 +121,7 @@ export default function Stats() {
             </div>
           </div>
 
-          {/* Movies vs Shows — CSS conic-gradient donut */}
+          {/* Movies vs Shows donut */}
           {donutData.length > 0 && (() => {
             const total = donutData.reduce((s, x) => s + x.value, 0);
             let cumPct = 0;
@@ -115,18 +133,13 @@ export default function Stats() {
             });
             const gradient = `conic-gradient(from -90deg, ${stops.join(', ')})`;
             return (
-              <div
-                className="rounded-2xl p-5"
-                style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
-              >
+              <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
                 <p className="font-bold mb-4" style={{ color: '#111111' }}>Movies vs Shows</p>
                 <div className="flex items-center gap-6">
-                  {/* CSS donut — no library needed */}
                   <div
                     className="flex-shrink-0 rounded-full"
                     style={{
-                      width: 112,
-                      height: 112,
+                      width: 112, height: 112,
                       background: gradient,
                       WebkitMask: 'radial-gradient(circle, transparent 36px, black 37px)',
                       mask: 'radial-gradient(circle, transparent 36px, black 37px)',
@@ -151,10 +164,7 @@ export default function Stats() {
           })()}
 
           {/* Monthly bar chart */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
-          >
+          <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
             <p className="font-bold mb-4" style={{ color: '#111111' }}>Monthly Activity</p>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={barData} barSize={16} barCategoryGap="25%">
@@ -168,11 +178,9 @@ export default function Stats() {
                 <Tooltip
                   cursor={{ fill: '#EFE4D2' }}
                   contentStyle={{
-                    borderRadius: '10px',
-                    border: 'none',
+                    borderRadius: '10px', border: 'none',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    fontFamily: 'Manrope',
-                    fontWeight: 600,
+                    fontFamily: 'Manrope', fontWeight: 600,
                   }}
                 />
                 <Bar dataKey="count" fill="#6B46C1" radius={[6, 6, 0, 0]} />
@@ -180,76 +188,100 @@ export default function Stats() {
             </ResponsiveContainer>
           </div>
 
-
-          {/* Genre breakdown — interactive horizontal bars (bottom of page).
-              Always renders when there are completed entries for this year so the
-              user sees a helpful message instead of the section silently vanishing. */}
-          {allEntries !== undefined && allEntries.length > 0 && (
-            <div
-              className="rounded-2xl p-5"
-              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
-            >
-              <p className="font-bold mb-1" style={{ color: '#111111' }}>Genre Breakdown · {selectedYear}</p>
-              {genreData.length > 0 ? (
-                <>
-                  <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
-                    Tap a genre to highlight · based on titles watched in {selectedYear}
-                  </p>
-                  <div className="space-y-2.5">
-                    {genreData.map(({ genre, count, pct }, idx) => {
-                      const color = GENRE_COLORS[idx % GENRE_COLORS.length];
-                      const isActive = activeGenre === genre;
-                      const isDimmed = activeGenre !== null && !isActive;
-                      return (
-                        <button
-                          key={genre}
-                          type="button"
-                          onClick={() => setActiveGenre(isActive ? null : genre)}
-                          className="w-full text-left transition-opacity"
-                          style={{ opacity: isDimmed ? 0.35 : 1 }}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span
-                              className="text-xs font-bold"
-                              style={{ color: isActive ? color : '#111111' }}
-                            >
-                              {genre}
-                            </span>
-                            <span className="text-xs font-bold" style={{ color: '#7E7A73' }}>
-                              {count} · {pct}%
-                            </span>
-                          </div>
-                          <div
-                            className="h-2 rounded-full overflow-hidden"
-                            style={{ background: '#EFE4D2' }}
-                          >
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${(count / maxGenreCount) * 100}%`,
-                                background: color,
-                              }}
-                            />
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center py-6 gap-2 text-center">
-                  <p className="text-2xl">🎭</p>
-                  <p className="text-sm font-semibold" style={{ color: '#111111' }}>
-                    No genre data for {selectedYear}
-                  </p>
-                  <p className="text-xs leading-relaxed" style={{ color: '#7E7A73' }}>
-                    Entries logged this year don&apos;t have genres attached yet.
-                    Search and add titles via the Search tab — genres are filled in automatically from TMDB.
-                  </p>
+          {/* Genre Breakdown — pie chart */}
+          {genreData.length > 0 && (
+            <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
+              <p className="font-bold mb-4" style={{ color: '#111111' }}>Genre Breakdown</p>
+              <div className="flex gap-4 items-center">
+                {/* Pie */}
+                <div className="flex-shrink-0" style={{ width: 140, height: 140 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={genreData}
+                        dataKey="count"
+                        nameKey="genre"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={65}
+                        innerRadius={32}
+                        paddingAngle={2}
+                        strokeWidth={0}
+                      >
+                        {genreData.map((_, idx) => (
+                          <Cell key={idx} fill={GENRE_COLORS[idx % GENRE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number, name: string) => [value, name]}
+                        contentStyle={{
+                          borderRadius: '10px', border: 'none',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          fontFamily: 'Manrope', fontWeight: 600, fontSize: 12,
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
+                {/* Legend */}
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  {genreData.slice(0, 7).map(({ genre, count }, idx) => (
+                    <div key={genre} className="flex items-center gap-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ background: GENRE_COLORS[idx % GENRE_COLORS.length] }}
+                      />
+                      <span className="text-xs font-semibold truncate" style={{ color: '#111111' }}>{genre}</span>
+                      <span className="text-xs ml-auto flex-shrink-0" style={{ color: '#7E7A73' }}>{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
+
+          {/* Top Rated */}
+          {topRated.length > 0 && (
+            <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
+              <p className="font-bold mb-4" style={{ color: '#111111' }}>Top Rated</p>
+              <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+                {topRated.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex-shrink-0 w-24 cursor-pointer active:opacity-70 transition-opacity"
+                    onClick={() => setLocation(`/entry/${entry.id}`)}
+                  >
+                    <div
+                      className="aspect-[2/3] rounded-xl overflow-hidden mb-1.5"
+                      style={{ background: '#EFE4D2' }}
+                    >
+                      {entry.posterUrl ? (
+                        <img
+                          src={entry.posterUrl}
+                          alt={entry.title}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-xl font-bold" style={{ color: '#116149' }}>
+                            {entry.title[0]?.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-bold truncate leading-tight" style={{ color: '#111111' }}>
+                      {entry.title}
+                    </p>
+                    {entry.rating != null && entry.rating > 0 && (
+                      <StarDisplay rating={entry.rating} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       ) : (
         <div className="flex flex-col items-center py-16 gap-4 px-5">

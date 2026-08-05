@@ -132,14 +132,6 @@ export function PosterCard({ entry, onClick, compact = false, index = 0 }: Poste
                 ★
               </span>
             ))}
-            {displayRating > 0 && (
-              <span
-                className="text-[9px] ml-0.5"
-                style={{ color: '#7E7A73', lineHeight: 1 }}
-              >
-                {displayRating}/5
-              </span>
-            )}
           </div>
         </div>
       )}

@@ -78,8 +78,9 @@ const clerkAppearance = {
     rootBox: "w-full flex justify-center",
     cardBox: "bg-white rounded-2xl w-[440px] max-w-full overflow-hidden shadow-sm",
     card: "!shadow-none !border-0 !bg-white !rounded-none",
-    headerTitle: "font-bold",
-    headerSubtitle: "text-sm",
+    // Hide Clerk's built-in "Sign in to <App>" title — our custom pages provide their own Spud branding
+    headerTitle: { display: "none" } as React.CSSProperties,
+    headerSubtitle: { display: "none" } as React.CSSProperties,
     formFieldLabel: "font-medium text-sm",
     footerActionLink: "font-semibold",
     footerActionText: "text-sm",

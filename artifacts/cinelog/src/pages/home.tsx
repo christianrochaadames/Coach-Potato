@@ -340,7 +340,7 @@ export default function Home() {
                   </div>
                   <p className="text-xs font-semibold truncate" style={{ color: '#111111' }}>{rec.title}</p>
                   <p className="text-[10px]" style={{ color: '#7E7A73' }}>
-                    {rec.year} · {rec.type === 'movie' ? 'Film' : 'Show'}
+                    {rec.year} · {rec.type === 'movie' ? 'Movie' : 'TV Show'}
                   </p>
                 </div>
               );

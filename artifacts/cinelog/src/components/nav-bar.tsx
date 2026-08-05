@@ -7,7 +7,7 @@ export function NavBar() {
   const [location] = useLocation();
 
   const navItems = [
-    { href: '/', label: 'Your Films', icon: Film },
+    { href: '/', label: 'Home', icon: Film },
     { href: '/stats', label: 'Stats', icon: BarChart3 },
   ];
 
