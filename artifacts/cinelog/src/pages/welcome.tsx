@@ -9,7 +9,6 @@ export default function Welcome() {
   const [showForm, setShowForm]   = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName]   = useState("");
-  const [username, setUsername]   = useState("");
   const [errors, setErrors]       = useState<Record<string, string>>({});
   const [saving, setSaving]       = useState(false);
   const [apiError, setApiError]   = useState("");
@@ -17,13 +16,6 @@ export default function Welcome() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!firstName.trim()) e.firstName = "First name is required";
-    if (!username.trim()) {
-      e.username = "Username is required";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
-      e.username = "Only letters, numbers and underscores — no spaces";
-    } else if (username.trim().length < 2) {
-      e.username = "Must be at least 2 characters";
-    }
     return e;
   };
 
@@ -40,7 +32,6 @@ export default function Welcome() {
         body: JSON.stringify({
           firstName: firstName.trim(),
           lastName: lastName.trim() || null,
-          username: username.trim().toLowerCase(),
         }),
       });
       if (!res.ok) {
@@ -263,34 +254,6 @@ export default function Welcome() {
                   autoCapitalize="words"
                   autoCorrect="off"
                 />
-              </div>
-
-              {/* Username */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: GREEN }}>
-                  Username <span style={{ color: "#DC2626" }}>*</span>
-                </label>
-                <div className="relative">
-                  <span
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold"
-                    style={{ color: GREEN }}
-                  >
-                    @
-                  </span>
-                  <input
-                    value={username}
-                    onChange={e => { setUsername(e.target.value.replace(/\s/g, "")); setErrors(p => ({ ...p, username: "" })); }}
-                    placeholder="SpudThePotato"
-                    style={{ ...inputStyle(!!errors.username), paddingLeft: 32 }}
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                  />
-                </div>
-                {errors.username ? (
-                  <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>{errors.username}</p>
-                ) : (
-                  <p className="text-xs" style={{ color: "#7E7A73" }}>Letters, numbers and underscores only</p>
-                )}
               </div>
 
               {apiError && (

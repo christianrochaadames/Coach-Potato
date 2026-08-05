@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { ChevronLeft, LogOut, Edit2, Camera, ZoomIn, ZoomOut } from "lucide-react";
-import { useListEntries } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -266,7 +265,7 @@ function FriendAvatar({ friend }: { friend: FriendProfile }) {
   );
 }
 
-type EditField = "name" | "username" | "bio" | null;
+type EditField = "name" | "bio" | null;
 
 export default function Profile() {
   const [, setLocation] = useLocation();
@@ -280,7 +279,6 @@ export default function Profile() {
 
   const [firstNameVal, setFirstNameVal] = useState("");
   const [lastNameVal,  setLastNameVal]  = useState("");
-  const [usernameVal,  setUsernameVal]  = useState("");
   const [bioVal,       setBioVal]       = useState("");
   const [fieldError,   setFieldError]   = useState("");
   const [saving,       setSaving]       = useState(false);
@@ -291,17 +289,10 @@ export default function Profile() {
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [cropSrc,     setCropSrc]     = useState<string | null>(null);
 
-  const { data: allEntries } = useListEntries({} as any);
-  const { data: watching }   = useListEntries({ status: "watching" } as any);
-  const { data: watchlist }  = useListEntries({ status: "plan_to_watch" } as any);
-
   // Friends discovery
   const [friendsResult, setFriendsResult] = useState<FriendsResult | null>(null);
   const [friendsLoading, setFriendsLoading] = useState(true);
 
-  // Recommendation history reset
-  const [resetConfirm, setResetConfirm] = useState(false);
-  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -310,7 +301,6 @@ export default function Profile() {
         setProfile(p);
         setFirstNameVal(p.firstName ?? "");
         setLastNameVal(p.lastName ?? "");
-        setUsernameVal(p.username ?? "");
         setBioVal(p.bio ?? "");
         setAvatarId(p.avatarId ?? null);
         setAvatarUrl(p.avatarUrl ?? null);
@@ -334,7 +324,6 @@ export default function Profile() {
     setFieldError("");
     setFirstNameVal(profile?.firstName ?? "");
     setLastNameVal(profile?.lastName ?? "");
-    setUsernameVal(profile?.username ?? "");
     setBioVal(profile?.bio ?? "");
   };
 
@@ -374,30 +363,20 @@ export default function Profile() {
     if (!firstNameVal.trim()) { setFieldError("First name is required"); return; }
     save({ firstName: firstNameVal.trim(), lastName: lastNameVal.trim() || null });
   };
-  const saveUsername = () => {
-    if (!usernameVal.trim()) { setFieldError("Username is required"); return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(usernameVal.trim())) {
-      setFieldError("Only letters, numbers and underscores — no spaces");
-      return;
-    }
-    save({ username: usernameVal.trim().toLowerCase() });
-  };
   const saveBio = () => save({ bio: bioVal.trim() || null });
 
   const resetRecommendationHistory = async () => {
-    setResetting(true);
     try {
       const res = await fetch("/api/recommendations/history", { method: "DELETE" });
       if (res.ok) {
         toast({ title: "✓ Fresh picks ready", description: "Your recommendation history has been cleared." });
-        setResetConfirm(false);
       } else {
         toast({ title: "Couldn't reset history — please try again", variant: "destructive" });
       }
     } catch {
       toast({ title: "Network error — please try again", variant: "destructive" });
     } finally {
-      setResetting(false);
+      // no-op
     }
   };
 
@@ -455,9 +434,6 @@ export default function Profile() {
     saveAvatar({ avatarId: null, avatarUrl: dataUrl });
   };
 
-  const watched       = (allEntries ?? []).filter((e: any) => e.status === "completed").length;
-  const watchingCount = watching?.length ?? 0;
-  const queueCount    = watchlist?.length ?? 0;
 
   const displayName = profile
     ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.username || "Your Account"
@@ -541,15 +517,6 @@ export default function Profile() {
         {memberSince && (
           <p className="text-xs mt-1" style={{ color: "#7E7A73" }}>Member since {memberSince}</p>
         )}
-      </div>
-
-      {/* ── Stats ── */}
-      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#116149" }}>
-        <div className="grid grid-cols-3 gap-2 text-white text-center">
-          <div><p className="text-2xl font-bold">{watched}</p><p className="text-xs opacity-70 mt-0.5">Watched</p></div>
-          <div><p className="text-2xl font-bold">{watchingCount}</p><p className="text-xs opacity-70 mt-0.5">Watching</p></div>
-          <div><p className="text-2xl font-bold">{queueCount}</p><p className="text-xs opacity-70 mt-0.5">Watchlist</p></div>
-        </div>
       </div>
 
       {/* ── Avatar picker ── */}
@@ -660,37 +627,6 @@ export default function Profile() {
         )}
       </div>
 
-      {/* ── Username card ── */}
-      <div className="mx-5 mb-3 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#7E7A73" }}>Username</p>
-          {editing !== "username" && (
-            <button onClick={() => startEdit("username")}><Edit2 className="w-4 h-4" style={{ color: "#7E7A73" }} /></button>
-          )}
-        </div>
-        {editing === "username" ? (
-          <InlineEditor label="username" onSave={saveUsername} onCancel={cancelEdit} fieldError={fieldError} saving={saving}>
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold" style={{ color: "#7E7A73" }}>@</span>
-              <input
-                value={usernameVal}
-                onChange={e => { setUsernameVal(e.target.value.replace(/\s/g, "")); setFieldError(""); }}
-                placeholder="yourhandle"
-                style={{ ...inputStyle(!!fieldError), paddingLeft: 28 }}
-                autoCapitalize="none"
-                autoCorrect="off"
-                autoFocus
-              />
-            </div>
-            <p className="text-xs mt-1" style={{ color: "#7E7A73" }}>Letters, numbers and underscores only</p>
-          </InlineEditor>
-        ) : (
-          <p className="text-sm font-semibold" style={{ color: profile?.username ? "#111111" : "#7E7A73" }}>
-            {profile?.username ? `@${profile.username}` : "No username set yet"}
-          </p>
-        )}
-      </div>
-
       {/* ── Bio card ── */}
       <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
         <div className="flex items-center justify-between mb-2">
@@ -781,55 +717,6 @@ export default function Profile() {
             <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
               None of your Facebook friends have joined Spud yet — invite them!
             </p>
-          </div>
-        )}
-      </div>
-
-      {/* ── Settings ── */}
-      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
-        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7E7A73" }}>
-          Settings
-        </p>
-
-        {/* Reset recommendation history */}
-        {!resetConfirm ? (
-          <button
-            onClick={() => setResetConfirm(true)}
-            className="w-full text-left flex items-center justify-between py-2 active:opacity-60"
-          >
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "#111111" }}>Reset recommendation picks</p>
-              <p className="text-xs mt-0.5" style={{ color: "#7E7A73" }}>Start fresh — you'll see all titles again</p>
-            </div>
-            <span className="text-lg flex-shrink-0">🔄</span>
-          </button>
-        ) : (
-          <div
-            className="rounded-2xl p-4"
-            style={{ background: "#FFF3E8", border: "1.5px solid #FFD34D" }}
-          >
-            <p className="text-sm font-bold mb-1" style={{ color: "#111111" }}>Reset your picks history?</p>
-            <p className="text-xs mb-3 leading-relaxed" style={{ color: "#7E7A73" }}>
-              You'll start seeing all recommendations again, including ones you've already been shown.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={resetRecommendationHistory}
-                disabled={resetting}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
-                style={{ background: "#116149" }}
-              >
-                {resetting ? "Clearing…" : "Yes, start fresh"}
-              </button>
-              <button
-                onClick={() => setResetConfirm(false)}
-                disabled={resetting}
-                className="px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60"
-                style={{ background: "#EFE4D2", color: "#7E7A73" }}
-              >
-                Cancel
-              </button>
-            </div>
           </div>
         )}
       </div>
