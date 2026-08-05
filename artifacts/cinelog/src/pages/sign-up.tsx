@@ -134,6 +134,22 @@ export default function SignUpPage() {
         </div>
       </div>
 
+      <style>{`
+        [class*="cl-formButton"],
+        [class*="cl-formButton"]:hover,
+        [class*="cl-formButton"]:focus,
+        [class*="cl-socialButton"],
+        [class*="cl-socialButton"]:hover,
+        [class*="cl-socialButton"]:focus,
+        .cl-card button,
+        .cl-card button:hover,
+        .cl-card button:focus {
+          border: none !important;
+          box-shadow: none !important;
+          outline: none !important;
+        }
+      `}</style>
+
       {/* Clerk SignUp — email/password only */}
       <SignUp
         routing="path"

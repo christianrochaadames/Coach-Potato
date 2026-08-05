@@ -52,12 +52,15 @@ export default function SignInPage() {
       style={{ background: "#C5B8FF" }}
     >
       <style>{`
-        .cl-socialButtonsBlockButton,
-        .cl-socialButtonsBlockButton:hover,
-        .cl-socialButtonsBlockButton:focus,
-        .cl-formButtonPrimary,
-        .cl-formButtonPrimary:hover,
-        .cl-formButtonPrimary:focus {
+        [class*="cl-formButton"],
+        [class*="cl-formButton"]:hover,
+        [class*="cl-formButton"]:focus,
+        [class*="cl-socialButton"],
+        [class*="cl-socialButton"]:hover,
+        [class*="cl-socialButton"]:focus,
+        .cl-card button,
+        .cl-card button:hover,
+        .cl-card button:focus {
           border: none !important;
           box-shadow: none !important;
           outline: none !important;
