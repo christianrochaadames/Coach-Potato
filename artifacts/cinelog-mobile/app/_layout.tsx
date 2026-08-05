@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -125,10 +126,23 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (!fontsLoaded && !fontError) return;
+
+    const init = async () => {
+      try {
+        const seen = await SecureStore.getItemAsync('hasSeenOnboarding');
+        if (!seen) {
+          // Navigate to onboarding before hiding splash so there's no flash
+          router.replace('/onboarding' as any);
+        }
+      } catch {
+        // SecureStore unavailable (e.g. web preview) — skip and proceed normally
+      }
       SplashScreen.hideAsync();
       registerQuickActions();
-    }
+    };
+
+    init();
   }, [fontsLoaded, fontError]);
 
   useDeepLinkHandler();
@@ -147,6 +161,7 @@ export default function RootLayout() {
                 <KeyboardProvider>
                   <StatusBar style="dark" />
                   <Stack>
+                    <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
                     <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
                     <Stack.Screen name="(auth)" options={{ headerShown: false }} />
                     <Stack.Screen
