@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { SignUp } from "@clerk/react";
 import { useLocation } from "wouter";
 
@@ -5,20 +6,37 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // Hide Clerk's built-in OAuth buttons — we use our own below that route through
 // the sign-in page (where OAuth is proven to work in Clerk's dev environment).
-const hideBuiltinSocial = {
+const clerkAppearance = {
   elements: {
     socialButtonsRoot: { display: "none" as const },
     dividerRow: { display: "none" as const },
+    formButtonPrimary: {
+      backgroundColor: '#5B50D0',
+      color: '#ffffff',
+    },
   },
 };
 
 export default function SignUpPage() {
   const [, setLocation] = useLocation();
 
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.background;
+    const prevBody = document.body.style.background;
+    const main = document.querySelector("main") as HTMLElement | null;
+    const wrapper = main?.parentElement as HTMLElement | null;
+    const prevWrapper = wrapper?.style.background ?? "";
+    document.documentElement.style.background = "#C5B8FF";
+    document.body.style.background = "#C5B8FF";
+    if (wrapper) wrapper.style.background = "#C5B8FF";
+    return () => {
+      document.documentElement.style.background = prevHtml;
+      document.body.style.background = prevBody;
+      if (wrapper) wrapper.style.background = prevWrapper;
+    };
+  }, []);
+
   // Navigate to sign-in with an SSO intent query param.
-  // The sign-in page detects the param and auto-triggers OAuth immediately —
-  // single tap, no extra click needed. New Google/Apple/Facebook accounts are
-  // created automatically by Clerk when a new identity signs in for the first time.
   const handleOAuth = (provider: "google" | "apple" | "facebook") => {
     setLocation(`/sign-in?sso=${provider}`);
   };
@@ -26,7 +44,7 @@ export default function SignUpPage() {
   return (
     <div
       className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
-      style={{ background: "#FFF3E8" }}
+      style={{ background: "#C5B8FF" }}
     >
       {/* Branding: transparent logo left-aligned, Spud right */}
       <div
@@ -41,8 +59,8 @@ export default function SignUpPage() {
             height: 101,
             width: "auto",
             objectFit: "contain",
-            mixBlendMode: "multiply",
-            marginLeft: -8,
+            position: "relative",
+            zIndex: 10,
           }}
         />
         <img
@@ -53,7 +71,7 @@ export default function SignUpPage() {
         />
       </div>
 
-      {/* Custom OAuth buttons — navigate to sign-in which auto-fires the OAuth */}
+      {/* Custom OAuth buttons */}
       <div style={{ width: "100%", maxWidth: 440 }} className="mb-3 space-y-2">
 
         {/* Google — white with border */}
@@ -102,7 +120,6 @@ export default function SignUpPage() {
             color: "#ffffff",
           }}
         >
-          {/* Facebook "f" logomark */}
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden fill="currentColor">
             <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.97h-1.514c-1.491 0-1.956.93-1.956 1.886v2.269h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
           </svg>
@@ -122,7 +139,7 @@ export default function SignUpPage() {
         routing="path"
         path={`${basePath}/sign-up`}
         signInUrl={`${basePath}/sign-in`}
-        appearance={hideBuiltinSocial}
+        appearance={clerkAppearance}
       />
     </div>
   );
