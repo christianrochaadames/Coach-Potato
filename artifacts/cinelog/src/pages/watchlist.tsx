@@ -66,11 +66,12 @@ export default function Watchlist() {
   useEffect(() => {
     const prev = document.body.style.background;
     document.body.style.background = '#EFE4D2';
+
     return () => { document.body.style.background = prev; };
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: '#6366F1', borderRadius: '0 0 28px 28px', marginBottom: 100 }}>
+    <div className="min-h-screen" style={{ background: '#C5B8FF', borderRadius: '0 0 28px 28px', marginBottom: 100 }}>
       <div className="px-5 pt-8 pb-4">
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-bold" style={{ color: '#4A1020' }}>Watchlist</h1>
