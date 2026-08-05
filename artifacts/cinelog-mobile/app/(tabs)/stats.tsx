@@ -407,7 +407,7 @@ export default function StatsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: '#4A1020' }]}>
 
       {/* ── Off-screen share card (captured by react-native-view-shot) ── */}
       <View
