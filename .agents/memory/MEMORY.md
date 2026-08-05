@@ -1,6 +1,6 @@
 - [Clerk Auth integration](clerk-auth.md) — Full Clerk setup: proxy middleware order, requireAuth, seed_data auto-claim migration, App.tsx wiring, onboarding flow.
 - [Date entry UX](date-entry-ux.md) — All quick-add flows use year-only (YYYY-01-01); full add-entry shows year picker not a date input.
-- [Brand system](brand-system.md) — CouchPotato brand: potato-green #116149, couch-blue #9BD6FF, warm-cream #FFF3E8, Manrope + Baloo 2 fonts, Spud SVG mascot.
+- [Brand system](brand-system.md) — App renamed to **Spud** (was CouchPotato); /spud-logo.png with multiply blend; emoji-free UI except stats+stars; RT shown as text card.
 - [DB schema additions](db-schema.md) — entries table has status (watching/plan_to_watch/completed), synopsis, tmdbId, nullable dateWatched/year added via drizzle push-force.
 - [Zod codegen quirk](zod-codegen.md) — Orval generates zod.int() (v4 syntax) but workspace uses Zod v3; always run sed fix after codegen. Also: api-zod/src/index.ts must export types selectively to avoid TmdbPopularResponse/TmdbSearchResponse name collision.
 - [TMDB proxy](tmdb-proxy.md) — /api/tmdb/search, /api/tmdb/trending, /api/tmdb/popular proxy routes in api-server. Requires TMDB_API_KEY env secret. Returns 503 if key missing.

@@ -14,14 +14,14 @@ export function CouchPotatoLogo({ size = 'md', onDark = false, className }: Logo
 
   const img = (
     <img
-      src="/logo-text-v2.png"
-      alt="Couch Potato"
+      src="/spud-logo.png"
+      alt="Spud"
       draggable={false}
       style={{
         height: h,
         width: 'auto',
         objectFit: 'contain',
-        // multiply blends white→transparent against light (cream) backgrounds
+        // multiply blends black→transparent against light (cream) backgrounds
         mixBlendMode: onDark ? undefined : 'multiply',
         display: 'block',
       }}
@@ -29,8 +29,6 @@ export function CouchPotatoLogo({ size = 'md', onDark = false, className }: Logo
   );
 
   if (onDark) {
-    // On dark backgrounds wrap in a cream rounded pill so the jpeg white
-    // background blends in and the bubble letters stay readable.
     return (
       <div
         className={cn('inline-flex items-center justify-center rounded-2xl px-3 py-1 select-none', className)}

@@ -5,9 +5,9 @@ export default function Privacy() {
       <p className="text-sm mb-8" style={{ color: '#7E7A73' }}>Last updated: August 2, 2026</p>
 
       <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">What CouchPotato is</h2>
+        <h2 className="text-lg font-bold mb-2">What Spud is</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          CouchPotato is a personal movie and TV show tracker. You log what you watch,
+          Spud is a personal movie and TV show tracker. You log what you watch,
           rate titles, and view stats about your viewing habits. All your data belongs to you.
         </p>
       </section>
@@ -67,7 +67,7 @@ export default function Privacy() {
       <section className="mb-6">
         <h2 className="text-lg font-bold mb-2">Children's privacy</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          CouchPotato is not directed at children under 13. We do not knowingly collect
+          Spud is not directed at children under 13. We do not knowingly collect
           personal information from children under 13.
         </p>
       </section>
@@ -76,7 +76,7 @@ export default function Privacy() {
         <h2 className="text-lg font-bold mb-2">Contact</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
           If you have questions about this policy, please reach out via the App Store
-          support link on the CouchPotato listing.
+          support link on the Spud listing.
         </p>
       </section>
     </div>

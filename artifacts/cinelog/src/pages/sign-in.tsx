@@ -41,14 +41,14 @@ export default function SignInPage() {
         style={{ width: "100%", maxWidth: 440 }}
       >
         <img
-          src="/logo-text.png"
-          alt="Couch Potato"
+          src="/spud-logo.png"
+          alt="Spud"
           draggable={false}
           style={{
-            height: 120,
+            height: 88,
             width: "auto",
             objectFit: "contain",
-            marginLeft: -10,
+            mixBlendMode: "multiply",
           }}
         />
         <img

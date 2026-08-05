@@ -82,16 +82,17 @@ export default function Welcome() {
 
         {/* Logo — upper-left, generous breathing room from edges */}
         <img
-          src="/logo-text.png"
-          alt="Couch Potato"
+          src="/spud-logo.png"
+          alt="Spud"
           draggable={false}
           style={{
             position: "absolute",
             top: 44,
             left: 14,
-            height: 104,
+            height: 80,
             width: "auto",
             objectFit: "contain",
+            mixBlendMode: "multiply",
           }}
         />
 

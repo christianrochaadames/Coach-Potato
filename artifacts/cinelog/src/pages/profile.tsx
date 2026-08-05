@@ -722,7 +722,7 @@ export default function Profile() {
       {/* ── Friends on CouchPotato ── */}
       <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
         <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7E7A73" }}>
-          Friends on CouchPotato
+          Friends on Spud
         </p>
 
         {friendsLoading ? (
@@ -744,7 +744,7 @@ export default function Profile() {
             <p className="text-2xl mb-1">👥</p>
             <p className="text-sm font-semibold" style={{ color: "#111111" }}>Connect Facebook to find friends</p>
             <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
-              Sign in with Facebook to see which of your friends are already on CouchPotato.
+              Sign in with Facebook to see which of your friends are already on Spud.
             </p>
           </div>
         ) : friendsResult?.friends && friendsResult.friends.length > 0 ? (
@@ -753,7 +753,7 @@ export default function Profile() {
             {friendsResult.friends.map(friend => {
               const name = [friend.firstName, friend.lastName].filter(Boolean).join(" ")
                 || friend.username
-                || "CouchPotato User";
+                || "Spud User";
               return (
                 <div key={friend.userId} className="flex items-center gap-3">
                   <FriendAvatar friend={friend} />
@@ -779,7 +779,7 @@ export default function Profile() {
             <p className="text-2xl mb-1">🍿</p>
             <p className="text-sm font-semibold" style={{ color: "#111111" }}>No friends here yet</p>
             <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
-              None of your Facebook friends have joined CouchPotato yet — invite them!
+              None of your Facebook friends have joined Spud yet — invite them!
             </p>
           </div>
         )}

@@ -12,14 +12,14 @@ export default function Landing() {
            so the visible letter edge aligns exactly with the text below (px-6). ── */}
       <div className="pt-10 px-6 flex justify-start">
         <img
-          src="/logo-text.png"
-          alt="Couch Potato"
+          src="/spud-logo.png"
+          alt="Spud"
           draggable={false}
           style={{
-            height: 132,
+            height: 100,
             width: "auto",
             objectFit: "contain",
-            marginLeft: -10,
+            mixBlendMode: "multiply",
           }}
         />
       </div>

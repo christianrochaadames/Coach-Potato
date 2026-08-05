@@ -77,9 +77,16 @@ export default function SearchPage() {
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         const raw: { providerId: number; providerName: string; logoUrl: string }[] = d?.streaming ?? [];
-        // Dedup by name
-        const deduped = [...new Map(raw.map(p => [p.providerName, p])).values()];
-        setStreamingProviders(deduped);
+        // Dedup: strip ad-tier variants, prefer base service name
+        const normalize = (name: string) =>
+          name.replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '').trim();
+        const seen = new Map<string, typeof raw[0]>();
+        for (const p of raw) {
+          const key = normalize(p.providerName).toLowerCase();
+          const existing = seen.get(key);
+          if (!existing || p.providerName.length < existing.providerName.length) seen.set(key, p);
+        }
+        setStreamingProviders([...seen.values()]);
       })
       .catch(() => setStreamingProviders([]));
   }, [addingItem?.tmdbId]);
@@ -353,10 +360,9 @@ export default function SearchPage() {
                 </p>
                 {/* RT score */}
                 {sheetOmdb?.rtScore && (
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <span className="text-base leading-none">🍅</span>
-                    <span className="text-sm font-bold" style={{ color: '#111111' }}>{sheetOmdb.rtScore}</span>
-                    <span className="text-xs" style={{ color: '#7E7A73' }}>Rotten Tomatoes</span>
+                  <div className="mt-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Rotten Tomatoes</p>
+                    <p className="text-sm font-bold" style={{ color: '#111111' }}>{sheetOmdb.rtScore}</p>
                   </div>
                 )}
               </div>

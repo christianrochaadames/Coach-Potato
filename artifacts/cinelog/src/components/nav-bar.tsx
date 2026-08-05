@@ -25,7 +25,7 @@ export function NavBar() {
               <path d="M13 21 Q16 23.5 19 21" stroke="#1A1A2E" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
             </svg>
             <h1 className="text-xl font-display font-bold tracking-tight group-hover:text-primary transition-colors">
-              CouchPotato
+              Spud
             </h1>
           </Link>
 

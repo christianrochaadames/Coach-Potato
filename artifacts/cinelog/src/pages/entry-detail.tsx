@@ -88,6 +88,22 @@ type EpSheetState = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Strip ad-tier suffixes and dedup providers — prefer base service over "with ads" variant */
+function dedupeProviders<T extends { providerName: string }>(providers: T[]): T[] {
+  const normalize = (name: string) =>
+    name.replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '').trim();
+  const seen = new Map<string, T>();
+  for (const p of providers) {
+    const key = normalize(p.providerName).toLowerCase();
+    const existing = seen.get(key);
+    // Prefer the shorter name (base service > "with ads" variant)
+    if (!existing || p.providerName.length < existing.providerName.length) {
+      seen.set(key, p);
+    }
+  }
+  return [...seen.values()];
+}
+
 function formatMonthYear(s: string | null | undefined): string {
   if (!s) return '';
   const d = new Date(s + 'T00:00:00');
@@ -499,16 +515,14 @@ export default function EntryDetail() {
 
         {/* ── Ratings: RT + Your Stars ── */}
         <div className="rounded-2xl p-4 mb-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
-          {/* RT always shown */}
-          <div className="flex items-center gap-3 pb-3 mb-3" style={{ borderBottom: '1px solid #EFE4D2' }}>
-            <span className="text-2xl leading-none">🍅</span>
-            <div>
-              <p className="text-xl font-bold leading-none" style={{ color: omdbData?.rtScore ? '#111111' : '#B0A99E' }}>
-                {omdbData?.rtScore ?? (omdbData ? 'N/A' : '—')}
-              </p>
-              <p className="text-[10px] font-semibold mt-0.5" style={{ color: '#7E7A73' }}>Rotten Tomatoes</p>
-            </div>
+          {/* RT — always shown */}
+          <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #EFE4D2' }}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#7E7A73' }}>Rotten Tomatoes</p>
+            <p className="text-xl font-bold" style={{ color: omdbData?.rtScore ? '#111111' : '#B0A99E' }}>
+              {omdbData?.rtScore ?? (omdbData ? 'N/A' : '—')}
+            </p>
           </div>
+          {/* Your rating */}
           <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Your Rating</p>
           <StarRating
             rating={rating}
@@ -726,7 +740,7 @@ export default function EntryDetail() {
               <>
                 {watchProviders.streaming.length > 0 ? (
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {[...new Map(watchProviders.streaming.map(p => [p.providerName, p])).values()].map(p => (
+                    {dedupeProviders(watchProviders.streaming).map(p => (
                       <div key={p.providerName} title={p.providerName}>
                         <img src={p.logoUrl} alt={p.providerName} className="w-10 h-10 rounded-xl object-cover" style={{ border: '1px solid #E2D9CE' }}
                           onError={e => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }} />
@@ -737,7 +751,7 @@ export default function EntryDetail() {
                   <>
                     <p className="text-xs mb-2" style={{ color: '#7E7A73' }}>Not on streaming — available to rent/buy</p>
                     <div className="flex flex-wrap gap-2">
-                      {[...new Map([...watchProviders.rent, ...watchProviders.buy].map(p => [p.providerName, p])).values()].map(p => (
+                      {dedupeProviders([...watchProviders.rent, ...watchProviders.buy]).map(p => (
                           <div key={p.providerName} title={p.providerName}>
                             <img src={p.logoUrl} alt={p.providerName} className="w-10 h-10 rounded-xl object-cover"
                               style={{ border: '1px solid #E2D9CE', opacity: 0.7 }}
