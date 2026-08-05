@@ -54,7 +54,10 @@ export default function SignInPage() {
       <style>{`
         .cl-socialButtonsBlockButton,
         .cl-socialButtonsBlockButton:hover,
-        .cl-socialButtonsBlockButton:focus {
+        .cl-socialButtonsBlockButton:focus,
+        .cl-formButtonPrimary,
+        .cl-formButtonPrimary:hover,
+        .cl-formButtonPrimary:focus {
           border: none !important;
           box-shadow: none !important;
           outline: none !important;

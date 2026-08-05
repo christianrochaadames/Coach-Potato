@@ -79,7 +79,7 @@ export default function SignUpPage() {
           onClick={() => handleOAuth("google")}
           className="w-full flex items-center justify-center gap-3 py-3 rounded-xl font-semibold text-sm transition-opacity active:opacity-70 cursor-pointer"
           style={{
-            border: "1.5px solid #E2D9CE",
+            border: "none",
             background: "#ffffff",
             color: "#111111",
           }}
