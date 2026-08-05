@@ -225,22 +225,51 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
-// Listens for 401 events fired by customFetch, saves the current path,
-// shows a "session expired" toast, signs the user out, and redirects
-// to /sign-in.  Placed inside ClerkProvider + WouterRouter so it can
-// use both useClerk and useLocation.
+// Handles two concerns in one component so both share the same Clerk listener:
+//
+// 1. 401 interception: listens for `auth:unauthorized` events fired by
+//    customFetch, saves the current path, shows a toast, signs the user
+//    out, and redirects to /sign-in.
+//
+// 2. Return-to redirect: when the Clerk listener detects the user going
+//    from signed-out → signed-in it checks sessionStorage for a saved path
+//    and navigates there immediately — before any page-level redirect can
+//    overwrite the destination.
 function SessionExpiryHandler() {
-  const { signOut } = useClerk();
+  const { signOut, addListener } = useClerk();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const handlingRef = useRef(false);
+  const wasSignedOutRef = useRef(false);
 
+  // Watch for the user signing back in and restore the saved path
+  useEffect(() => {
+    const unsubscribe = addListener(({ user }) => {
+      const userId = user?.id ?? null;
+      if (wasSignedOutRef.current && userId) {
+        wasSignedOutRef.current = false;
+        const returnTo = sessionStorage.getItem("auth:returnTo");
+        if (returnTo) {
+          sessionStorage.removeItem("auth:returnTo");
+          const path = returnTo.startsWith(basePath)
+            ? returnTo.slice(basePath.length) || "/"
+            : returnTo;
+          if (path && path !== "/") setLocation(path);
+        }
+      } else if (!userId) {
+        wasSignedOutRef.current = true;
+      }
+    });
+    return unsubscribe;
+  }, [addListener, setLocation]);
+
+  // Intercept 401 responses from customFetch
   useEffect(() => {
     const handle = () => {
       if (handlingRef.current) return; // ignore duplicate 401 bursts
       handlingRef.current = true;
 
-      // Remember where the user was so we can return them there
+      // Save where the user was so we can return them there after sign-in
       const returnPath = window.location.pathname + window.location.search;
       const signInPath = `${basePath}/sign-in`;
       if (!returnPath.startsWith(signInPath)) {
@@ -266,25 +295,8 @@ function SessionExpiryHandler() {
   return null;
 }
 
-// Home: shows landing for guests, app for signed-in users.
-// After a session-expiry redirect the user is returned to the page they
-// were on before their session expired (stored in sessionStorage).
+// Home: shows landing for guests, app for signed-in users
 function HomeRoute() {
-  const { isSignedIn } = useAuth();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!isSignedIn) return;
-    const returnTo = sessionStorage.getItem("auth:returnTo");
-    if (!returnTo) return;
-    sessionStorage.removeItem("auth:returnTo");
-    // Strip the basePath prefix before handing to wouter
-    const path = returnTo.startsWith(basePath)
-      ? returnTo.slice(basePath.length) || "/"
-      : returnTo;
-    if (path && path !== "/") setLocation(path);
-  }, [isSignedIn, setLocation]);
-
   return (
     <>
       <Show when="signed-in">
