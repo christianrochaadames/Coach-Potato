@@ -51,6 +51,15 @@ export default function SignInPage() {
       className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
       style={{ background: "#C5B8FF" }}
     >
+      <style>{`
+        .cl-socialButtonsBlockButton,
+        .cl-socialButtonsBlockButton:hover,
+        .cl-socialButtonsBlockButton:focus {
+          border: none !important;
+          box-shadow: none !important;
+          outline: none !important;
+        }
+      `}</style>
       {/* Branding: transparent logo left-aligned, Spud right */}
       <div
         className="flex items-center justify-between mb-4"
