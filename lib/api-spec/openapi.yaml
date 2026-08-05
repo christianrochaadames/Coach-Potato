@@ -310,6 +310,70 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /tmdb/movie/{id}/providers:
+    get:
+      operationId: tmdbMovieProviders
+      tags: [tmdb]
+      summary: Get streaming availability for a movie
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: TMDB movie ID
+        - name: region
+          in: query
+          schema:
+            type: string
+            default: US
+          description: Two-letter ISO 3166-1 region code (e.g. US, GB)
+      responses:
+        "200":
+          description: Watch provider data for the requested region
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchProviders"
+        "400":
+          description: Invalid id
+        "502":
+          description: TMDB upstream error
+        "503":
+          description: TMDB API key not configured
+
+  /tmdb/tv/{id}/providers:
+    get:
+      operationId: tmdbTvProviders
+      tags: [tmdb]
+      summary: Get streaming availability for a TV show
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: TMDB TV show ID
+        - name: region
+          in: query
+          schema:
+            type: string
+            default: US
+          description: Two-letter ISO 3166-1 region code (e.g. US, GB)
+      responses:
+        "200":
+          description: Watch provider data for the requested region
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WatchProviders"
+        "400":
+          description: Invalid id
+        "502":
+          description: TMDB upstream error
+        "503":
+          description: TMDB API key not configured
+
   /tmdb/tv/{id}:
     get:
       operationId: tmdbTvDetail
@@ -653,6 +717,48 @@ components:
           type: ["integer", "null"]
         count:
           type: integer
+
+    WatchProvider:
+      type: object
+      required:
+        - providerId
+        - providerName
+        - logoUrl
+        - displayPriority
+      properties:
+        providerId:
+          type: integer
+        providerName:
+          type: string
+        logoUrl:
+          type: string
+        displayPriority:
+          type: integer
+
+    WatchProviders:
+      type: object
+      required:
+        - region
+        - streaming
+        - rent
+        - buy
+      properties:
+        region:
+          type: string
+        link:
+          type: ["string", "null"]
+        streaming:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+        rent:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
+        buy:
+          type: array
+          items:
+            $ref: "#/components/schemas/WatchProvider"
 
     ErrorResponse:
       type: object

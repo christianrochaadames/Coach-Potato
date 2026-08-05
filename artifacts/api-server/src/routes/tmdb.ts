@@ -419,4 +419,97 @@ router.get("/tmdb/tv/:id", requireAuth, async (req, res) => {
   }
 });
 
+interface WatchProvider {
+  providerId: number;
+  providerName: string;
+  logoUrl: string;
+  displayPriority: number;
+}
+
+interface WatchProvidersResponse {
+  region: string;
+  link: string | null;
+  streaming: WatchProvider[];
+  rent: WatchProvider[];
+  buy: WatchProvider[];
+}
+
+function mapProviders(
+  raw: Record<string, unknown>[],
+): WatchProvider[] {
+  return (raw ?? []).map((p) => ({
+    providerId: p.provider_id as number,
+    providerName: p.provider_name as string,
+    logoUrl: `https://image.tmdb.org/t/p/w92${p.logo_path as string}`,
+    displayPriority: (p.display_priority as number) ?? 99,
+  }));
+}
+
+async function fetchWatchProviders(
+  mediaType: "movie" | "tv",
+  tmdbId: number,
+  region: string,
+  apiKey: string,
+): Promise<WatchProvidersResponse> {
+  const url = `${TMDB_BASE}/${mediaType}/${tmdbId}/watch/providers?api_key=${apiKey}`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`TMDB watch/providers returned ${response.status}`);
+  }
+  const data = (await response.json()) as {
+    results?: Record<string, {
+      link?: string;
+      flatrate?: Record<string, unknown>[];
+      rent?: Record<string, unknown>[];
+      buy?: Record<string, unknown>[];
+    }>;
+  };
+  const regionData = data.results?.[region];
+  return {
+    region,
+    link: regionData?.link ?? null,
+    streaming: mapProviders(regionData?.flatrate ?? []),
+    rent: mapProviders(regionData?.rent ?? []),
+    buy: mapProviders(regionData?.buy ?? []),
+  };
+}
+
+// GET /tmdb/movie/:id/providers?region=US
+router.get("/tmdb/movie/:id/providers", requireAuth, async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    res.status(503).json({ error: "TMDB_API_KEY not configured" });
+    return;
+  }
+  const tmdbId = Number(req.params.id);
+  if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const region = ((req.query.region as string) || "US").toUpperCase().slice(0, 2);
+  try {
+    const result = await fetchWatchProviders("movie", tmdbId, region, apiKey);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "tmdb movie providers error");
+    res.status(502).json({ error: "TMDB request failed" });
+  }
+});
+
+// GET /tmdb/tv/:id/providers?region=US
+router.get("/tmdb/tv/:id/providers", requireAuth, async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    res.status(503).json({ error: "TMDB_API_KEY not configured" });
+    return;
+  }
+  const tmdbId = Number(req.params.id);
+  if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const region = ((req.query.region as string) || "US").toUpperCase().slice(0, 2);
+  try {
+    const result = await fetchWatchProviders("tv", tmdbId, region, apiKey);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "tmdb tv providers error");
+    res.status(502).json({ error: "TMDB request failed" });
+  }
+});
+
 export default router;

@@ -3,7 +3,7 @@ import { useParams, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft, Monitor, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft, Monitor, ChevronDown, ChevronUp, Info, Play } from 'lucide-react';
 import { PLATFORMS } from '@/lib/platforms';
 import {
   useGetEntry,
@@ -64,6 +64,17 @@ export default function EntryDetail() {
   } | null>(null);
   const [tmdbDetailLoading, setTmdbDetailLoading] = useState(false);
 
+  type WatchProvider = { providerId: number; providerName: string; logoUrl: string; displayPriority: number };
+  type WatchProvidersData = {
+    region: string;
+    link: string | null;
+    streaming: WatchProvider[];
+    rent: WatchProvider[];
+    buy: WatchProvider[];
+  };
+  const [watchProviders, setWatchProviders] = useState<WatchProvidersData | null>(null);
+  const [watchProvidersLoading, setWatchProvidersLoading] = useState(false);
+
   const entryId = params.id ? Number(params.id) : undefined;
   const { data: entry, isLoading } = useGetEntry(entryId!, {
     query: {
@@ -113,6 +124,23 @@ export default function EntryDetail() {
       .then((r) => (r.ok ? r.json() : {}))
       .then((d) => setSeasonCount(d.numberOfSeasons ?? null))
       .catch(() => {});
+  }, [entry?.tmdbId, entry?.type]);
+
+  // Fetch watch providers from TMDB
+  useEffect(() => {
+    if (!entry?.tmdbId) { setWatchProviders(null); return; }
+    // Derive region from browser locale (e.g. "en-US" → "US"), fall back to US
+    const locale = navigator.language ?? 'en-US';
+    const region = (locale.split('-')[1] ?? 'US').toUpperCase().slice(0, 2) || 'US';
+    const endpoint = entry.type === 'movie'
+      ? `/api/tmdb/movie/${entry.tmdbId}/providers?region=${region}`
+      : `/api/tmdb/tv/${entry.tmdbId}/providers?region=${region}`;
+    setWatchProvidersLoading(true);
+    fetch(endpoint)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setWatchProviders(d); })
+      .catch(() => {})
+      .finally(() => setWatchProvidersLoading(false));
   }, [entry?.tmdbId, entry?.type]);
 
   // Fetch cast + director from TMDB
@@ -799,6 +827,119 @@ export default function EntryDetail() {
 
               {!tmdbDetailLoading && !tmdbDetail && (
                 <p className="text-xs" style={{ color: '#7E7A73' }}>Cast info unavailable</p>
+              )}
+            </div>
+          )}
+
+          {/* Where to Watch */}
+          {entry.tmdbId && (
+            <div
+              className="rounded-2xl p-4 mb-4"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <div className="flex items-center gap-1.5 mb-3">
+                <Play className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#7E7A73' }} />
+                <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Where to Watch</p>
+              </div>
+
+              {watchProvidersLoading && (
+                <div className="flex gap-3 animate-pulse">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="w-10 h-10 rounded-xl" style={{ background: '#EFE4D2' }} />
+                  ))}
+                </div>
+              )}
+
+              {!watchProvidersLoading && watchProviders && (
+                <>
+                  {watchProviders.streaming.length > 0 ? (
+                    <>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {watchProviders.streaming.map((p) => (
+                          <div
+                            key={p.providerId}
+                            className="relative group"
+                            title={p.providerName}
+                          >
+                            <img
+                              src={p.logoUrl}
+                              alt={p.providerName}
+                              className="w-10 h-10 rounded-xl object-cover"
+                              style={{ border: '1px solid #E2D9CE' }}
+                              onError={(e) => {
+                                // Hide broken logos gracefully
+                                (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      {(watchProviders.rent.length > 0 || watchProviders.buy.length > 0) && (
+                        <p className="text-[11px] mb-2" style={{ color: '#7E7A73' }}>
+                          Also available to{' '}
+                          {watchProviders.rent.length > 0 && watchProviders.buy.length > 0
+                            ? 'rent & buy'
+                            : watchProviders.rent.length > 0
+                            ? 'rent'
+                            : 'buy'}
+                        </p>
+                      )}
+                    </>
+                  ) : watchProviders.rent.length > 0 || watchProviders.buy.length > 0 ? (
+                    <div className="mb-2">
+                      <p className="text-xs mb-2" style={{ color: '#7E7A73' }}>
+                        Not on streaming — available to{' '}
+                        {watchProviders.rent.length > 0 && watchProviders.buy.length > 0
+                          ? 'rent & buy'
+                          : watchProviders.rent.length > 0
+                          ? 'rent'
+                          : 'buy'}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {[...watchProviders.rent, ...watchProviders.buy]
+                          .filter((p, i, arr) => arr.findIndex((x) => x.providerId === p.providerId) === i)
+                          .map((p) => (
+                            <div key={p.providerId} title={p.providerName}>
+                              <img
+                                src={p.logoUrl}
+                                alt={p.providerName}
+                                className="w-10 h-10 rounded-xl object-cover"
+                                style={{ border: '1px solid #E2D9CE', opacity: 0.7 }}
+                                onError={(e) => {
+                                  (e.currentTarget.parentElement as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs" style={{ color: '#7E7A73' }}>
+                      Not available to stream in{' '}
+                      {watchProviders.region === 'US' ? 'the US' : watchProviders.region} right now
+                    </p>
+                  )}
+
+                  {/* JustWatch attribution — required by TMDB ToS for watch provider data */}
+                  <div className="flex items-center gap-1 mt-3 pt-3" style={{ borderTop: '1px solid #EFE4D2' }}>
+                    <span className="text-[10px]" style={{ color: '#7E7A73' }}>
+                      Streaming data provided by{' '}
+                      <a
+                        href="https://www.justwatch.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline font-semibold"
+                        style={{ color: '#7E7A73' }}
+                      >
+                        JustWatch
+                      </a>
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {!watchProvidersLoading && !watchProviders && (
+                <p className="text-xs" style={{ color: '#7E7A73' }}>Streaming info unavailable</p>
               )}
             </div>
           )}
