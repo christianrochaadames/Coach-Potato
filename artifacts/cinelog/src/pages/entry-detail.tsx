@@ -3,7 +3,7 @@ import { useParams, useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft, Monitor, ChevronDown, ChevronUp, Info, Play } from 'lucide-react';
+import { Film, Tv, Edit2, Trash2, X, Calendar, ChevronLeft, Monitor, ChevronDown, ChevronUp, Info, Play, Search } from 'lucide-react';
 import { PLATFORMS } from '@/lib/platforms';
 import {
   useGetEntry,
@@ -63,6 +63,14 @@ export default function EntryDetail() {
     genres: string[];
   } | null>(null);
   const [tmdbDetailLoading, setTmdbDetailLoading] = useState(false);
+
+  // TMDB relink state
+  type TmdbSearchResult = { tmdbId: number; title: string; type: 'movie' | 'show'; year: number | null; posterUrl: string | null; overview: string | null };
+  const [tmdbSearchOpen, setTmdbSearchOpen] = useState(false);
+  const [tmdbSearchQuery, setTmdbSearchQuery] = useState('');
+  const [tmdbSearchResults, setTmdbSearchResults] = useState<TmdbSearchResult[]>([]);
+  const [tmdbSearchLoading, setTmdbSearchLoading] = useState(false);
+  const [pendingTmdbMatch, setPendingTmdbMatch] = useState<{ tmdbId: number; title: string; posterUrl: string | null; synopsis: string | null } | null>(null);
 
   type WatchProvider = { providerId: number; providerName: string; logoUrl: string; displayPriority: number };
   type WatchProvidersData = {
@@ -165,6 +173,28 @@ export default function EntryDetail() {
       .finally(() => setTmdbDetailLoading(false));
   }, [entry?.tmdbId, entry?.type]);
 
+  const runTmdbSearch = async (q: string) => {
+    if (!q.trim()) { setTmdbSearchResults([]); return; }
+    setTmdbSearchLoading(true);
+    try {
+      const r = await fetch(`/api/tmdb/search?q=${encodeURIComponent(q)}`);
+      const data = r.ok ? await r.json() : { results: [] };
+      setTmdbSearchResults((data.results ?? []) as TmdbSearchResult[]);
+    } catch {
+      setTmdbSearchResults([]);
+    } finally {
+      setTmdbSearchLoading(false);
+    }
+  };
+
+  const selectTmdbMatch = (result: TmdbSearchResult) => {
+    setPendingTmdbMatch({ tmdbId: result.tmdbId, title: result.title, posterUrl: result.posterUrl, synopsis: result.overview });
+    if (result.posterUrl) form.setValue('posterUrl', result.posterUrl);
+    setTmdbSearchOpen(false);
+    setTmdbSearchResults([]);
+    setTmdbSearchQuery('');
+  };
+
   type SeasonData = { number: number; status: string; dateWatched?: string | null; rating?: number | null; notes?: string | null };
 
   // Unmark a watched season directly (one-tap undo)
@@ -225,6 +255,11 @@ export default function EntryDetail() {
           notes: data.notes || null,
           platform: data.platform || null,
           tags,
+          // Include pending TMDB relink if user selected a new match
+          ...(pendingTmdbMatch && {
+            tmdbId: pendingTmdbMatch.tmdbId,
+            synopsis: pendingTmdbMatch.synopsis,
+          }),
         } as any,
       },
       {
@@ -236,6 +271,7 @@ export default function EntryDetail() {
           queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           setIsEditing(false);
+          setPendingTmdbMatch(null);
         },
         onError: () => {
           toast({
@@ -343,6 +379,9 @@ export default function EntryDetail() {
                 setIsEditing(false);
                 form.reset();
                 setRating(entry.rating ?? null);
+                setPendingTmdbMatch(null);
+                setTmdbSearchOpen(false);
+                setTmdbSearchResults([]);
               }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold"
               style={{ background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }}
@@ -460,6 +499,135 @@ export default function EntryDetail() {
               onBlur={e => (e.target.style.borderColor = '#E2D9CE')}
               data-testid="input-edit-poster"
             />
+          </div>
+
+          {/* TMDB Match — relink to the correct film/show */}
+          <div className="space-y-2">
+            <label className="text-sm font-bold" style={{ color: '#111111' }}>
+              TMDB Match{' '}
+              <span style={{ color: '#7E7A73', fontWeight: 400 }}>(cast & plot source)</span>
+            </label>
+
+            {/* Current / pending match indicator */}
+            {(pendingTmdbMatch || (entry as any).tmdbId) && !tmdbSearchOpen && (
+              <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl" style={{ background: '#EFE4D2' }}>
+                {(pendingTmdbMatch?.posterUrl ?? (entry.posterUrl || null)) && (
+                  <img
+                    src={pendingTmdbMatch?.posterUrl ?? entry.posterUrl!}
+                    alt=""
+                    className="w-7 h-10 object-cover rounded-lg flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold truncate" style={{ color: '#111111' }}>
+                    {pendingTmdbMatch?.title ?? entry.title}
+                  </p>
+                  <p className="text-[10px]" style={{ color: '#7E7A73' }}>
+                    TMDB #{pendingTmdbMatch?.tmdbId ?? (entry as any).tmdbId}
+                    {pendingTmdbMatch && (
+                      <span className="ml-1 font-bold" style={{ color: '#116149' }}>• Changed</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Toggle button */}
+            {!tmdbSearchOpen && (
+              <button
+                type="button"
+                data-testid="button-find-on-tmdb"
+                onClick={() => {
+                  setTmdbSearchQuery(entry.title ?? '');
+                  setTmdbSearchOpen(true);
+                }}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full text-sm font-bold"
+                style={{ background: '#ffffff', border: '1px solid #E2D9CE', color: '#116149' }}
+              >
+                <Search className="w-4 h-4" />
+                {(entry as any).tmdbId ? 'Change TMDB match' : 'Find on TMDB'}
+              </button>
+            )}
+
+            {/* Inline search panel */}
+            {tmdbSearchOpen && (
+              <div className="rounded-2xl overflow-hidden" style={{ border: '2px solid #116149' }}>
+                {/* Input row */}
+                <div className="flex items-center gap-2 px-3 py-2.5" style={{ background: '#ffffff' }}>
+                  <input
+                    autoFocus
+                    value={tmdbSearchQuery}
+                    onChange={(e) => setTmdbSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runTmdbSearch(tmdbSearchQuery); } }}
+                    placeholder="Search for the correct title…"
+                    className="flex-1 text-sm font-medium focus:outline-none"
+                    style={{ color: '#111111', background: 'transparent' }}
+                    data-testid="input-tmdb-search"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => runTmdbSearch(tmdbSearchQuery)}
+                    disabled={tmdbSearchLoading || !tmdbSearchQuery.trim()}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold text-white disabled:opacity-50"
+                    style={{ background: '#116149' }}
+                  >
+                    {tmdbSearchLoading ? '…' : 'Search'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setTmdbSearchOpen(false); setTmdbSearchResults([]); setTmdbSearchQuery(''); }}
+                    className="p-1.5 rounded-lg"
+                    style={{ background: '#EFE4D2' }}
+                  >
+                    <X className="w-4 h-4" style={{ color: '#7E7A73' }} />
+                  </button>
+                </div>
+
+                {/* Results list */}
+                {tmdbSearchResults.length > 0 && (
+                  <div style={{ maxHeight: '240px', overflowY: 'auto', borderTop: '1px solid #EFE4D2' }}>
+                    {tmdbSearchResults.map((result) => (
+                      <button
+                        key={result.tmdbId}
+                        type="button"
+                        data-testid={`tmdb-result-${result.tmdbId}`}
+                        onClick={() => selectTmdbMatch(result)}
+                        className="w-full flex items-start gap-3 px-3 py-2.5 text-left"
+                        style={{ background: '#ffffff', borderBottom: '1px solid #EFE4D2' }}
+                      >
+                        {result.posterUrl ? (
+                          <img src={result.posterUrl} alt="" className="w-8 h-12 object-cover rounded-lg flex-shrink-0" />
+                        ) : (
+                          <div className="w-8 h-12 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: '#EFE4D2' }}>
+                            {result.type === 'movie'
+                              ? <Film className="w-4 h-4" style={{ color: '#7E7A73' }} />
+                              : <Tv className="w-4 h-4" style={{ color: '#7E7A73' }} />}
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0 pt-0.5">
+                          <p className="text-xs font-bold truncate" style={{ color: '#111111' }}>{result.title}</p>
+                          <p className="text-[10px] mb-0.5" style={{ color: '#7E7A73' }}>
+                            {result.year ?? 'Unknown year'} · {result.type === 'movie' ? 'Movie' : 'TV Show'}
+                          </p>
+                          {result.overview && (
+                            <p className="text-[10px] leading-snug line-clamp-2" style={{ color: '#7E7A73' }}>
+                              {result.overview}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Empty state */}
+                {!tmdbSearchLoading && tmdbSearchResults.length === 0 && tmdbSearchQuery.trim() && (
+                  <div className="px-3 py-3 text-center" style={{ background: '#ffffff', borderTop: '1px solid #EFE4D2' }}>
+                    <p className="text-xs" style={{ color: '#7E7A73' }}>No results — try a different search</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Notes */}
