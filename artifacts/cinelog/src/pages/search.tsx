@@ -139,7 +139,7 @@ export default function SearchPage() {
 
   const noKey = searchNoKey || popularNoKey;
 
-  const closeSheet = () => { setAddingItem(null); setWatchedStep(false); setSheetOmdb(null); };
+  const closeSheet = () => { setAddingItem(null); setWatchedStep(false); };
 
   const markWatching = (item: TmdbItem) => {
     createEntry.mutate(
