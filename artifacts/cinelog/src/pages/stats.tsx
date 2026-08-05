@@ -99,7 +99,7 @@ export default function Stats() {
           value={selectedYear}
           onChange={e => setSelectedYear(Number(e.target.value))}
           className="px-4 py-1.5 rounded-full font-bold text-sm focus:outline-none cursor-pointer"
-          style={{ border: '2px solid #FF4BAE', color: '#FF4BAE', background: 'transparent' }}
+          style={{ border: '2px solid #FFB4D6', color: '#FFB4D6', background: 'transparent' }}
         >
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
