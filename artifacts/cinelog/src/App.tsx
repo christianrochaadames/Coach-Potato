@@ -6,6 +6,7 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from "wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import { BottomNav } from "@/components/bottom-nav";
 import Home from "@/pages/home";
 import MyShows from "@/pages/my-shows";
@@ -224,8 +225,66 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
-// Home: shows landing for guests, app for signed-in users
+// Listens for 401 events fired by customFetch, saves the current path,
+// shows a "session expired" toast, signs the user out, and redirects
+// to /sign-in.  Placed inside ClerkProvider + WouterRouter so it can
+// use both useClerk and useLocation.
+function SessionExpiryHandler() {
+  const { signOut } = useClerk();
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const handlingRef = useRef(false);
+
+  useEffect(() => {
+    const handle = () => {
+      if (handlingRef.current) return; // ignore duplicate 401 bursts
+      handlingRef.current = true;
+
+      // Remember where the user was so we can return them there
+      const returnPath = window.location.pathname + window.location.search;
+      const signInPath = `${basePath}/sign-in`;
+      if (!returnPath.startsWith(signInPath)) {
+        sessionStorage.setItem("auth:returnTo", returnPath);
+      }
+
+      toast({
+        title: "Session expired",
+        description: "Please sign in again to continue.",
+        variant: "destructive",
+      });
+
+      signOut().then(() => {
+        setLocation("/sign-in");
+        handlingRef.current = false;
+      });
+    };
+
+    window.addEventListener("auth:unauthorized", handle);
+    return () => window.removeEventListener("auth:unauthorized", handle);
+  }, [signOut, toast, setLocation]);
+
+  return null;
+}
+
+// Home: shows landing for guests, app for signed-in users.
+// After a session-expiry redirect the user is returned to the page they
+// were on before their session expired (stored in sessionStorage).
 function HomeRoute() {
+  const { isSignedIn } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const returnTo = sessionStorage.getItem("auth:returnTo");
+    if (!returnTo) return;
+    sessionStorage.removeItem("auth:returnTo");
+    // Strip the basePath prefix before handing to wouter
+    const path = returnTo.startsWith(basePath)
+      ? returnTo.slice(basePath.length) || "/"
+      : returnTo;
+    if (path && path !== "/") setLocation(path);
+  }, [isSignedIn, setLocation]);
+
   return (
     <>
       <Show when="signed-in">
@@ -285,6 +344,7 @@ function ClerkProviderWithRoutes() {
       <QueryClientProvider client={queryClient}>
         <ClerkDevModeNeutralizer />
         <ClerkQueryClientCacheInvalidator />
+        <SessionExpiryHandler />
         <TooltipProvider>
           <Router />
           <Toaster />

@@ -363,6 +363,12 @@ export async function customFetch<T = unknown>(
   const response = await fetch(input, { ...init, method, headers });
 
   if (!response.ok) {
+    // Signal the app layer to sign out when the session has expired.
+    // Fired before throwing so callers that catch ApiError still see it,
+    // but the global handler can start the redirect concurrently.
+    if (response.status === 401 && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+    }
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
   }
