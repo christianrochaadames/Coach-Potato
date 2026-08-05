@@ -84,6 +84,7 @@ export default function AddEntry() {
   const prefillOverview = urlParams.get('overview') ?? '';
   const prefillTmdbId = urlParams.get('tmdbId') ? Number(urlParams.get('tmdbId')) : undefined;
   const prefillGenres = urlParams.get('genres') ?? '';
+  const prefillPlatform = urlParams.get('platform') ?? '';
 
   // Inline TMDB search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,7 +126,7 @@ export default function AddEntry() {
       dateWatched: new Date().toISOString().split('T')[0],
       notes: '',
       tags: prefillGenres, // auto-populated from TMDB genre_ids
-      platform: '',
+      platform: prefillPlatform,
     },
   });
 

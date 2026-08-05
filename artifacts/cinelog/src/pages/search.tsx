@@ -433,7 +433,7 @@ export default function SearchPage() {
             </div>
             <button
               onClick={() => setLocation(
-                `/add?tmdbId=${addingItem.tmdbId}&title=${encodeURIComponent(addingItem.title)}&type=${addingItem.type}&year=${addingItem.year ?? ''}&poster=${encodeURIComponent(addingItem.posterUrl ?? '')}&overview=${encodeURIComponent(addingItem.overview ?? '')}&genres=${encodeURIComponent((addingItem.genres ?? []).join(','))}`
+                `/add?tmdbId=${addingItem.tmdbId}&title=${encodeURIComponent(addingItem.title)}&type=${addingItem.type}&year=${addingItem.year ?? ''}&poster=${encodeURIComponent(addingItem.posterUrl ?? '')}&overview=${encodeURIComponent(addingItem.overview ?? '')}&genres=${encodeURIComponent((addingItem.genres ?? []).join(','))}&platform=${encodeURIComponent(quickAddPlatform)}`
               )}
               className="w-full text-center text-sm font-semibold"
               style={{ color: '#7E7A73' }}
