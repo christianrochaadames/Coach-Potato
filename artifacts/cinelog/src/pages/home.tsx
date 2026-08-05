@@ -270,7 +270,7 @@ export default function Home() {
             <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
             <span
               className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
-              style={{ background: '#4A78FF', color: '#ffffff' }}
+              style={{ background: '#6B46C1', color: '#ffffff' }}
             >
               Picked for you
             </span>
@@ -422,11 +422,11 @@ export default function Home() {
           sessionStorage.setItem('search:autofocus', '1');
           setLocation('/search');
         }}
-        className="fixed bottom-20 right-5 w-14 h-14 rounded-full flex items-center justify-center shadow-lg z-40 active:scale-95 transition-transform"
-        style={{ background: '#FF4BAE' }}
+        className="fixed bottom-20 right-5 w-16 h-16 z-40 active:scale-95 transition-transform flex items-center justify-center p-0 bg-transparent border-0"
         aria-label="Log new entry"
       >
-        <Plus className="w-7 h-7 text-white" />
+        <img src="/blue-button.png" alt="" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
+        <Plus className="relative w-7 h-7 text-white drop-shadow" />
       </button>
 
       {/* ── Rec quick-add sheet — matches Search sheet exactly ── */}
