@@ -426,7 +426,7 @@ export default function Home() {
         aria-label="Log new entry"
         style={{ background: '#BDECC8', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
       >
-        <Plus className="w-7 h-7" style={{ color: '#1A5FA8' }} />
+        <Plus className="w-7 h-7" style={{ color: '#116149' }} />
       </button>
 
       {/* ── Rec quick-add sheet — matches Search sheet exactly ── */}

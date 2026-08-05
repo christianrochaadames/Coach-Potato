@@ -73,8 +73,8 @@ export default function SearchPage() {
     const prevBody = document.body.style.background;
     const main = document.querySelector('main') as HTMLElement | null;
     const prevMain = main?.style.background ?? '';
-    document.body.style.background = '#FFD34D';
-    if (main) main.style.background = '#FFD34D';
+    document.body.style.background = '#FFBC4D';
+    if (main) main.style.background = '#FFBC4D';
     return () => {
       document.body.style.background = prevBody;
       if (main) main.style.background = prevMain;
@@ -277,7 +277,7 @@ export default function SearchPage() {
   };
 
   return (
-    <div style={{ background: '#FFD34D', minHeight: '100vh' }}>
+    <div style={{ background: '#FFBC4D', minHeight: '100vh' }}>
     <div style={{ background: '#FFF3E8', borderRadius: '0 0 28px 28px', paddingBottom: 32 }}>
       <div className="px-5 pt-8 pb-4">
         <h1 className="text-2xl font-bold mb-4" style={{ color: '#111111' }}>Search</h1>
