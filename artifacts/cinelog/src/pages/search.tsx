@@ -379,7 +379,10 @@ export default function SearchPage() {
             {/* Platform picker */}
             <div className="space-y-2">
               <p className="text-sm font-bold" style={{ color: '#111111' }}>
-                Platform <span style={{ color: '#7E7A73', fontWeight: 400 }}>(optional)</span>
+                Platform{' '}
+                <span style={{ color: '#7E7A73', fontWeight: 400 }}>
+                  {quickAddPlatform ? '' : '— pick one to keep your stats accurate'}
+                </span>
               </p>
               <div className="flex flex-wrap gap-2">
                 {PLATFORMS.map(p => {

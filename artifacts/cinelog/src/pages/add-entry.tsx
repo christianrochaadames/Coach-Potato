@@ -490,7 +490,7 @@ export default function AddEntry() {
         {/* Platform */}
         <div className="space-y-2">
           <label className="text-sm font-bold" style={{ color: '#111111' }}>
-            Platform <span style={{ color: '#7E7A73', fontWeight: 400 }}>(where you watched it)</span>
+            Platform <span style={{ color: '#7E7A73', fontWeight: 400 }}>(pick one to keep your stats accurate)</span>
           </label>
           <div className="flex flex-wrap gap-2">
             {PLATFORMS.map(p => {
