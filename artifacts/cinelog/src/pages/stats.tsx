@@ -84,7 +84,7 @@ export default function Stats() {
   }, [allEntries]);
 
   return (
-    <div className="min-h-full pb-8" style={{ background: '#4A1020' }}>
+    <div className="min-h-screen pb-8" style={{ background: '#4A1020' }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: '#FFF3E8' }}>Your Stats</h1>
@@ -106,11 +106,12 @@ export default function Stats() {
         </div>
       ) : stats ? (
         <div
-          className="px-5 space-y-4 pt-6 pb-32 min-h-screen"
+          className="px-5 space-y-4 pt-6 pb-32"
           style={{
             background: '#FFF3E8',
-            borderRadius: '28px 28px 0 0',
+            borderRadius: 28,
             marginTop: 8,
+            marginBottom: 100,
           }}
         >
 
@@ -292,8 +293,8 @@ export default function Stats() {
         </div>
       ) : (
         <div
-          className="flex flex-col items-center py-16 gap-4 px-5 min-h-screen"
-          style={{ background: '#FFF3E8', borderRadius: '28px 28px 0 0', marginTop: 8 }}
+          className="flex flex-col items-center py-16 gap-4 px-5"
+          style={{ background: '#FFF3E8', borderRadius: 28, marginTop: 8, marginBottom: 100 }}
         >
           <SpudMascot pose="sleepy" size={96} />
           <p className="text-sm text-center font-medium" style={{ color: '#7E7A73' }}>
