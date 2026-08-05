@@ -4,9 +4,10 @@ export default function Landing() {
   const [, setLocation] = useLocation();
 
   return (
+    <div className="min-h-[100dvh] flex flex-col" style={{ background: "#EFE4D2" }}>
     <div
-      className="min-h-[100dvh] flex flex-col"
-      style={{ background: "#D4CCFF", overflow: "hidden" }}
+      className="flex flex-col flex-1 mx-3"
+      style={{ background: "#D4CCFF", borderRadius: 28, marginTop: 16, marginBottom: 16, overflow: "hidden" }}
     >
       {/* ── Logo — transparent PNG. marginLeft nudges out the PNG's internal padding
            so the visible letter edge aligns exactly with the text below (px-6). ── */}
@@ -99,6 +100,7 @@ export default function Landing() {
           Sign in
         </button>
       </div>
+    </div>
     </div>
   );
 }
