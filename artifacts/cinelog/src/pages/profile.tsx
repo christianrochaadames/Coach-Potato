@@ -296,6 +296,13 @@ export default function Profile() {
       setProfile(updated);
       setEditing(null);
       toast({ title: "Saved ✓" });
+      // Sync name to Clerk only after a successful app DB save
+      if (payload.firstName !== undefined || payload.lastName !== undefined) {
+        user?.update({
+          firstName: payload.firstName ?? user?.firstName ?? "",
+          lastName:  payload.lastName  ?? user?.lastName  ?? "",
+        }).catch((e) => console.warn("[Clerk sync] name update failed:", e));
+      }
     } catch {
       setFieldError("Network error — please try again");
     } finally {
@@ -306,11 +313,6 @@ export default function Profile() {
   const saveName     = () => {
     if (!firstNameVal.trim()) { setFieldError("First name is required"); return; }
     save({ firstName: firstNameVal.trim(), lastName: lastNameVal.trim() || null });
-    // Keep Clerk's user record in sync (best-effort — does not block our DB save)
-    user?.update({
-      firstName: firstNameVal.trim(),
-      lastName:  lastNameVal.trim() || "",
-    }).catch(() => {});
   };
   const saveUsername = () => {
     if (!usernameVal.trim()) { setFieldError("Username is required"); return; }
@@ -336,6 +338,20 @@ export default function Profile() {
         setAvatarId(updated.avatarId ?? null);
         setAvatarUrl(updated.avatarUrl ?? null);
         toast({ title: "Photo saved ✓" });
+        // Sync to Clerk only after the app DB save succeeded
+        if (patch.avatarUrl) {
+          // Custom cropped photo — convert data URL to File
+          fetch(patch.avatarUrl)
+            .then(r => r.blob())
+            .then(blob => user?.setProfileImage({ file: new File([blob], "avatar.jpg", { type: "image/jpeg" }) }))
+            .catch(e => console.warn("[Clerk sync] photo upload failed:", e));
+        } else if (patch.avatarId) {
+          // Spud preset — fetch the PNG and push it to Clerk so both systems match
+          fetch(`/spud-avatar-${patch.avatarId}.png`)
+            .then(r => r.blob())
+            .then(blob => user?.setProfileImage({ file: new File([blob], `spud-${patch.avatarId}.png`, { type: "image/png" }) }))
+            .catch(e => console.warn("[Clerk sync] spud avatar sync failed:", e));
+        }
       } else {
         toast({ title: "Could not save your photo — please try again", variant: "destructive" });
       }
@@ -358,15 +374,8 @@ export default function Profile() {
 
   const handleCropConfirm = (dataUrl: string) => {
     setCropSrc(null);
+    // saveAvatar handles both the DB save and the Clerk sync in order
     saveAvatar({ avatarId: null, avatarUrl: dataUrl });
-    // Also push the cropped image to Clerk's profile (best-effort)
-    fetch(dataUrl)
-      .then(r => r.blob())
-      .then(blob => {
-        const file = new File([blob], "avatar.jpg", { type: "image/jpeg" });
-        return user?.setProfileImage({ file });
-      })
-      .catch(() => {});
   };
 
   const watched       = (allEntries ?? []).filter((e: any) => e.status === "completed").length;
