@@ -4,7 +4,7 @@ export default function Landing() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="min-h-[100dvh] flex flex-col" style={{ background: "#EFE4D2" }}>
+    <div className="min-h-[100dvh] flex flex-col" style={{ background: "#5B50D0" }}>
     <div
       className="flex flex-col flex-1 mx-3"
       style={{ background: "#D4CCFF", borderRadius: 28, marginTop: 16, marginBottom: 16, overflow: "hidden" }}
