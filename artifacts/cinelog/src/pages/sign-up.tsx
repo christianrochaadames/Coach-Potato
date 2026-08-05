@@ -148,6 +148,13 @@ export default function SignUpPage() {
           box-shadow: none !important;
           outline: none !important;
         }
+        [class*="cl-formButtonPrimary"] {
+          background-color: #5B50D0 !important;
+        }
+        [class*="cl-formButtonPrimary"]:hover,
+        [class*="cl-formButtonPrimary"]:active {
+          background-color: #4A3FC0 !important;
+        }
       `}</style>
 
       {/* Clerk SignUp — email/password only */}
