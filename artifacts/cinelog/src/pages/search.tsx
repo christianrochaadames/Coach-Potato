@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { Search as SearchIcon, X, Film, Tv } from 'lucide-react';
 import { PLATFORMS } from '@/lib/platforms';
@@ -68,6 +68,16 @@ export default function SearchPage() {
   const [addingItem, setAddingItem] = useState<TmdbItem | null>(null);
   const [quickAddYear, setQuickAddYear] = useState(new Date().getFullYear());
   const [quickAddPlatform, setQuickAddPlatform] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus when arriving from the FAB
+  useEffect(() => {
+    if (sessionStorage.getItem('search:autofocus') === '1') {
+      sessionStorage.removeItem('search:autofocus');
+      // Small delay lets the page finish mounting/painting before focus
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+  }, []);
   const { results, loading: searchLoading, noKey: searchNoKey } = useTmdbSearch(query);
   const { data: popular, noKey: popularNoKey, loading: popularLoading } = useTmdbPopular();
   const createEntry = useCreateEntry();
@@ -231,6 +241,7 @@ export default function SearchPage() {
             style={{ color: '#7E7A73' }}
           />
           <input
+            ref={searchInputRef}
             type="search"
             placeholder="Search movies & TV shows..."
             value={query}

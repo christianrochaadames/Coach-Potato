@@ -441,7 +441,10 @@ export default function Home() {
 
       {/* ── FAB ── */}
       <button
-        onClick={() => setLocation('/search')}
+        onClick={() => {
+          sessionStorage.setItem('search:autofocus', '1');
+          setLocation('/search');
+        }}
         className="fixed bottom-20 right-5 w-14 h-14 rounded-full flex items-center justify-center shadow-lg z-40 active:scale-95 transition-transform"
         style={{ background: '#FF4BAE' }}
         aria-label="Log new entry"
