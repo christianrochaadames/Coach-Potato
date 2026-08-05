@@ -13,22 +13,6 @@ import { CouchPotatoLogo } from '@/components/couch-potato-logo';
 import { SpudMascot } from '@/components/spud-mascot';
 import { PosterCard } from '@/components/poster-card';
 
-/** Group currently-watching entries by platform */
-function groupByPlatform(entries: any[]) {
-  const map = new Map<string, any[]>();
-  for (const e of entries) {
-    const key = (e.platform as string | null) ?? '';
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(e);
-  }
-  // Named platforms first (sorted), then entries with no platform
-  return [...map.entries()].sort(([a], [b]) => {
-    if (!a && b) return 1;
-    if (a && !b) return -1;
-    return a.localeCompare(b);
-  });
-}
-
 /** Group an entry array by year (key = year number, sorted descending) */
 function groupByYear(entries: { year?: number | null; dateWatched?: string | null; [k: string]: any }[]) {
   const map = new Map<number, typeof entries>();
@@ -254,23 +238,6 @@ export default function Home() {
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
             {watching!.map((entry: any, i: number) => (
               <div key={entry.id} className="flex-shrink-0 w-28">
-                {/* Platform pill sits above the poster */}
-                <div className="mb-1.5 h-6 flex items-center">
-                  {entry.platform ? (
-                    <span
-                      className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold truncate max-w-full"
-                      style={{ background: '#4A78FF', color: '#ffffff' }}
-                    >
-                      {entry.platform}
-                    </span>
-                  ) : (
-                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
-                      style={{ background: '#EFE4D2', color: '#7E7A73' }}
-                    >
-                      + Add platform
-                    </span>
-                  )}
-                </div>
                 <PosterCard
                   entry={entry}
                   index={i}

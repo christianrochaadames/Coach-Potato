@@ -268,7 +268,7 @@ router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
   }
 });
 
-// GET /tmdb/show/:id — season count for TV shows
+// GET /tmdb/show/:id — season count + season list with poster URLs
 router.get("/tmdb/show/:id", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -281,7 +281,11 @@ router.get("/tmdb/show/:id", requireAuth, async (req, res) => {
     return;
   }
   const cacheKey = `show:${tmdbId}`;
-  const cached = cacheGet<{ numberOfSeasons: number | null; name: string | null }>(cacheKey);
+  const cached = cacheGet<{
+    numberOfSeasons: number | null;
+    name: string | null;
+    seasons: { number: number; name: string; episodeCount: number; posterUrl: string | null; airYear: number | null }[];
+  }>(cacheKey);
   if (cached) { res.json(cached); return; }
 
   try {
@@ -294,10 +298,24 @@ router.get("/tmdb/show/:id", requireAuth, async (req, res) => {
     const data = (await response.json()) as {
       number_of_seasons?: number;
       name?: string;
+      seasons?: {
+        season_number: number;
+        name: string;
+        episode_count: number;
+        poster_path: string | null;
+        air_date: string | null;
+      }[];
     };
     const payload = {
       numberOfSeasons: data.number_of_seasons ?? null,
       name: data.name ?? null,
+      seasons: (data.seasons ?? []).map((s) => ({
+        number: s.season_number,
+        name: s.name ?? `Season ${s.season_number}`,
+        episodeCount: s.episode_count ?? 0,
+        posterUrl: s.poster_path ? `${POSTER_BASE}${s.poster_path}` : null,
+        airYear: s.air_date ? parseInt(s.air_date.split("-")[0], 10) || null : null,
+      })),
     };
     cacheSet(cacheKey, payload, TTL_HOUR);
     res.json(payload);
@@ -658,6 +676,7 @@ router.get("/tmdb/tv/:id/season/:seasonNum", requireAuth, async (req, res) => {
         overview: ep.overview,
         air_date: ep.air_date,
         runtime: ep.runtime ?? null,
+        stillUrl: ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : null,
       })),
     };
     cacheSet(cacheKey, result, TTL_DAY);
