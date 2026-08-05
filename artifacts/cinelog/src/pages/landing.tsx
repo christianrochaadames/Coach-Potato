@@ -57,7 +57,6 @@ export default function Landing() {
             objectFit: "contain",
             pointerEvents: "none",
             userSelect: "none",
-            mixBlendMode: "screen",
           }}
         />
 
