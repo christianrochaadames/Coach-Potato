@@ -87,12 +87,12 @@ export default function Stats() {
     <div className="min-h-full pb-8" style={{ background: '#4A1020' }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold" style={{ color: '#111111' }}>Stats</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#FFF3E8' }}>Your Stats</h1>
         <select
           value={selectedYear}
           onChange={e => setSelectedYear(Number(e.target.value))}
           className="px-4 py-1.5 rounded-full font-bold text-sm focus:outline-none cursor-pointer"
-          style={{ border: '2px solid #116149', color: '#116149', background: '#ffffff' }}
+          style={{ border: '2px solid #FF4BAE', color: '#FF4BAE', background: 'transparent' }}
         >
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
@@ -110,14 +110,14 @@ export default function Stats() {
           {/* Summary cards */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl p-5" style={{ background: '#FFD34D' }}>
-              <p className="text-3xl font-bold" style={{ color: '#111111' }} data-testid="stat-total">{stats.total}</p>
-              <p className="text-sm font-semibold" style={{ color: '#111111', opacity: 0.7 }}>Total Watched</p>
+              <p className="text-3xl font-bold" style={{ color: '#FFF3E8' }} data-testid="stat-total">{stats.total}</p>
+              <p className="text-sm font-semibold" style={{ color: '#EFE4D2' }}>Total Watched</p>
             </div>
             <div className="rounded-2xl p-5" style={{ background: '#FFE4F3' }}>
-              <p className="text-3xl font-bold" style={{ color: '#FF4BAE' }} data-testid="stat-avg-rating">
+              <p className="text-3xl font-bold" style={{ color: '#4A1020' }} data-testid="stat-avg-rating">
                 {stats.averageRating != null ? stats.averageRating.toFixed(1) : '—'}
               </p>
-              <p className="text-sm font-semibold" style={{ color: '#c73b8e' }}>Avg Rating ★</p>
+              <p className="text-sm font-semibold" style={{ color: '#4A1020' }}>Avg Rating ★</p>
             </div>
           </div>
 
