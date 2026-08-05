@@ -92,8 +92,16 @@ type EpSheetState = {
 function dedupeProviders<T extends { providerName: string }>(providers: T[]): T[] {
   const normalize = (name: string) =>
     name
+      // Strip tier suffixes: Premium, Essential, Basic, Standard
       .replace(/\s+(Premium|Essential|Basic|Standard)(?=\s|$)/gi, '')
+      // Strip "with ads" variants
       .replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '')
+      // Strip platform channel add-ons: "Apple TV Channel", "Roku Channel", "Amazon Channel", etc.
+      .replace(/\s+(Apple\s+TV|Roku|Amazon|Google\s+Play|Microsoft|Vudu|Xfinity|Cox)(\s+Channel)?/gi, '')
+      // Strip "with [addon]" — e.g. "with Showtime", "with Starz"
+      .replace(/\s+with\s+\S+/gi, '')
+      // Strip "on [platform]" — e.g. "on Roku", "on Demand"
+      .replace(/\s+on\s+\S+/gi, '')
       .trim();
   const seen = new Map<string, T>();
   for (const p of providers) {

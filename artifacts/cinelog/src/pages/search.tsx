@@ -82,6 +82,9 @@ export default function SearchPage() {
           name
             .replace(/\s+(Premium|Essential|Basic|Standard)(?=\s|$)/gi, '')
             .replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '')
+            .replace(/\s+(Apple\s+TV|Roku|Amazon|Google\s+Play|Microsoft|Vudu|Xfinity|Cox)(\s+Channel)?/gi, '')
+            .replace(/\s+with\s+\S+/gi, '')
+            .replace(/\s+on\s+\S+/gi, '')
             .trim();
         const seen = new Map<string, typeof raw[0]>();
         for (const p of raw) {
