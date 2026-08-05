@@ -47,6 +47,20 @@ function mapRec(item: Record<string, unknown>, mediaType: "movie" | "tv") {
 type MappedRec = ReturnType<typeof mapRec>;
 type TaggedRec = MappedRec & { recencyRank: number; seedRating: number | null };
 
+// DELETE /api/recommendations/history — clear the current user's seen history so they get fresh picks
+router.delete("/recommendations/history", requireAuth, async (req, res) => {
+  try {
+    await pool.query(
+      `DELETE FROM recommendation_history WHERE user_id = $1`,
+      [req.userId]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    req.log.error({ err }, "deleteRecommendationHistory error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST /api/recommendations/feedback — record like or skip signal
 router.post("/recommendations/feedback", requireAuth, async (req, res) => {
   const { tmdbId, signal } = req.body as { tmdbId: unknown; signal: unknown };

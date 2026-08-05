@@ -299,6 +299,10 @@ export default function Profile() {
   const [friendsResult, setFriendsResult] = useState<FriendsResult | null>(null);
   const [friendsLoading, setFriendsLoading] = useState(true);
 
+  // Recommendation history reset
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
   useEffect(() => {
     fetch("/api/profile")
       .then(r => r.json())
@@ -379,6 +383,23 @@ export default function Profile() {
     save({ username: usernameVal.trim().toLowerCase() });
   };
   const saveBio = () => save({ bio: bioVal.trim() || null });
+
+  const resetRecommendationHistory = async () => {
+    setResetting(true);
+    try {
+      const res = await fetch("/api/recommendations/history", { method: "DELETE" });
+      if (res.ok) {
+        toast({ title: "✓ Fresh picks ready", description: "Your recommendation history has been cleared." });
+        setResetConfirm(false);
+      } else {
+        toast({ title: "Couldn't reset history — please try again", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Network error — please try again", variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
 
   // ── Avatar save ──
   const saveAvatar = async (patch: { avatarId: string | null; avatarUrl: string | null }) => {
@@ -760,6 +781,55 @@ export default function Profile() {
             <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
               None of your Facebook friends have joined CouchPotato yet — invite them!
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Settings ── */}
+      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7E7A73" }}>
+          Settings
+        </p>
+
+        {/* Reset recommendation history */}
+        {!resetConfirm ? (
+          <button
+            onClick={() => setResetConfirm(true)}
+            className="w-full text-left flex items-center justify-between py-2 active:opacity-60"
+          >
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "#111111" }}>Reset recommendation picks</p>
+              <p className="text-xs mt-0.5" style={{ color: "#7E7A73" }}>Start fresh — you'll see all titles again</p>
+            </div>
+            <span className="text-lg flex-shrink-0">🔄</span>
+          </button>
+        ) : (
+          <div
+            className="rounded-2xl p-4"
+            style={{ background: "#FFF3E8", border: "1.5px solid #FFD34D" }}
+          >
+            <p className="text-sm font-bold mb-1" style={{ color: "#111111" }}>Reset your picks history?</p>
+            <p className="text-xs mb-3 leading-relaxed" style={{ color: "#7E7A73" }}>
+              You'll start seeing all recommendations again, including ones you've already been shown.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={resetRecommendationHistory}
+                disabled={resetting}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
+                style={{ background: "#116149" }}
+              >
+                {resetting ? "Clearing…" : "Yes, start fresh"}
+              </button>
+              <button
+                onClick={() => setResetConfirm(false)}
+                disabled={resetting}
+                className="px-4 py-2.5 rounded-xl text-sm font-semibold disabled:opacity-60"
+                style={{ background: "#EFE4D2", color: "#7E7A73" }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
       </div>
