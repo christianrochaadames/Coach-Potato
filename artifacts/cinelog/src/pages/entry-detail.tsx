@@ -527,12 +527,12 @@ export default function EntryDetail() {
                 : (tmdbDetailLoading ? '—' : 'N/A')}
             </p>
             <p className="text-[10px] mt-0.5" style={{ color: '#B0A99E' }}>
-              Source:{' '}
+              <span className="font-bold">Source:</span>{' '}
               <a
                 href="https://www.themoviedb.org"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="underline font-bold"
+                className="underline"
                 style={{ color: '#B0A99E' }}
               >
                 The Movie Database (TMDB)
