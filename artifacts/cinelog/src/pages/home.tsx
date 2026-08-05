@@ -422,11 +422,11 @@ export default function Home() {
           sessionStorage.setItem('search:autofocus', '1');
           setLocation('/search');
         }}
-        className="fixed bottom-20 right-5 w-16 h-16 z-40 active:scale-95 transition-transform flex items-center justify-center p-0 bg-transparent border-0"
+        className="fixed bottom-24 right-5 w-14 h-14 z-40 active:scale-95 transition-transform flex items-center justify-center rounded-full border-0"
         aria-label="Log new entry"
+        style={{ background: '#E6F2FF', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
       >
-        <img src="/blue-button.png" alt="" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
-        <Plus className="relative w-7 h-7 text-white drop-shadow" />
+        <Plus className="w-7 h-7" style={{ color: '#1A5FA8' }} />
       </button>
 
       {/* ── Rec quick-add sheet — matches Search sheet exactly ── */}

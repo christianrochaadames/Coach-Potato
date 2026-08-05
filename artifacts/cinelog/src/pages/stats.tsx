@@ -84,7 +84,7 @@ export default function Stats() {
   }, [allEntries]);
 
   return (
-    <div className="min-h-full pb-8" style={{ background: '#FFF3E8' }}>
+    <div className="min-h-full pb-8" style={{ background: '#4A1020' }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: '#111111' }}>Stats</h1>
