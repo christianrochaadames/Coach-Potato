@@ -5,6 +5,38 @@ const router = Router();
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const POSTER_BASE = "https://image.tmdb.org/t/p/w500";
 
+// ---------------------------------------------------------------------------
+// Simple in-memory TTL cache
+// Keys are strings; entries expire automatically after their TTL.
+// The cache is intentionally not persisted across server restarts.
+// ---------------------------------------------------------------------------
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const TTL_HOUR = 60 * 60 * 1000;        // 1 hour  — cast/detail/show
+const TTL_HALF_HOUR = 30 * 60 * 1000;   // 30 min  — trending/popular
+const TTL_DAY = 24 * 60 * 60 * 1000;    // 24 hours — watch providers, top-rated
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tmdbCache = new Map<string, CacheEntry<any>>();
+
+function cacheGet<T>(key: string): T | null {
+  const entry = tmdbCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    tmdbCache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function cacheSet<T>(key: string, data: T, ttlMs: number): void {
+  tmdbCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+// ---------------------------------------------------------------------------
+
 function getApiKey(): string | undefined {
   return process.env.TMDB_API_KEY;
 }
@@ -95,6 +127,9 @@ router.get("/tmdb/trending", requireAuth, async (req, res) => {
     return;
   }
 
+  const cached = cacheGet<{ results: TmdbResult[] }>("trending");
+  if (cached) { res.json(cached); return; }
+
   try {
     const url = `${TMDB_BASE}/trending/all/week?api_key=${apiKey}&language=en-US`;
     const response = await fetch(url);
@@ -111,7 +146,9 @@ router.get("/tmdb/trending", requireAuth, async (req, res) => {
       .slice(0, 10)
       .map((item) => mapItem(item, (item.media_type as string) === "movie" ? "movie" : "tv"));
 
-    res.json({ results });
+    const payload = { results };
+    cacheSet("trending", payload, TTL_HALF_HOUR);
+    res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb trending error");
     res.status(500).json({ error: "Internal server error" });
@@ -125,6 +162,9 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
     res.status(503).json({ error: "TMDB_API_KEY not configured. Add it as a Replit Secret." });
     return;
   }
+
+  const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>("popular");
+  if (cached) { res.json(cached); return; }
 
   try {
     const [moviesRes, showsRes] = await Promise.all([
@@ -144,7 +184,9 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
       .slice(0, 8)
       .map((item) => mapItem(item, "tv"));
 
-    res.json({ movies, shows });
+    const payload = { movies, shows };
+    cacheSet("popular", payload, TTL_HALF_HOUR);
+    res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb popular error");
     res.status(500).json({ error: "Internal server error" });
@@ -158,6 +200,10 @@ router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
     res.status(503).json({ error: "TMDB_API_KEY not configured." });
     return;
   }
+
+  const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>("top-rated");
+  if (cached) { res.json(cached); return; }
+
   try {
     // The most universally recognised movies and TV shows ever made
     const movieIds = [
@@ -213,7 +259,9 @@ router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
 
     const movies = movieResults.filter(Boolean) as TmdbResult[];
     const shows  = showResults.filter(Boolean) as TmdbResult[];
-    res.json({ movies, shows });
+    const payload = { movies, shows };
+    cacheSet("top-rated", payload, TTL_DAY);
+    res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb top-rated error");
     res.status(500).json({ error: "Internal server error" });
@@ -232,6 +280,10 @@ router.get("/tmdb/show/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
+  const cacheKey = `show:${tmdbId}`;
+  const cached = cacheGet<{ numberOfSeasons: number | null; name: string | null }>(cacheKey);
+  if (cached) { res.json(cached); return; }
+
   try {
     const url = `${TMDB_BASE}/tv/${tmdbId}?api_key=${apiKey}&language=en-US`;
     const response = await fetch(url);
@@ -243,10 +295,12 @@ router.get("/tmdb/show/:id", requireAuth, async (req, res) => {
       number_of_seasons?: number;
       name?: string;
     };
-    res.json({
+    const payload = {
       numberOfSeasons: data.number_of_seasons ?? null,
       name: data.name ?? null,
-    });
+    };
+    cacheSet(cacheKey, payload, TTL_HOUR);
+    res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb show error");
     res.status(500).json({ error: "Internal server error" });
@@ -314,6 +368,10 @@ router.get("/tmdb/movie/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
+  const cacheKey = `movie:${tmdbId}`;
+  const cached = cacheGet<TmdbDetailResponse>(cacheKey);
+  if (cached) { res.json(cached); return; }
+
   try {
     const url = `${TMDB_BASE}/movie/${tmdbId}?api_key=${apiKey}&language=en-US&append_to_response=credits`;
     const response = await fetch(url);
@@ -349,6 +407,7 @@ router.get("/tmdb/movie/:id", requireAuth, async (req, res) => {
       genres: genreNames,
     };
 
+    cacheSet(cacheKey, result, TTL_HOUR);
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "tmdb movie detail error");
@@ -368,6 +427,10 @@ router.get("/tmdb/tv/:id", requireAuth, async (req, res) => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
+  const cacheKey = `tv:${tmdbId}`;
+  const cached = cacheGet<TmdbDetailResponse>(cacheKey);
+  if (cached) { res.json(cached); return; }
+
   try {
     const url = `${TMDB_BASE}/tv/${tmdbId}?api_key=${apiKey}&language=en-US&append_to_response=credits`;
     const response = await fetch(url);
@@ -412,6 +475,7 @@ router.get("/tmdb/tv/:id", requireAuth, async (req, res) => {
       genres: genreNames,
     };
 
+    cacheSet(cacheKey, result, TTL_HOUR);
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "tmdb tv detail error");
@@ -484,8 +548,12 @@ router.get("/tmdb/movie/:id/providers", requireAuth, async (req, res) => {
   const tmdbId = Number(req.params.id);
   if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid id" }); return; }
   const region = ((req.query.region as string) || "US").toUpperCase().slice(0, 2);
+  const cacheKey = `movie-providers:${tmdbId}:${region}`;
+  const cached = cacheGet<WatchProvidersResponse>(cacheKey);
+  if (cached) { res.json(cached); return; }
   try {
     const result = await fetchWatchProviders("movie", tmdbId, region, apiKey);
+    cacheSet(cacheKey, result, TTL_DAY);
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "tmdb movie providers error");
@@ -503,8 +571,12 @@ router.get("/tmdb/tv/:id/providers", requireAuth, async (req, res) => {
   const tmdbId = Number(req.params.id);
   if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid id" }); return; }
   const region = ((req.query.region as string) || "US").toUpperCase().slice(0, 2);
+  const cacheKey = `tv-providers:${tmdbId}:${region}`;
+  const cached = cacheGet<WatchProvidersResponse>(cacheKey);
+  if (cached) { res.json(cached); return; }
   try {
     const result = await fetchWatchProviders("tv", tmdbId, region, apiKey);
+    cacheSet(cacheKey, result, TTL_DAY);
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "tmdb tv providers error");
