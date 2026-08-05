@@ -6,6 +6,22 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 export default function SignInPage() {
   const { signIn, isLoaded } = useSignIn();
 
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.background;
+    const prevBody = document.body.style.background;
+    const main = document.querySelector("main") as HTMLElement | null;
+    const wrapper = main?.parentElement as HTMLElement | null;
+    const prevWrapper = wrapper?.style.background ?? "";
+    document.documentElement.style.background = "#C5B8FF";
+    document.body.style.background = "#C5B8FF";
+    if (wrapper) wrapper.style.background = "#C5B8FF";
+    return () => {
+      document.documentElement.style.background = prevHtml;
+      document.body.style.background = prevBody;
+      if (wrapper) wrapper.style.background = prevWrapper;
+    };
+  }, []);
+
   // Read an optional ?returnTo=<path> set by the session-expiry handler so
   // we can restore the user to the page they were on before their session expired.
   const params = new URLSearchParams(window.location.search);
@@ -66,6 +82,15 @@ export default function SignInPage() {
         signUpUrl={`${basePath}/sign-up`}
         fallbackRedirectUrl={`${basePath}/`}
         forceRedirectUrl={forceRedirectUrl}
+        appearance={{
+          elements: {
+            formButtonPrimary: {
+              backgroundColor: '#5B50D0',
+              '&:hover': { backgroundColor: '#4A3FC0' },
+              '&:focus': { backgroundColor: '#4A3FC0' },
+            },
+          },
+        }}
       />
     </div>
   );

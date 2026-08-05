@@ -5,13 +5,16 @@ export default function Landing() {
   const [, setLocation] = useLocation();
 
   useEffect(() => {
+    const prevHtml = document.documentElement.style.background;
     const prevBody = document.body.style.background;
     const main = document.querySelector("main") as HTMLElement | null;
     const wrapper = main?.parentElement as HTMLElement | null;
     const prevWrapper = wrapper?.style.background ?? "";
+    document.documentElement.style.background = "#5B50D0";
     document.body.style.background = "#5B50D0";
     if (wrapper) wrapper.style.background = "#5B50D0";
     return () => {
+      document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
       if (wrapper) wrapper.style.background = prevWrapper;
     };
