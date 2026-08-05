@@ -12,7 +12,11 @@ import {
   TextInput,
   Share,
   FlatList,
+  ActionSheetIOS,
+  Linking,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams, router, Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -232,6 +236,13 @@ export default function EntryDetailScreen() {
   const [editStatus, setEditStatus] = useState<string>('');
   const [editRating, setEditRating] = useState<number>(0);
   const [editNotes, setEditNotes] = useState<string>('');
+  const [instagramAvailable, setInstagramAvailable] = useState(false);
+
+  useEffect(() => {
+    Linking.canOpenURL('instagram://app')
+      .then(setInstagramAvailable)
+      .catch(() => setInstagramAvailable(false));
+  }, []);
 
   const updateEntry = useUpdateEntry();
   const deleteEntry = useDeleteEntry();
@@ -298,11 +309,10 @@ export default function EntryDetailScreen() {
     }
   }
 
-  // ── Share handler ───────────────────────────────────────────────────────────
+  // ── Share handlers ──────────────────────────────────────────────────────────
 
-  async function handleShare() {
+  async function handleShareText() {
     if (!entry) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const yearText = entry.year ? ` (${entry.year})` : '';
     const ratingText = entry.rating ? ` ${'⭐'.repeat(entry.rating)}` : '';
     const actionText =
@@ -319,6 +329,62 @@ export default function EntryDetailScreen() {
       });
     } catch {
       // user cancelled or share failed — no-op
+    }
+  }
+
+  async function handleShareInstagram() {
+    if (!entry?.posterUrl) return;
+    try {
+      // Download poster to a local temp file
+      const tmpPath = `${FileSystem.cacheDirectory}poster-${entry.id}.jpg`;
+      const { status } = await FileSystem.downloadAsync(entry.posterUrl, tmpPath);
+      if (status !== 200) throw new Error('Download failed');
+
+      // Check whether the system can share files (should always be true on iOS/Android)
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) {
+        Alert.alert('Not supported', 'Sharing is not available on this device.');
+        return;
+      }
+
+      // Open the native share sheet with the poster — user picks Instagram Stories from there
+      await Sharing.shareAsync(tmpPath, {
+        mimeType: 'image/jpeg',
+        UTI: 'public.jpeg',
+        dialogTitle: 'Share poster to Instagram Stories',
+      });
+    } catch {
+      Alert.alert('Error', 'Could not load the poster. Please try again.');
+    }
+  }
+
+  function handleShare() {
+    if (!entry) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    const hasPoster = !!entry.posterUrl;
+    const showInstagram = hasPoster && instagramAvailable;
+
+    if (Platform.OS === 'ios') {
+      const options = ['Cancel', 'Share text'];
+      if (showInstagram) options.push('Share to Instagram Stories');
+
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex: 0 },
+        (idx) => {
+          if (idx === 1) handleShareText();
+          else if (idx === 2 && showInstagram) handleShareInstagram();
+        }
+      );
+    } else {
+      // Android — Alert acts as the action sheet
+      type AlertBtn = { text: string; onPress?: () => void; style?: 'cancel' | 'default' | 'destructive' };
+      const buttons: AlertBtn[] = [{ text: 'Share text', onPress: handleShareText }];
+      if (showInstagram) {
+        buttons.push({ text: 'Share to Instagram Stories', onPress: handleShareInstagram });
+      }
+      buttons.push({ text: 'Cancel', style: 'cancel' });
+      Alert.alert('Share', undefined, buttons);
     }
   }
 
