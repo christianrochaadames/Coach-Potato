@@ -32,7 +32,7 @@ export default function Stats() {
   // Paint the full viewport (including below the floating nav) in the page colour
   useEffect(() => {
     const prev = document.body.style.background;
-    document.body.style.background = '#4A1020';
+    document.body.style.background = '#EFE4D2';
     return () => { document.body.style.background = prev; };
   }, []);
   const [, setLocation] = useLocation();
@@ -91,7 +91,7 @@ export default function Stats() {
   }, [allEntries]);
 
   return (
-    <div className="min-h-screen pb-8" style={{ background: '#4A1020' }}>
+    <div className="pb-8" style={{ background: '#4A1020', borderRadius: '0 0 28px 28px', marginBottom: 100 }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: '#FFF3E8' }}>Your Stats</h1>
