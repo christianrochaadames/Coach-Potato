@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useGetStats, useListYears, useListEntries } from '@workspace/api-client-react';
 import { useLocation } from 'wouter';
 import {
@@ -28,6 +28,13 @@ function StarDisplay({ rating }: { rating: number }) {
 export default function Stats() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // Paint the full viewport (including below the floating nav) in the page colour
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = '#4A1020';
+    return () => { document.body.style.background = prev; };
+  }, []);
   const [, setLocation] = useLocation();
 
   const { data: yearSummaries } = useListYears();
