@@ -16,9 +16,9 @@
     },
     "production": {
       "autoIncrement": true,
-      "image": "sdk-54",
       "ios": {
-        "buildConfiguration": "Release"
+        "buildConfiguration": "Release",
+        "image": "sdk-54"
       }
     }
   },
