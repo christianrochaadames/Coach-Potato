@@ -278,7 +278,7 @@ export default function SearchPage() {
 
   return (
     <div style={{ background: '#FFBC4D', minHeight: '100vh' }}>
-    <div style={{ background: '#FFF3E8', borderRadius: '0 0 28px 28px', paddingBottom: 32 }}>
+    <div style={{ background: '#FFF3E8', borderRadius: 28, paddingBottom: 32 }}>
       <div className="px-5 pt-8 pb-4">
         <h1 className="text-2xl font-bold mb-4" style={{ color: '#111111' }}>Search</h1>
         {/* Search bar */}

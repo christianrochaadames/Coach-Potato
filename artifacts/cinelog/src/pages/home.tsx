@@ -201,7 +201,7 @@ export default function Home() {
         className="mx-5 mb-5 rounded-3xl p-5"
         style={{ background: '#4A1020' }}
       >
-        <p className="text-xl font-bold" style={{ marginBottom: 2, color: '#FFD6E7' }}>
+        <p className="text-xl font-bold" style={{ marginBottom: 2, color: '#ffffff' }}>
           {greeting}{firstName ? `, ${firstName}` : ''}
         </p>
         <p className="text-sm mb-4" style={{ color: '#FFD6E7', opacity: 0.7 }}>Welcome back to your personal TV &amp; movie library.</p>
