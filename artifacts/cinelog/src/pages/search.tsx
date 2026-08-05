@@ -73,6 +73,7 @@ export default function SearchPage() {
     const prev = document.body.style.background;
     document.body.style.background = '#FFD34D';
     return () => { document.body.style.background = prev; };
+    return () => { document.body.style.background = prev; };
   }, []);
 
   // Streaming providers for the selected TV show
@@ -271,7 +272,8 @@ export default function SearchPage() {
   };
 
   return (
-    <div style={{ background: '#FFF3E8', borderRadius: '0 0 28px 28px', marginBottom: 100 }}>
+    <>
+    <div style={{ background: '#FFF3E8' }}>
       <div className="px-5 pt-8 pb-4">
         <h1 className="text-2xl font-bold mb-4" style={{ color: '#111111' }}>Search</h1>
         {/* Search bar */}
@@ -489,5 +491,7 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+    <div style={{ background: '#FFD34D', borderRadius: '28px 28px 0 0', minHeight: 120 }} />
+    </>
   );
 }
