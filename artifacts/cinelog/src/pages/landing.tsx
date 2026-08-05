@@ -6,7 +6,7 @@ export default function Landing() {
   return (
     <div
       className="min-h-[100dvh] flex flex-col"
-      style={{ background: "#FFF3E8", overflow: "hidden" }}
+      style={{ background: "#FFBC4D", overflow: "hidden" }}
     >
       {/* ── Logo — transparent PNG. marginLeft nudges out the PNG's internal padding
            so the visible letter edge aligns exactly with the text below (px-6). ── */}
@@ -51,25 +51,25 @@ export default function Landing() {
         >
           <p
             className="leading-snug"
-            style={{ color: "#116149", fontSize: 22, fontWeight: 400 }}
+            style={{ color: "#6B46C1", fontSize: 22, fontWeight: 400 }}
           >
             The TV shows and movies you're <strong>watching</strong>
           </p>
           <p
             className="leading-snug"
-            style={{ color: "#116149", fontSize: 22, fontWeight: 400 }}
+            style={{ color: "#6B46C1", fontSize: 22, fontWeight: 400 }}
           >
             The ones you've already <strong>watched</strong>
           </p>
           <p
             className="leading-snug"
-            style={{ color: "#116149", fontSize: 22, fontWeight: 400 }}
+            style={{ color: "#6B46C1", fontSize: 22, fontWeight: 400 }}
           >
             And what you'll <strong>watch</strong> next
           </p>
           <p
             className="font-bold leading-snug"
-            style={{ color: "#116149", fontSize: 22 }}
+            style={{ color: "#6B46C1", fontSize: 22 }}
           >
             All in one place.
           </p>
@@ -82,9 +82,9 @@ export default function Landing() {
           onClick={() => setLocation("/sign-up")}
           className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
           style={{
-            border: "2px solid #116149",
-            color: "#ffffff",
-            background: "#116149",
+            border: "2px solid #C5B8FF",
+            color: "#6B46C1",
+            background: "#C5B8FF",
           }}
         >
           Get started free
@@ -93,8 +93,8 @@ export default function Landing() {
           onClick={() => setLocation("/sign-in")}
           className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
           style={{
-            border: "2px solid #116149",
-            color: "#116149",
+            border: "2px solid #6B46C1",
+            color: "#6B46C1",
             background: "transparent",
           }}
         >
