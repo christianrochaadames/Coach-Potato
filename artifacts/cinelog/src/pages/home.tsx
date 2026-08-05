@@ -96,10 +96,15 @@ export default function Home() {
 
   // Onboarding guard: if the user has no username yet (e.g. signed up via
   // Google and landed at "/" instead of "/welcome"), send them to the welcome form.
+  // The `cancelled` flag prevents the redirect from firing if the component
+  // unmounts before the fetch resolves (e.g. a session-expiry return-to redirect
+  // navigates to a different page first).
   useEffect(() => {
+    let cancelled = false;
     fetch('/api/profile')
       .then(r => r.ok ? r.json() : null)
       .then(p => {
+        if (cancelled) return;
         if (!p || !p.username) {
           setLocation('/welcome');
           return;
@@ -109,6 +114,7 @@ export default function Home() {
         setAvatarUrl(p.avatarUrl ?? null);
       })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   const { data: watching } = useListEntries({ status: 'watching' } as any);
