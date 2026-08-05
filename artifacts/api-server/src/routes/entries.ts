@@ -11,6 +11,7 @@ const seasonSchema = z.object({
   status: z.enum(["watched", "watching"]),
   dateWatched: z.string().nullable().optional(),
   rating: z.number().int().min(1).max(5).nullable().optional(),
+  notes: z.string().nullable().optional(),
 });
 
 const entryInputSchema = z.object({

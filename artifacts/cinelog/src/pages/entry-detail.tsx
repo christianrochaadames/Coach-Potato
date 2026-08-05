@@ -50,6 +50,12 @@ export default function EntryDetail() {
   const [rating, setRating] = useState<number | null>(null);
   const [seasonCount, setSeasonCount] = useState<number | null>(null);
   const [synopsisExpanded, setSynopsisExpanded] = useState(false);
+  const [seasonSheet, setSeasonSheet] = useState<{
+    num: number;
+    rating: number | null;
+    note: string;
+    editing: boolean; // true = editing existing, false = marking new
+  } | null>(null);
   const [tmdbDetail, setTmdbDetail] = useState<{
     cast: Array<{ name: string; character: string; profileUrl: string | null }>;
     directors: Array<{ name: string; job: string }>;
@@ -131,27 +137,43 @@ export default function EntryDetail() {
       .finally(() => setTmdbDetailLoading(false));
   }, [entry?.tmdbId, entry?.type]);
 
-  const setSeasonRating = (num: number, rating: number | null) => {
+  type SeasonData = { number: number; status: string; dateWatched?: string | null; rating?: number | null; notes?: string | null };
+
+  // Unmark a watched season directly (one-tap undo)
+  const unmarkSeason = (num: number) => {
     if (!entryId || !entry) return;
-    const seasons = ((entry as any).seasons ?? []) as Array<{ number: number; status: string; dateWatched?: string | null; rating?: number | null }>;
-    const updated = seasons.map((s) => s.number === num ? { ...s, rating } : s);
+    const seasons = ((entry as any).seasons ?? []) as SeasonData[];
     updateEntry.mutate(
-      { id: entryId, data: { seasons: updated } as any },
+      { id: entryId, data: { seasons: seasons.filter((s) => s.number !== num) } as any },
       { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) }) }
     );
   };
 
-  const toggleSeason = (num: number) => {
-    if (!entryId || !entry) return;
-    const seasons = ((entry as any).seasons ?? []) as Array<{ number: number; status: string; dateWatched?: string | null }>;
-    const isWatched = seasons.some((s) => s.number === num && s.status === 'watched');
+  // Save a season from the sheet (mark watched with optional rating + notes)
+  const confirmSeason = () => {
+    if (!seasonSheet || !entryId || !entry) return;
+    const { num, rating: sRating, note, editing } = seasonSheet;
+    const seasons = ((entry as any).seasons ?? []) as SeasonData[];
+    const existing = seasons.find((s) => s.number === num);
     const today = new Date().toISOString().split('T')[0];
-    const updated = isWatched
-      ? seasons.filter((s) => s.number !== num)
-      : [...seasons.filter((s) => s.number !== num), { number: num, status: 'watched', dateWatched: today }];
+    const updated = [
+      ...seasons.filter((s) => s.number !== num),
+      {
+        number: num,
+        status: 'watched' as const,
+        dateWatched: existing?.dateWatched ?? today,
+        rating: sRating ?? null,
+        notes: note.trim() || null,
+      },
+    ];
     updateEntry.mutate(
       { id: entryId, data: { seasons: updated } as any },
-      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) }) }
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) });
+          setSeasonSheet(null);
+        },
+      }
     );
   };
 
@@ -581,7 +603,7 @@ export default function EntryDetail() {
 
           {/* Season tracker — shows only */}
           {entry.type === 'show' && (() => {
-            const seasons = ((entry as any).seasons ?? []) as Array<{ number: number; status: string }>;
+            const seasons = ((entry as any).seasons ?? []) as SeasonData[];
             const totalSeasons = Math.max(seasonCount ?? 0, ...seasons.map((s) => s.number), seasonCount ? 0 : 1);
             const watchedNums = new Set(seasons.filter((s) => s.status === 'watched').map((s) => s.number));
             const pills = Array.from({ length: Math.max(totalSeasons, 1) }, (_, i) => i + 1);
@@ -596,34 +618,43 @@ export default function EntryDetail() {
                 <div className="flex flex-wrap gap-3">
                   {pills.map((num) => {
                     const isWatched = watchedNums.has(num);
-                    const seasonData = (seasons as Array<{ number: number; status: string; rating?: number | null }>).find((s) => s.number === num);
+                    const seasonData = seasons.find((s) => s.number === num);
                     const seasonRating = seasonData?.rating ?? null;
                     return (
-                      <div key={num} className="flex items-center gap-1.5">
+                      <div key={num} className="flex flex-col items-center gap-0.5">
                         <button
-                          onClick={() => toggleSeason(num)}
+                          onClick={() => {
+                            if (isWatched) {
+                              unmarkSeason(num);
+                            } else {
+                              setSeasonSheet({ num, rating: null, note: '', editing: false });
+                            }
+                          }}
+                          onContextMenu={(e) => {
+                            if (isWatched) {
+                              e.preventDefault();
+                              setSeasonSheet({ num, rating: seasonRating, note: seasonData?.notes ?? '', editing: true });
+                            }
+                          }}
                           disabled={updateEntry.isPending}
-                          className="w-10 h-10 rounded-full font-bold text-xs transition-all active:scale-90 disabled:opacity-50 flex-shrink-0"
+                          className="w-10 h-10 rounded-full font-bold text-xs transition-all active:scale-90 disabled:opacity-50"
                           style={isWatched
                             ? { background: '#116149', color: '#ffffff' }
                             : { background: '#EFE4D2', color: '#7E7A73' }
                           }
-                          title={isWatched ? `Season ${num} — tap to unmark` : `Season ${num} — tap to mark watched`}
+                          title={isWatched ? `Season ${num} — tap to unmark · right-click to edit` : `Season ${num} — tap to rate & mark watched`}
                         >
                           S{num}
                         </button>
+                        {/* Faint star count beneath watched pill */}
                         {isWatched && (
-                          <div className="flex gap-0.5">
+                          <div className="flex gap-px" aria-label={seasonRating ? `${seasonRating} stars` : 'no rating'}>
                             {[1, 2, 3, 4, 5].map((star) => (
-                              <button
+                              <span
                                 key={star}
-                                onClick={() => setSeasonRating(num, star === seasonRating ? null : star)}
-                                disabled={updateEntry.isPending}
-                                className="text-base leading-none transition-all active:scale-110 disabled:opacity-50"
-                                title={`Season ${num}: ${star}/5`}
-                              >
-                                <span style={{ color: star <= (seasonRating ?? 0) ? '#FFD34D' : '#D4C9BC' }}>★</span>
-                              </button>
+                                className="text-[8px] leading-none"
+                                style={{ color: star <= (seasonRating ?? 0) ? '#FFD34D' : '#D4C9BC' }}
+                              >★</span>
                             ))}
                           </div>
                         )}
@@ -632,7 +663,7 @@ export default function EntryDetail() {
                   })}
                 </div>
                 <p className="text-[10px] mt-3" style={{ color: '#7E7A73' }}>
-                  Tap a pill to mark watched · tap again to unmark
+                  Tap unwatched to rate · tap watched to unmark
                 </p>
               </div>
             );
@@ -807,6 +838,91 @@ export default function EntryDetail() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Season rating + notes sheet */}
+      {seasonSheet && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setSeasonSheet(null)}
+          />
+          {/* Sheet */}
+          <div
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl px-5 pt-5 pb-8 max-w-lg mx-auto"
+            style={{ background: '#FFF3E8', border: '1px solid #E2D9CE' }}
+          >
+            {/* Handle */}
+            <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: '#D4C9BC' }} />
+
+            <p className="text-base font-bold mb-4" style={{ color: '#111111' }}>
+              Season {seasonSheet.num}
+              {seasonSheet.editing && <span className="ml-2 text-xs font-normal" style={{ color: '#7E7A73' }}>editing</span>}
+            </p>
+
+            {/* Star rating */}
+            <div className="mb-4">
+              <p className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: '#7E7A73' }}>Rating (optional)</p>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setSeasonSheet((s) => s ? { ...s, rating: star === s.rating ? null : star } : s)}
+                    className="text-3xl leading-none transition-transform active:scale-110"
+                    style={{ color: star <= (seasonSheet.rating ?? 0) ? '#FFD34D' : '#D4C9BC' }}
+                    aria-label={`${star} star${star !== 1 ? 's' : ''}`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="mb-5">
+              <p className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: '#7E7A73' }}>Notes (optional)</p>
+              <textarea
+                rows={3}
+                value={seasonSheet.note}
+                onChange={(e) => setSeasonSheet((s) => s ? { ...s, note: e.target.value } : s)}
+                placeholder="What did you think of this season?"
+                className="w-full px-4 py-3 rounded-2xl font-medium focus:outline-none resize-none text-sm"
+                style={{
+                  border: '2px solid #E2D9CE',
+                  background: '#ffffff',
+                  color: '#111111',
+                  fontFamily: 'Manrope, sans-serif',
+                }}
+                onFocus={(e) => (e.target.style.borderColor = '#116149')}
+                onBlur={(e) => (e.target.style.borderColor = '#E2D9CE')}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setSeasonSheet(null)}
+                className="flex-1 py-3.5 rounded-full font-bold text-sm"
+                style={{ background: '#ffffff', border: '1px solid #E2D9CE', color: '#7E7A73' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmSeason}
+                disabled={updateEntry.isPending}
+                className="flex-1 py-3.5 rounded-full font-bold text-sm text-white transition-opacity disabled:opacity-60"
+                style={{ background: '#116149' }}
+              >
+                {updateEntry.isPending ? 'Saving…' : seasonSheet.editing ? 'Save Changes' : 'Mark Watched'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Delete Confirmation Dialog */}
