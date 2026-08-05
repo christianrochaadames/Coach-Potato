@@ -224,98 +224,113 @@ export default function Stats() {
             </ResponsiveContainer>
           </div>
 
-          {/* Platform breakdown — interactive horizontal bars */}
-          {platformData.length > 0 && (() => {
-            const trackedRows = platformData.filter(d => !d.untracked);
-            const untrackedRow = platformData.find(d => d.untracked);
-            // maxPlatformCount is already derived from the first element (largest)
-            return (
-              <div
-                className="rounded-2xl p-5"
-                style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
-              >
-                <p className="font-bold mb-1" style={{ color: '#111111' }}>Platform Breakdown</p>
-                <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
-                  Tap a platform to highlight · {selectedYear}
-                </p>
-                <div className="space-y-2.5">
-                  {trackedRows.map(({ platform, count, pct }, idx) => {
-                    const color = PLATFORM_COLORS[idx % PLATFORM_COLORS.length];
-                    const isActive = activePlatform === platform;
-                    const isDimmed = activePlatform !== null && !isActive;
-                    return (
-                      <button
-                        key={platform}
-                        type="button"
-                        onClick={() => setActivePlatform(isActive ? null : platform)}
-                        className="w-full text-left transition-opacity"
-                        style={{ opacity: isDimmed ? 0.35 : 1 }}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span
-                            className="text-xs font-bold"
-                            style={{ color: isActive ? color : '#111111' }}
+          {/* Platform breakdown — always renders when entries exist for this year so
+              the user sees a helpful message instead of the section silently vanishing. */}
+          {allEntries !== undefined && allEntries.length > 0 && (
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+            >
+              <p className="font-bold mb-1" style={{ color: '#111111' }}>Platform Breakdown</p>
+              {platformData.length > 0 ? (() => {
+                const trackedRows = platformData.filter(d => !d.untracked);
+                const untrackedRow = platformData.find(d => d.untracked);
+                return (
+                  <>
+                    <p className="text-xs mb-4" style={{ color: '#7E7A73' }}>
+                      Tap a platform to highlight · {selectedYear}
+                    </p>
+                    <div className="space-y-2.5">
+                      {trackedRows.map(({ platform, count, pct }, idx) => {
+                        const color = PLATFORM_COLORS[idx % PLATFORM_COLORS.length];
+                        const isActive = activePlatform === platform;
+                        const isDimmed = activePlatform !== null && !isActive;
+                        return (
+                          <button
+                            key={platform}
+                            type="button"
+                            onClick={() => setActivePlatform(isActive ? null : platform)}
+                            className="w-full text-left transition-opacity"
+                            style={{ opacity: isDimmed ? 0.35 : 1 }}
                           >
-                            {platform}
-                          </span>
-                          <span className="text-xs font-bold" style={{ color: '#7E7A73' }}>
-                            {count} · {pct}%
-                          </span>
-                        </div>
-                        <div
-                          className="h-2 rounded-full overflow-hidden"
-                          style={{ background: '#EFE4D2' }}
-                        >
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{
-                              width: `${(count / maxPlatformCount) * 100}%`,
-                              background: color,
-                            }}
-                          />
-                        </div>
-                      </button>
-                    );
-                  })}
+                            <div className="flex items-center justify-between mb-1">
+                              <span
+                                className="text-xs font-bold"
+                                style={{ color: isActive ? color : '#111111' }}
+                              >
+                                {platform}
+                              </span>
+                              <span className="text-xs font-bold" style={{ color: '#7E7A73' }}>
+                                {count} · {pct}%
+                              </span>
+                            </div>
+                            <div
+                              className="h-2 rounded-full overflow-hidden"
+                              style={{ background: '#EFE4D2' }}
+                            >
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{
+                                  width: `${(count / maxPlatformCount) * 100}%`,
+                                  background: color,
+                                }}
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
 
-                  {/* Untracked row — visually separated, greyed out, non-interactive */}
-                  {untrackedRow && (
-                    <>
-                      {trackedRows.length > 0 && (
-                        <div className="border-t pt-2.5" style={{ borderColor: '#E2D9CE' }} />
+                      {/* Untracked row — visually separated, greyed out, non-interactive */}
+                      {untrackedRow && (
+                        <>
+                          {trackedRows.length > 0 && (
+                            <div className="border-t pt-2.5" style={{ borderColor: '#E2D9CE' }} />
+                          )}
+                          <div>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-bold" style={{ color: '#B0A99E' }}>
+                                Not tracked
+                              </span>
+                              <span className="text-xs font-bold" style={{ color: '#B0A99E' }}>
+                                {untrackedRow.count} · {untrackedRow.pct}%
+                              </span>
+                            </div>
+                            <div
+                              className="h-2 rounded-full overflow-hidden"
+                              style={{ background: '#EFE4D2' }}
+                            >
+                              <div
+                                className="h-full rounded-full"
+                                style={{
+                                  width: `${(untrackedRow.count / maxPlatformCount) * 100}%`,
+                                  background: '#C4B9AD',
+                                  backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.35) 3px, rgba(255,255,255,0.35) 6px)',
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs mt-1.5" style={{ color: '#B0A99E' }}>
+                              {untrackedRow.count} {untrackedRow.count === 1 ? 'title has' : 'titles have'} no platform set — open the entry to add one
+                            </p>
+                          </div>
+                        </>
                       )}
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold" style={{ color: '#B0A99E' }}>
-                            Not tracked
-                          </span>
-                          <span className="text-xs font-bold" style={{ color: '#B0A99E' }}>
-                            {untrackedRow.count} · {untrackedRow.pct}%
-                          </span>
-                        </div>
-                        <div
-                          className="h-2 rounded-full overflow-hidden"
-                          style={{ background: '#EFE4D2' }}
-                        >
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${(untrackedRow.count / maxPlatformCount) * 100}%`,
-                              background: '#C4B9AD',
-                              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(255,255,255,0.35) 3px, rgba(255,255,255,0.35) 6px)',
-                            }}
-                          />
-                        </div>
-                        <p className="text-xs mt-1.5" style={{ color: '#B0A99E' }}>
-                          {untrackedRow.count} {untrackedRow.count === 1 ? 'title has' : 'titles have'} no platform set — open the entry to add one
-                        </p>
-                      </div>
-                    </>
-                  )}
+                    </div>
+                  </>
+                );
+              })() : (
+                <div className="flex flex-col items-center py-6 gap-2 text-center">
+                  <p className="text-2xl">📺</p>
+                  <p className="text-sm font-semibold" style={{ color: '#111111' }}>
+                    No platform data for {selectedYear}
+                  </p>
+                  <p className="text-xs leading-relaxed" style={{ color: '#7E7A73' }}>
+                    None of your {selectedYear} entries have a streaming platform set.
+                    Open any entry and pick a platform to start tracking where you watch.
+                  </p>
                 </div>
-              </div>
-            );
-          })()}
+              )}
+            </div>
+          )}
 
           {/* Genre breakdown — interactive horizontal bars (bottom of page).
               Always renders when there are completed entries for this year so the
