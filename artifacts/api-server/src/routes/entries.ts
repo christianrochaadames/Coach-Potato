@@ -6,12 +6,20 @@ import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
+const episodeSchema = z.object({
+  number: z.number().int().min(0),
+  title: z.string().optional(),
+  watched: z.boolean().default(false),
+  airDate: z.string().nullable().optional(),
+});
+
 const seasonSchema = z.object({
   number: z.number().int().min(1),
   status: z.enum(["watched", "watching"]),
   dateWatched: z.string().nullable().optional(),
   rating: z.number().int().min(1).max(5).nullable().optional(),
   notes: z.string().nullable().optional(),
+  episodes: z.array(episodeSchema).optional(),
 });
 
 const entryInputSchema = z.object({

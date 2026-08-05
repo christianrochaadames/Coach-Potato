@@ -584,4 +584,88 @@ router.get("/tmdb/tv/:id/providers", requireAuth, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Recommendations
+// ---------------------------------------------------------------------------
+
+// GET /tmdb/movie/:id/recommendations
+router.get("/tmdb/movie/:id/recommendations", requireAuth, async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) { res.status(503).json({ error: "TMDB_API_KEY not configured" }); return; }
+  const tmdbId = Number(req.params.id);
+  if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const cacheKey = `movie-recs:${tmdbId}`;
+  const cached = cacheGet<TmdbResult[]>(cacheKey);
+  if (cached) { res.json({ results: cached }); return; }
+  try {
+    const resp = await fetch(`${TMDB_BASE}/movie/${tmdbId}/recommendations?api_key=${apiKey}&language=en-US`);
+    if (!resp.ok) { res.status(502).json({ error: "TMDB error" }); return; }
+    const data = await resp.json() as { results?: Record<string, unknown>[] };
+    const results = (data.results ?? []).slice(0, 12).map((item) => mapItem(item, "movie"));
+    cacheSet(cacheKey, results, TTL_HOUR);
+    res.json({ results });
+  } catch (err) {
+    req.log.error({ err }, "tmdb movie recommendations error");
+    res.status(502).json({ error: "TMDB request failed" });
+  }
+});
+
+// GET /tmdb/tv/:id/recommendations
+router.get("/tmdb/tv/:id/recommendations", requireAuth, async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) { res.status(503).json({ error: "TMDB_API_KEY not configured" }); return; }
+  const tmdbId = Number(req.params.id);
+  if (isNaN(tmdbId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const cacheKey = `tv-recs:${tmdbId}`;
+  const cached = cacheGet<TmdbResult[]>(cacheKey);
+  if (cached) { res.json({ results: cached }); return; }
+  try {
+    const resp = await fetch(`${TMDB_BASE}/tv/${tmdbId}/recommendations?api_key=${apiKey}&language=en-US`);
+    if (!resp.ok) { res.status(502).json({ error: "TMDB error" }); return; }
+    const data = await resp.json() as { results?: Record<string, unknown>[] };
+    const results = (data.results ?? []).slice(0, 12).map((item) => mapItem(item, "tv"));
+    cacheSet(cacheKey, results, TTL_HOUR);
+    res.json({ results });
+  } catch (err) {
+    req.log.error({ err }, "tmdb tv recommendations error");
+    res.status(502).json({ error: "TMDB request failed" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Season episodes
+// ---------------------------------------------------------------------------
+
+// GET /tmdb/tv/:id/season/:seasonNum
+router.get("/tmdb/tv/:id/season/:seasonNum", requireAuth, async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) { res.status(503).json({ error: "TMDB_API_KEY not configured" }); return; }
+  const tmdbId = Number(req.params.id);
+  const seasonNum = Number(req.params.seasonNum);
+  if (isNaN(tmdbId) || isNaN(seasonNum)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const cacheKey = `tv-season:${tmdbId}:${seasonNum}`;
+  const cached = cacheGet<object>(cacheKey);
+  if (cached) { res.json(cached); return; }
+  try {
+    const resp = await fetch(`${TMDB_BASE}/tv/${tmdbId}/season/${seasonNum}?api_key=${apiKey}&language=en-US`);
+    if (!resp.ok) { res.status(502).json({ error: "TMDB error" }); return; }
+    const data = await resp.json() as { episodes?: Record<string, unknown>[] };
+    const result = {
+      seasonNumber: seasonNum,
+      episodes: (data.episodes ?? []).map((ep) => ({
+        episode_number: ep.episode_number,
+        name: ep.name,
+        overview: ep.overview,
+        air_date: ep.air_date,
+        runtime: ep.runtime ?? null,
+      })),
+    };
+    cacheSet(cacheKey, result, TTL_DAY);
+    res.json(result);
+  } catch (err) {
+    req.log.error({ err }, "tmdb tv season error");
+    res.status(502).json({ error: "TMDB request failed" });
+  }
+});
+
 export default router;
