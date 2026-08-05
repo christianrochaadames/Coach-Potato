@@ -46,7 +46,7 @@ export default function Landing() {
 
         {/* Spud — tucked into bottom-right corner */}
         <img
-          src="/spud-acrylic.png"
+          src="/spud.png"
           alt="Spud"
           draggable={false}
           style={{
