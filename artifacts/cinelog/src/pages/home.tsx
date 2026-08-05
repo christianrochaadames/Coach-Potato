@@ -403,15 +403,15 @@ export default function Home() {
       {queueCount > 0 && (
         <div
           className="mx-5 mb-8 rounded-2xl px-4 py-4 flex items-center gap-3 cursor-pointer"
-          style={{ background: '#BDECC8', border: '1px solid #116149' }}
+          style={{ background: '#C5B8FF', border: '2px solid #6B46C1' }}
           onClick={() => setLocation('/watchlist')}
         >
-          <Bookmark className="w-5 h-5 flex-shrink-0" style={{ color: '#116149' }} />
+          <Bookmark className="w-5 h-5 flex-shrink-0" style={{ color: '#6B46C1' }} />
           <div className="flex-1">
-            <p className="text-sm font-bold" style={{ color: '#116149' }}>
+            <p className="text-sm font-bold" style={{ color: '#6B46C1' }}>
               {queueCount} title{queueCount !== 1 ? 's' : ''} in your watchlist
             </p>
-            <p className="text-xs" style={{ color: '#116149', opacity: 0.7 }}>Tap to see what's up next →</p>
+            <p className="text-xs" style={{ color: '#6B46C1', opacity: 0.7 }}>Tap to see what's up next →</p>
           </div>
         </div>
       )}

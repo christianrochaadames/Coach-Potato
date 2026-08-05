@@ -38,7 +38,7 @@ export function BottomNav() {
                 height: 48,
                 borderRadius: 999,
                 background: isActive ? '#9BD6FF' : 'transparent',
-                color: isActive ? '#111111' : 'rgba(255,255,255,0.75)',
+                color: isActive ? '#111111' : '#9E9890',
                 border: 'none',
                 cursor: 'pointer',
               }}
