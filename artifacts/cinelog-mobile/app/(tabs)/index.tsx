@@ -103,12 +103,12 @@ export default function HomeScreen() {
 
       {/* FAB — one tap to log */}
       <TouchableOpacity
-        style={[styles.fab, { backgroundColor: colors.primary, bottom: bottomPad + 80 }]}
+        style={[styles.fab, { backgroundColor: '#BDECC8', bottom: bottomPad + 80 }]}
         onPress={handleLogPress}
         activeOpacity={0.85}
         testID="log-fab"
       >
-        <Feather name="plus" size={26} color={colors.primaryForeground} />
+        <Feather name="plus" size={26} color="#111111" />
       </TouchableOpacity>
     </View>
   );
