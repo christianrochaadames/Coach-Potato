@@ -1,7 +1,14 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = "#5B50D0";
+    return () => { document.body.style.background = prev; };
+  }, []);
 
   return (
     <div className="min-h-[100dvh] flex flex-col" style={{ background: "#5B50D0" }}>
@@ -36,7 +43,7 @@ export default function Landing() {
             position: "absolute",
             right: 0,
             bottom: 0,
-            width: 228,
+            width: 182,
             objectFit: "contain",
             pointerEvents: "none",
             userSelect: "none",
