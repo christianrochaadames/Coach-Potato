@@ -46,7 +46,7 @@ export default function Landing() {
 
         {/* Spud — tucked into bottom-right corner */}
         <img
-          src="/spud.png"
+          src="/spud-acrylic.png"
           alt="Spud"
           draggable={false}
           style={{
@@ -57,6 +57,7 @@ export default function Landing() {
             objectFit: "contain",
             pointerEvents: "none",
             userSelect: "none",
+            mixBlendMode: "screen",
           }}
         />
 
