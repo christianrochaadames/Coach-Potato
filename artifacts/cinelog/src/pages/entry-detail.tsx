@@ -526,8 +526,17 @@ export default function EntryDetail() {
                 ? `${tmdbDetail.voteAverage.toFixed(1)} / 10`
                 : (tmdbDetailLoading ? '—' : 'N/A')}
             </p>
-            <p className="text-[10px] font-bold mt-0.5" style={{ color: '#B0A99E' }}>
-              Source: The Movie Database (TMDB)
+            <p className="text-[10px] mt-0.5" style={{ color: '#B0A99E' }}>
+              Source:{' '}
+              <a
+                href="https://www.themoviedb.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-bold"
+                style={{ color: '#B0A99E' }}
+              >
+                The Movie Database (TMDB)
+              </a>
             </p>
           </div>
           {/* Your rating */}
