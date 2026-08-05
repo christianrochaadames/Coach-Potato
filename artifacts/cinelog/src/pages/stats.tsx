@@ -105,13 +105,20 @@ export default function Stats() {
           ))}
         </div>
       ) : stats ? (
-        <div className="px-5 space-y-4">
+        <div
+          className="px-5 space-y-4 pt-6 pb-32 min-h-screen"
+          style={{
+            background: '#FFF3E8',
+            borderRadius: '28px 28px 0 0',
+            marginTop: 8,
+          }}
+        >
 
           {/* Summary cards */}
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-2xl p-5" style={{ background: '#FFD34D' }}>
-              <p className="text-3xl font-bold" style={{ color: '#FFF3E8' }} data-testid="stat-total">{stats.total}</p>
-              <p className="text-sm font-semibold" style={{ color: '#EFE4D2' }}>Total Watched</p>
+              <p className="text-3xl font-bold" style={{ color: '#4A1020' }} data-testid="stat-total">{stats.total}</p>
+              <p className="text-sm font-semibold" style={{ color: '#4A1020' }}>Total Watched</p>
             </div>
             <div className="rounded-2xl p-5" style={{ background: '#FFE4F3' }}>
               <p className="text-3xl font-bold" style={{ color: '#4A1020' }} data-testid="stat-avg-rating">
@@ -284,7 +291,10 @@ export default function Stats() {
 
         </div>
       ) : (
-        <div className="flex flex-col items-center py-16 gap-4 px-5">
+        <div
+          className="flex flex-col items-center py-16 gap-4 px-5 min-h-screen"
+          style={{ background: '#FFF3E8', borderRadius: '28px 28px 0 0', marginTop: 8 }}
+        >
           <SpudMascot pose="sleepy" size={96} />
           <p className="text-sm text-center font-medium" style={{ color: '#7E7A73' }}>
             No data for {selectedYear} yet

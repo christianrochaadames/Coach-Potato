@@ -15,12 +15,12 @@ export function BottomNav() {
       <div
         className="flex items-center gap-1 px-3 py-3 pointer-events-auto"
         style={{
-          background: 'rgba(255,243,232,0.92)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
+          background: 'rgba(255,255,255,0.18)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
           borderRadius: 999,
-          border: '1.5px solid rgba(255,255,255,0.6)',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+          border: '1.5px solid rgba(255,255,255,0.35)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
         }}
       >
         {tabs.map(({ href, icon: Icon }) => {
