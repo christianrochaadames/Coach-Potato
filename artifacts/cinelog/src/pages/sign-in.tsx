@@ -64,8 +64,8 @@ export default function SignInPage() {
             height: 101,
             width: "auto",
             objectFit: "contain",
-            mixBlendMode: "multiply",
-            marginLeft: -8,
+            position: "relative",
+            zIndex: 10,
           }}
         />
         <img
@@ -86,6 +86,7 @@ export default function SignInPage() {
           elements: {
             formButtonPrimary: {
               backgroundColor: '#5B50D0',
+              color: '#ffffff',
               '&:hover': { backgroundColor: '#4A3FC0' },
               '&:focus': { backgroundColor: '#4A3FC0' },
             },
