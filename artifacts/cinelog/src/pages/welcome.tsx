@@ -124,7 +124,7 @@ export default function Welcome() {
           </h1>
           <h2
             className="font-bold"
-            style={{ color: "#7EDC5A", fontSize: 28, marginTop: 6 }}
+            style={{ color: "#2D6A4F", fontSize: 28, marginTop: 6 }}
           >
             I'm Spud.
           </h2>
@@ -169,13 +169,13 @@ export default function Welcome() {
               right: 20,
               top: "50%",
               transform: "translateY(-50%)",
-              background: "#39FF14",
+              background: "#0F2D1C",
               borderRadius: 9999,
               fontSize: 14,
               padding: "12px 26px",
               whiteSpace: "nowrap",
               border: "none",
-              color: "#0F2D1C",
+              color: "#D4F5A0",
             }}
           >
             Let's get comfy
