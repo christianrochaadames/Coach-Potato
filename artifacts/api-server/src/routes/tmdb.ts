@@ -163,7 +163,9 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
     return;
   }
 
-  const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>("popular");
+  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const popularKey = `popular:${today}`;
+  const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>(popularKey);
   if (cached) { res.json(cached); return; }
 
   try {
@@ -185,7 +187,7 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
       .map((item) => mapItem(item, "tv"));
 
     const payload = { movies, shows };
-    cacheSet("popular", payload, TTL_HALF_HOUR);
+    cacheSet(popularKey, payload, TTL_HALF_HOUR);
     res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb popular error");

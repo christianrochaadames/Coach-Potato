@@ -241,8 +241,8 @@ export default function SearchPage() {
       key={item.tmdbId}
       className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer active:opacity-70 transition-opacity"
       style={{
-        background: alreadyAdded ? '#F4FBF7' : '#ffffff',
-        border: alreadyAdded ? '1.5px solid #BDECC8' : '1px solid #E2D9CE',
+        background: '#ffffff',
+        border: '1px solid #E2D9CE',
       }}
       onClick={() => setAddingItem(item)}
     >
@@ -347,10 +347,10 @@ export default function SearchPage() {
           </>
         ) : popular ? (
           <>
-            <p className="text-xs font-bold uppercase tracking-wider pb-1" style={{ color: '#7E7A73' }}>Popular Movies</p>
-            {popular.movies.map((item, i) => renderItem(item, i))}
-            <p className="text-xs font-bold uppercase tracking-wider pb-1 pt-3" style={{ color: '#7E7A73' }}>Popular TV Shows</p>
+            <p className="text-xs font-bold uppercase tracking-wider pb-1" style={{ color: '#7E7A73' }}>Popular TV Shows</p>
             {popular.shows.map((item, i) => renderItem(item, i))}
+            <p className="text-xs font-bold uppercase tracking-wider pb-1 pt-3" style={{ color: '#7E7A73' }}>Popular Movies</p>
+            {popular.movies.map((item, i) => renderItem(item, i))}
           </>
         ) : !noKey && popularLoading ? (
           [...Array(6)].map((_, i) => (
