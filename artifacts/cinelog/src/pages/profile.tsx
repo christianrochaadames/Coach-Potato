@@ -536,8 +536,8 @@ export default function Profile() {
       </div>
 
       {/* ── Avatar picker ── */}
-      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#1A4A2A" }}>
-        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7EDC5A" }}>
+      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#D4F5A0" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#2A6B30" }}>
           Choose your avatar
         </p>
 
@@ -552,7 +552,7 @@ export default function Profile() {
                 aspectRatio: "1",
                 borderRadius: "50%",
                 overflow: "hidden",
-                background: "#1E5530",
+                background: "#82C97E",
                 border: avatarId === String(id) && !avatarUrl
                   ? "3px solid #7EDC5A"
                   : "2.5px solid transparent",
@@ -577,7 +577,7 @@ export default function Profile() {
               aspectRatio: "1",
               borderRadius: "50%",
               background: avatarUrl ? "#1E5530" : "#1E5530",
-              border: avatarUrl ? "3px solid #7EDC5A" : "2.5px dashed #FF6B9D",
+              border: avatarUrl ? "3px solid #7EDC5A" : "2.5px dashed #2A6B30",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -590,8 +590,8 @@ export default function Profile() {
               <img src={avatarUrl} alt="Your photo" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
             ) : (
               <>
-                <Camera style={{ width: 18, height: 18, color: "#FF6B9D" }} />
-                <span style={{ fontSize: 8, fontWeight: 700, color: "#FF6B9D", lineHeight: 1 }}>Photo</span>
+                <Camera style={{ width: 18, height: 18, color: "#2A6B30" }} />
+                <span style={{ fontSize: 8, fontWeight: 700, color: "#2A6B30", lineHeight: 1 }}>Photo</span>
               </>
             )}
           </button>
@@ -606,7 +606,7 @@ export default function Profile() {
         />
 
         {savingAvatar && (
-          <p className="text-xs text-center mt-2" style={{ color: "#A8D4B0" }}>Saving avatar…</p>
+          <p className="text-xs text-center mt-2" style={{ color: "#2A6B30" }}>Saving avatar…</p>
         )}
       </div>
 
@@ -742,7 +742,7 @@ export default function Profile() {
         <button
           onClick={() => signOut({ redirectUrl: basePath || "/" })}
           className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 active:opacity-70"
-          style={{ background: "#1A4A2A", color: "#FF6B9D", border: "1.5px solid #FF6B9D" }}
+          style={{ background: "#1A4A2A", color: "#7EDC5A", border: "1.5px solid #7EDC5A" }}
         >
           <LogOut className="w-4 h-4" />
           Sign out
