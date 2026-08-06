@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { Search as SearchIcon, X, Film, Tv } from 'lucide-react';
+import { Search as SearchIcon, X, Film, Tv, Check } from 'lucide-react';
 import {
   useCreateEntry,
   useListEntries,

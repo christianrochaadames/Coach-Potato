@@ -149,10 +149,10 @@ export default function Watchlist() {
                     <button
                       onClick={() => markWatched(entry.id, entry.title)}
                       disabled={updateEntry.isPending}
-                      className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-50"
+                      className="flex items-center gap-1 text-xs font-bold px-4 py-1.5 rounded-full text-white disabled:opacity-50 whitespace-nowrap"
                       style={{ background: '#FF2BAC' }}
                     >
-                      <Check className="w-3 h-3" strokeWidth={3} /> Watched
+                      <Check className="w-3 h-3 flex-shrink-0" strokeWidth={3} /> Watched
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(entry.id)}
