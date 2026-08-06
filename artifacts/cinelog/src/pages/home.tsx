@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Plus, Bookmark, X, RefreshCw, Play } from 'lucide-react';
+import { Plus, Bookmark, X, RefreshCw } from 'lucide-react';
 import {
   useListEntries,
   useCreateEntry,
@@ -234,11 +234,11 @@ export default function Home() {
       </div>
 
       {/* ── Currently Watching ── */}
-      {watchingCount > 0 ? (
-        <section id="section-watching" className="mb-6">
-          <div className="px-5 mb-3">
-            <h2 className="text-base font-bold" style={{ color: '#111111' }}>Currently Watching</h2>
-          </div>
+      <section id="section-watching" className="mb-6">
+        <div className="px-5 mb-3">
+          <h2 className="text-base font-bold" style={{ color: '#111111' }}>Currently Watching</h2>
+        </div>
+        {watchingCount > 0 ? (
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
             {watching!.map((entry: any, i: number) => (
               <div key={entry.id} className="flex-shrink-0 w-28">
@@ -250,18 +250,12 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </section>
-      ) : (
-        <div className="mx-5 mb-6 rounded-2xl px-4 py-3 flex items-center gap-3"
-          style={{ background: '#EFE4D2', border: '1px solid #E2D9CE' }}
-        >
-          <Play className="w-5 h-5 flex-shrink-0" style={{ color: '#7E7A73' }} />
-          <div className="flex-1">
-            <p className="text-sm font-bold" style={{ color: '#111111' }}>Nothing on right now</p>
-            <p className="text-xs" style={{ color: '#7E7A73' }}>Mark a title as "Watching" from My Shows</p>
-          </div>
-        </div>
-      )}
+        ) : (
+          <p className="px-5 text-sm" style={{ color: '#7E7A73' }}>
+            Add TV shows or movies that you're currently watching. They'll appear here.
+          </p>
+        )}
+      </section>
 
       {/* ── You Might Like — always rendered so it never disappears ── */}
       <section className="mb-6">
@@ -300,9 +294,22 @@ export default function Home() {
 
         {/* Empty state */}
         {!recsLoading && recs.length === 0 && (
-          <div className="mx-5 px-4 py-5 rounded-2xl text-center" style={{ background: '#EFE4D2' }}>
-            <p className="text-sm font-semibold" style={{ color: '#116149' }}>Log a few titles you've watched</p>
-            <p className="text-xs mt-1" style={{ color: '#7E7A73' }}>Recommendations appear once we know your taste</p>
+          <div className="flex flex-col items-center py-10 px-5 gap-4">
+            <img
+              src="/spud-heart.png"
+              alt="Spud"
+              style={{ width: 250, height: 250, objectFit: 'contain' }}
+            />
+            <p className="text-sm text-center font-medium" style={{ color: '#7E7A73', maxWidth: 260 }}>
+              Start adding shows to your watchlist so we can recommend new TV shows and movies to watch.
+            </p>
+            <button
+              onClick={() => setLocation('/search')}
+              className="px-6 py-3 rounded-full font-bold text-sm text-white"
+              style={{ background: '#5B50D0', border: 'none' }}
+            >
+              Find something to watch
+            </button>
           </div>
         )}
 
