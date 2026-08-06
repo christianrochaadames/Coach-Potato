@@ -134,9 +134,20 @@ export default function Watchlist() {
                   >
                     {entry.title}
                   </p>
-                  <p className="text-xs mb-2" style={{ color: '#7E7A73' }}>
-                    {entry.year ?? (entry.type === 'movie' ? 'Movie' : 'TV Show')}
-                  </p>
+                  <div className="flex items-center gap-2 mb-2">
+                    {entry.year && (
+                      <p className="text-xs" style={{ color: '#7E7A73' }}>{entry.year}</p>
+                    )}
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={entry.type === 'movie'
+                        ? { background: '#7C3AED', color: '#ffffff' }
+                        : { background: '#2D6A4F', color: '#ffffff' }
+                      }
+                    >
+                      {entry.type === 'movie' ? 'Movie' : 'TV Show'}
+                    </span>
+                  </div>
                   <div className="flex gap-2 flex-wrap">
                     <button
                       onClick={() => startWatching(entry.id, entry.title)}
