@@ -92,7 +92,7 @@ export default function Welcome() {
             style={{
               position: "absolute",
               top: 28,
-              left: 10,
+              left: 28,
               height: 84,
               width: "auto",
               objectFit: "contain",
@@ -132,9 +132,9 @@ export default function Welcome() {
             className="leading-relaxed"
             style={{ color: "#2D6A4F", fontSize: 16, fontWeight: 500, marginTop: 18 }}
           >
-            I'm here to help you keep track of every Movie and TV Show you've
-            watched, so next time someone asks what you've been watching lately,
-            you'll know exactly where to look.
+            I'm here to help you keep track of every movie and TV show you've
+            watched, what you're watching right now, and recommend what to
+            watch next.
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export default function Welcome() {
               right: 20,
               top: "50%",
               transform: "translateY(-50%)",
-              background: "transparent",
+              background: "#0F2D1C",
               borderRadius: 9999,
               fontSize: 14,
               padding: "12px 26px",
