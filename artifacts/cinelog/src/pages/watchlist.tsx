@@ -206,14 +206,18 @@ export default function Watchlist() {
           ))
         ) : (
           <div className="flex flex-col items-center py-16 gap-4">
-            <SpudMascot pose="sleepy" size={96} />
+            <img
+              src="/spud-phone.png"
+              alt="Spud"
+              style={{ width: 125, height: 125, objectFit: 'contain' }}
+            />
             <p className="text-sm text-center font-medium" style={{ color: '#7E7A73' }}>
               Your watchlist is empty.{'\n'}Search for something to save!
             </p>
             <button
               onClick={() => setLocation('/search')}
               className="px-6 py-3 rounded-full font-bold text-sm text-white"
-              style={{ background: '#116149' }}
+              style={{ background: '#5B50D0', border: 'none' }}
             >
               Browse Search
             </button>
