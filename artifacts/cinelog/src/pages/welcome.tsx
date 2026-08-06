@@ -96,7 +96,6 @@ export default function Welcome() {
               height: 84,
               width: "auto",
               objectFit: "contain",
-              mixBlendMode: "multiply",
             }}
           />
           <img
@@ -125,7 +124,7 @@ export default function Welcome() {
           </h1>
           <h2
             className="font-bold"
-            style={{ color: "#0e4f3a", fontSize: 28, marginTop: 6 }}
+            style={{ color: "#7EDC5A", fontSize: 28, marginTop: 6 }}
           >
             I'm Spud.
           </h2>
@@ -164,18 +163,19 @@ export default function Welcome() {
           />
           <button
             onClick={() => setShowForm(true)}
-            className="font-bold text-white active:opacity-80 transition-opacity"
+            className="font-bold active:opacity-80 transition-opacity"
             style={{
               position: "absolute",
               right: 20,
               top: "50%",
               transform: "translateY(-50%)",
-              background: "#116149",
+              background: "transparent",
               borderRadius: 9999,
               fontSize: 14,
               padding: "12px 26px",
               whiteSpace: "nowrap",
-              border: "none",
+              border: "2px solid #7EDC5A",
+              color: "#7EDC5A",
             }}
           >
             Let's get comfy
