@@ -349,10 +349,31 @@ export default function SearchPage() {
           </>
         ) : popular ? (
           <>
-            <p className="text-xs font-bold uppercase tracking-wider pb-1" style={{ color: '#7E7A73' }}>Popular TV Shows</p>
-            {popular.shows.map((item, i) => renderItem(item, i))}
-            <p className="text-xs font-bold uppercase tracking-wider pb-1 pt-3" style={{ color: '#7E7A73' }}>Popular Movies</p>
-            {popular.movies.map((item, i) => renderItem(item, i))}
+            {(() => {
+              const freshShows = popular.shows.filter(item => !inCollection.has(item.tmdbId));
+              const freshMovies = popular.movies.filter(item => !inCollection.has(item.tmdbId));
+              return (
+                <>
+                  {freshShows.length > 0 && (
+                    <>
+                      <p className="text-xs font-bold uppercase tracking-wider pb-1" style={{ color: '#7E7A73' }}>Popular TV Shows</p>
+                      {freshShows.map((item, i) => renderItem(item, i))}
+                    </>
+                  )}
+                  {freshMovies.length > 0 && (
+                    <>
+                      <p className="text-xs font-bold uppercase tracking-wider pb-1 pt-3" style={{ color: '#7E7A73' }}>Popular Movies</p>
+                      {freshMovies.map((item, i) => renderItem(item, i))}
+                    </>
+                  )}
+                  {freshShows.length === 0 && freshMovies.length === 0 && (
+                    <p className="text-center py-10 text-sm" style={{ color: '#7E7A73' }}>
+                      You&apos;ve added everything popular — search to find more!
+                    </p>
+                  )}
+                </>
+              );
+            })()}
           </>
         ) : !noKey && popularLoading ? (
           [...Array(6)].map((_, i) => (
