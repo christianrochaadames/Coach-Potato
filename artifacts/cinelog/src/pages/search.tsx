@@ -273,7 +273,7 @@ export default function SearchPage() {
         className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
         style={
           item.type === 'movie'
-            ? { background: '#FFE4EF', color: '#4A1020', border: '1.5px solid #4A1020' }
+            ? { background: '#E5FAB0', color: '#2D6A4F', border: '1.5px solid #2D6A4F' }
             : { background: '#DDD8FF', color: '#5B50D0', border: '1.5px solid #5B50D0' }
         }
       >
