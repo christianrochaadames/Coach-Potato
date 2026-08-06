@@ -508,7 +508,7 @@ export default function Profile() {
       <div className="px-5 flex flex-col items-center pb-6">
         <div
           className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center"
-          style={{ background: "#1E5530", border: "3px solid #7EDC5A" }}
+          style={{ background: "#D4F5A0", border: "3px solid #7EDC5A" }}
         >
           {avatarUrl ? (
             <img src={avatarUrl} alt="Profile photo" className="w-full h-full object-cover" />
@@ -536,9 +536,9 @@ export default function Profile() {
       </div>
 
       {/* ── Avatar picker ── */}
-      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#D4F5A0" }}>
-        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#2A6B30" }}>
-          Choose your avatar
+      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#82C97E" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#0F2D1C" }}>
+          Choose your Spud or upload your picture.
         </p>
 
         {/* Grid: 14 Spud variants + 1 photo upload button */}
@@ -552,7 +552,7 @@ export default function Profile() {
                 aspectRatio: "1",
                 borderRadius: "50%",
                 overflow: "hidden",
-                background: "#82C97E",
+                background: "#D4F5A0",
                 border: avatarId === String(id) && !avatarUrl
                   ? "3px solid #7EDC5A"
                   : "2.5px solid transparent",
@@ -576,8 +576,8 @@ export default function Profile() {
             style={{
               aspectRatio: "1",
               borderRadius: "50%",
-              background: avatarUrl ? "#1E5530" : "#1E5530",
-              border: avatarUrl ? "3px solid #7EDC5A" : "2.5px dashed #2A6B30",
+              background: avatarUrl ? "#D4F5A0" : "#1A4A2A",
+              border: avatarUrl ? "3px solid #7EDC5A" : "2.5px dashed #7EDC5A",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -590,8 +590,8 @@ export default function Profile() {
               <img src={avatarUrl} alt="Your photo" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
             ) : (
               <>
-                <Camera style={{ width: 18, height: 18, color: "#2A6B30" }} />
-                <span style={{ fontSize: 8, fontWeight: 700, color: "#2A6B30", lineHeight: 1 }}>Photo</span>
+                <Camera style={{ width: 18, height: 18, color: "#7EDC5A" }} />
+                <span style={{ fontSize: 8, fontWeight: 700, color: "#7EDC5A", lineHeight: 1 }}>Photo</span>
               </>
             )}
           </button>
