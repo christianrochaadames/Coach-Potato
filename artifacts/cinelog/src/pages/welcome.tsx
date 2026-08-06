@@ -115,7 +115,7 @@ export default function Welcome() {
         </div>
 
         {/* Text content */}
-        <div className="flex flex-col px-7" style={{ gap: 0 }}>
+        <div className="flex flex-col px-7" style={{ gap: 0, marginTop: 32 }}>
           <h1
             className="font-extrabold leading-none"
             style={{ color: "#116149", fontSize: 52, letterSpacing: -1 }}
