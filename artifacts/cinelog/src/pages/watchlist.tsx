@@ -150,7 +150,7 @@ export default function Watchlist() {
                       onClick={() => markWatched(entry.id, entry.title)}
                       disabled={updateEntry.isPending}
                       className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-50"
-                      style={{ background: '#116149' }}
+                      style={{ background: '#FF6B9D' }}
                     >
                       ✓ Watched
                     </button>

@@ -106,7 +106,7 @@ export default function Stats() {
   return (
     <div className="pb-8" style={{ background: '#4A1020', borderRadius: 28, marginTop: 8, marginBottom: 100 }}>
       {/* Header */}
-      <div className="px-5 pt-8 pb-4 flex items-center justify-between">
+      <div className="px-5 pt-8 pb-16 flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: '#FFF3E8' }}>Your Stats</h1>
         <select
           value={selectedYear}
@@ -135,7 +135,7 @@ export default function Stats() {
         </div>
       ) : stats ? (
         <div
-          className="px-5 space-y-4 pt-6 pb-8"
+          className="px-5 space-y-4 pt-6 pb-4"
           style={{
             background: '#FFF3E8',
             borderRadius: 28,
