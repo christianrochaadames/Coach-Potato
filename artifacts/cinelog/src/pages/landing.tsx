@@ -10,9 +10,9 @@ export default function Landing() {
     const main = document.querySelector("main") as HTMLElement | null;
     const wrapper = main?.parentElement as HTMLElement | null;
     const prevWrapper = wrapper?.style.background ?? "";
-    document.documentElement.style.background = "#0F2D1C";
-    document.body.style.background = "#0F2D1C";
-    if (wrapper) wrapper.style.background = "#0F2D1C";
+    document.documentElement.style.background = "#5B50D0";
+    document.body.style.background = "#5B50D0";
+    if (wrapper) wrapper.style.background = "#5B50D0";
     return () => {
       document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
@@ -21,120 +21,103 @@ export default function Landing() {
   }, []);
 
   return (
+    <div className="min-h-[100dvh] flex flex-col" style={{ background: "#5B50D0" }}>
     <div
-      className="min-h-[100dvh] flex flex-col"
-      style={{ background: "#0F2D1C" }}
+      className="flex flex-col flex-1 mx-3"
+      style={{ background: "#D4CCFF", borderRadius: 28, marginTop: 16, marginBottom: 16, overflow: "hidden" }}
     >
-      {/* ── TOP rounded box ── */}
-      <div
-        style={{
-          background: "#1A4A2A",
-          borderRadius: 24,
-          margin: "16px 16px 0",
-          padding: "24px 24px 20px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
+      {/* ── Logo — transparent PNG. marginLeft nudges out the PNG's internal padding
+           so the visible letter edge aligns exactly with the text below (px-6). ── */}
+      <div className="pt-10 px-6 flex justify-start">
         <img
           src="/spud-logo.png"
           alt="Spud"
           draggable={false}
-          style={{ height: 72, width: "auto", objectFit: "contain" }}
+          style={{
+            height: 115,
+            width: "auto",
+            objectFit: "contain",
+          }}
         />
-        {/* decorative lime dot cluster */}
-        <div style={{ display: "flex", gap: 6 }}>
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#7EDC5A", opacity: 0.9 }} />
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#7EDC5A", opacity: 0.5 }} />
-          <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#7EDC5A", opacity: 0.25 }} />
-        </div>
       </div>
 
-      {/* ── Main content ── */}
-      <div className="flex-1 flex flex-col px-6 pt-8">
-        <h1
-          className="font-black leading-none mb-1"
-          style={{ color: "#7EDC5A", fontSize: 40 }}
-        >
-          Welcome!
-        </h1>
-        <h2
-          className="font-bold mb-5"
-          style={{ color: "#D4F5A0", fontSize: 26 }}
-        >
-          I'm Spud.
-        </h2>
-        <p
-          className="leading-relaxed mb-8"
-          style={{ color: "#A8D4B0", fontSize: 15, maxWidth: 320 }}
-        >
-          I'm here to help you keep track of every Movie and TV Show you've
-          watched, so next time someone asks what you've been watching lately,
-          you'll know exactly where to look.
-        </p>
+      {/* ── Hero: text left / Spud right ── */}
+      <div className="relative flex-1 mt-2" style={{ minHeight: 380 }}>
 
-        {/* ── Spud mascot — same D4F5A0 circle as profile avatar ── */}
-        <div className="flex justify-center">
-          <div
-            style={{
-              background: "#D4F5A0",
-              border: "3px solid #7EDC5A",
-              borderRadius: 24,
-              padding: "12px 20px 0",
-              display: "inline-flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              overflow: "hidden",
-              width: 200,
-              height: 200,
-            }}
+        {/* Spud — tucked into bottom-right corner */}
+        <img
+          src="/spud.png"
+          alt="Spud"
+          draggable={false}
+          style={{
+            position: "absolute",
+            right: 0,
+            bottom: 0,
+            width: 182,
+            objectFit: "contain",
+            pointerEvents: "none",
+            userSelect: "none",
+          }}
+        />
+
+        {/* Text — left-aligned, all dark green, even spacing */}
+        <div
+          className="relative flex flex-col px-6"
+          style={{ gap: 22, zIndex: 1, maxWidth: "65%" }}
+        >
+          <p
+            className="leading-snug"
+            style={{ color: "#6B46C1", fontSize: 22, fontWeight: 400 }}
           >
-            <img
-              src="/spud.png"
-              alt="Spud"
-              draggable={false}
-              style={{
-                width: 176,
-                objectFit: "contain",
-                display: "block",
-              }}
-            />
-          </div>
+            The TV shows and movies you're <strong>watching</strong>
+          </p>
+          <p
+            className="leading-snug"
+            style={{ color: "#6B46C1", fontSize: 22, fontWeight: 400 }}
+          >
+            The ones you've already <strong>watched</strong>
+          </p>
+          <p
+            className="leading-snug"
+            style={{ color: "#6B46C1", fontSize: 22, fontWeight: 400 }}
+          >
+            And what you'll <strong>watch</strong> next
+          </p>
+          <p
+            className="font-bold leading-snug"
+            style={{ color: "#6B46C1", fontSize: 22 }}
+          >
+            All in one place.
+          </p>
         </div>
       </div>
 
-      {/* ── BOTTOM rounded box — CTAs ── */}
-      <div
-        style={{
-          background: "#1A4A2A",
-          borderRadius: 24,
-          margin: "24px 16px 16px",
-          padding: "24px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
+      {/* ── CTAs — both pill boxes, smaller, at bottom ── */}
+      <div className="w-full px-6 pb-12 pt-6 flex flex-col gap-3">
         <button
           onClick={() => setLocation("/sign-up")}
-          className="w-full py-3.5 rounded-full font-bold text-sm active:opacity-80 transition-opacity"
-          style={{ background: "#7EDC5A", color: "#0F2D1C", border: "none" }}
+          className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
+          style={{
+            border: "2px solid #5B50D0",
+            color: "#ffffff",
+            background: "#5B50D0",
+          }}
         >
           Get started free
         </button>
         <button
           onClick={() => setLocation("/sign-in")}
-          className="w-full py-3.5 rounded-full font-bold text-sm active:opacity-80 transition-opacity"
+          className="w-full py-3 rounded-full font-bold text-sm active:opacity-75 transition-opacity"
           style={{
+            border: "2px solid #5B50D0",
+            color: "#5B50D0",
             background: "transparent",
-            color: "#D4F5A0",
-            border: "2px solid #3A7A50",
           }}
         >
           Sign in
         </button>
       </div>
+    </div>
     </div>
   );
 }
