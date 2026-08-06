@@ -93,7 +93,7 @@ export default function Welcome() {
               position: "absolute",
               top: 28,
               left: 28,
-              height: 84,
+              height: 92,
               width: "auto",
               objectFit: "contain",
             }}
@@ -169,7 +169,7 @@ export default function Welcome() {
               right: 20,
               top: "50%",
               transform: "translateY(-50%)",
-              background: "#82C97E",
+              background: "#6DC96B",
               borderRadius: 9999,
               fontSize: 14,
               padding: "12px 26px",
