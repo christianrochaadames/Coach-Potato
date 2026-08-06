@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { Bookmark, ArrowRight, Play, Trash2 } from 'lucide-react';
+import { Bookmark, ArrowRight, Play, Trash2, Check } from 'lucide-react';
 import {
   useListEntries,
   useUpdateEntry,
@@ -152,7 +152,7 @@ export default function Watchlist() {
                       className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-50"
                       style={{ background: '#FF2BAC' }}
                     >
-                      ✓ Watched
+                      <Check className="w-3 h-3" strokeWidth={3} /> Watched
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(entry.id)}

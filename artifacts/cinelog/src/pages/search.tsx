@@ -262,7 +262,9 @@ export default function SearchPage() {
         <div className="flex items-center gap-1.5">
           <p className="font-bold text-sm truncate" style={{ color: '#111111' }}>{item.title}</p>
           {alreadyAdded && (
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0" style={{ background: '#BDECC8', color: '#116149' }}>✓</span>
+            <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#FF2BAC' }}>
+              <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+            </span>
           )}
         </div>
         <p className="text-xs" style={{ color: '#7E7A73' }}>

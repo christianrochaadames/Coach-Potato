@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Check } from "lucide-react";
 import { useLocation } from "wouter";
 import { CouchPotatoLogo } from "@/components/couch-potato-logo";
 import { useCreateEntry, getListEntriesQueryKey } from "@workspace/api-client-react";
@@ -163,7 +164,7 @@ export default function Onboarding() {
                       style={{ background: "rgba(17, 97, 73, 0.45)" }}
                     >
                       <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "#116149" }}>
-                        <span className="text-white text-base font-bold">✓</span>
+                        <Check className="w-5 h-5 text-white" strokeWidth={3} />
                       </div>
                     </div>
                   )}
