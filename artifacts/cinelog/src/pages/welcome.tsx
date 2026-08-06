@@ -64,137 +64,123 @@ export default function Welcome() {
     width: "100%",
     padding: "14px 16px",
     borderRadius: 16,
-    border: hasError ? "2px solid #DC2626" : "2px solid #3A7A50",
-    background: "#1A4A2A",
-    color: "#D4F5A0",
+    border: hasError ? "2px solid #DC2626" : "2px solid rgba(17,97,73,0.25)",
+    background: "#ffffff",
+    color: "#111111",
     fontSize: 15,
     fontWeight: 600,
     outline: "none",
   });
 
   return (
+    /* Outer shell — dark green, peeking at top + bottom */
     <div
       className="min-h-[100dvh] flex flex-col"
-      style={{ background: "#0F2D1C" }}
+      style={{ background: "#0F2D1C", padding: "20px 12px" }}
     >
-      {/* ── TOP rounded box ── */}
+      {/* ── Big light-green card ── */}
       <div
-        style={{
-          background: "#1A4A2A",
-          borderRadius: 24,
-          margin: "16px 16px 0",
-          padding: "20px 20px 0",
-          overflow: "hidden",
-          position: "relative",
-          minHeight: 140,
-        }}
+        className="flex-1 flex flex-col overflow-hidden"
+        style={{ background: "#D4F5A0", borderRadius: 28 }}
       >
-        {/* Logo top-left */}
-        <img
-          src="/spud-logo.png"
-          alt="Spud"
-          draggable={false}
-          style={{
-            height: 80,
-            width: "auto",
-            objectFit: "contain",
-            position: "relative",
-            zIndex: 1,
-          }}
-        />
-        {/* Walking Spud hero — right side, bleeds out of box slightly */}
-        <img
-          src="/spud-hero.png"
-          alt=""
-          aria-hidden
-          draggable={false}
-          style={{
-            position: "absolute",
-            right: -8,
-            bottom: 0,
-            height: 190,
-            width: "auto",
-            objectFit: "contain",
-          }}
-        />
-      </div>
-
-      {/* ── Main content ── */}
-      <div className="flex-1 flex flex-col px-6 pt-7">
-        <h1
-          className="font-black leading-none mb-1"
-          style={{ color: "#7EDC5A", fontSize: 48, letterSpacing: -1 }}
-        >
-          Welcome!
-        </h1>
-        <h2
-          className="font-bold mb-5"
-          style={{ color: "#D4F5A0", fontSize: 26 }}
-        >
-          I'm Spud.
-        </h2>
-        <p
-          className="leading-relaxed"
-          style={{ color: "#A8D4B0", fontSize: 15, maxWidth: 340 }}
-        >
-          I'm here to help you keep track of every Movie and TV Show you've
-          watched, so next time someone asks what you've been watching lately,
-          you'll know exactly where to look.
-        </p>
-
-        {/* ── Couch Spud in profile-style lime box ── */}
-        <div className="flex justify-center mt-6">
-          <div
+        {/* Hero: logo left + walking Spud right */}
+        <div className="relative flex-shrink-0" style={{ height: 220 }}>
+          <img
+            src="/spud-logo.png"
+            alt="Spud"
+            draggable={false}
             style={{
-              background: "#D4F5A0",
-              border: "3px solid #7EDC5A",
-              borderRadius: 24,
-              padding: "12px 16px 0",
-              display: "inline-flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              overflow: "hidden",
+              position: "absolute",
+              top: 28,
+              left: 10,
+              height: 84,
+              width: "auto",
+              objectFit: "contain",
+              mixBlendMode: "multiply",
+            }}
+          />
+          <img
+            src="/spud-hero.png"
+            alt=""
+            aria-hidden
+            draggable={false}
+            style={{
+              position: "absolute",
+              top: 20,
+              right: -8,
+              height: 200,
+              width: "auto",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+
+        {/* Text content */}
+        <div className="flex flex-col px-7" style={{ gap: 0 }}>
+          <h1
+            className="font-extrabold leading-none"
+            style={{ color: "#116149", fontSize: 52, letterSpacing: -1 }}
+          >
+            Welcome!
+          </h1>
+          <h2
+            className="font-bold"
+            style={{ color: "#0e4f3a", fontSize: 28, marginTop: 6 }}
+          >
+            I'm Spud.
+          </h2>
+          <p
+            className="leading-relaxed"
+            style={{ color: "#2D6A4F", fontSize: 16, fontWeight: 500, marginTop: 18 }}
+          >
+            I'm here to help you keep track of every Movie and TV Show you've
+            watched, so next time someone asks what you've been watching lately,
+            you'll know exactly where to look.
+          </p>
+        </div>
+
+        {/* Flexible spacer */}
+        <div className="flex-1" />
+
+        {/* Bottom: couch Spud left, button right */}
+        <div
+          className="relative flex-shrink-0"
+          style={{ height: 200, marginBottom: 28 }}
+        >
+          <img
+            src="/spud-couch.png"
+            alt=""
+            aria-hidden
+            draggable={false}
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 10,
               width: 210,
-              height: 170,
+              height: "auto",
+              objectFit: "contain",
+              mixBlendMode: "multiply",
+            }}
+          />
+          <button
+            onClick={() => setShowForm(true)}
+            className="font-bold text-white active:opacity-80 transition-opacity"
+            style={{
+              position: "absolute",
+              right: 20,
+              top: "50%",
+              transform: "translateY(-50%)",
+              background: "#116149",
+              borderRadius: 9999,
+              fontSize: 14,
+              padding: "12px 26px",
+              whiteSpace: "nowrap",
+              border: "none",
             }}
           >
-            <img
-              src="/spud-couch.png"
-              alt=""
-              aria-hidden
-              draggable={false}
-              style={{
-                width: 196,
-                objectFit: "contain",
-                display: "block",
-              }}
-            />
-          </div>
+            Let's get comfy
+          </button>
         </div>
-      </div>
-
-      {/* ── BOTTOM rounded box ── */}
-      <div
-        style={{
-          background: "#1A4A2A",
-          borderRadius: 24,
-          margin: "20px 16px 16px",
-          padding: "24px",
-        }}
-      >
-        <button
-          onClick={() => setShowForm(true)}
-          className="w-full font-bold text-base active:opacity-80 transition-opacity"
-          style={{
-            background: "#7EDC5A",
-            color: "#0F2D1C",
-            borderRadius: 9999,
-            padding: "16px 0",
-            border: "none",
-          }}
-        >
-          Let's get comfy
-        </button>
       </div>
 
       {/* ── Profile form bottom-sheet ── */}
@@ -202,29 +188,26 @@ export default function Welcome() {
         <>
           <div
             className="fixed inset-0 z-20"
-            style={{ background: "rgba(0,0,0,0.55)" }}
+            style={{ background: "rgba(0,0,0,0.45)" }}
             onClick={() => setShowForm(false)}
           />
           <div
             className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-6 pt-5 pb-10"
-            style={{ background: "#1A4A2A", maxHeight: "88dvh", overflowY: "auto" }}
+            style={{ background: "#ffffff", maxHeight: "88dvh", overflowY: "auto" }}
           >
             <div className="flex justify-center mb-5">
-              <div className="w-12 h-1.5 rounded-full" style={{ background: "#3A7A50" }} />
+              <div className="w-12 h-1.5 rounded-full" style={{ background: "#E2D9CE" }} />
             </div>
-
-            <h2 className="text-2xl font-bold mb-1" style={{ color: "#7EDC5A" }}>
+            <h2 className="text-2xl font-bold mb-1" style={{ color: "#116149" }}>
               Tell me about yourself
             </h2>
-            <p className="text-sm mb-6" style={{ color: "#A8D4B0" }}>
+            <p className="text-sm mb-6" style={{ color: "#7E7A73" }}>
               Just a few details to set up your profile.
             </p>
-
             <div className="flex flex-col gap-4">
-              {/* First name */}
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "#7EDC5A" }}>
-                  First name <span style={{ color: "#FF6B6B" }}>*</span>
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "#116149" }}>
+                  First name <span style={{ color: "#DC2626" }}>*</span>
                 </label>
                 <input
                   value={firstName}
@@ -236,15 +219,13 @@ export default function Welcome() {
                   autoFocus
                 />
                 {errors.firstName && (
-                  <p className="text-xs font-semibold" style={{ color: "#FF6B6B" }}>{errors.firstName}</p>
+                  <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>{errors.firstName}</p>
                 )}
               </div>
-
-              {/* Last name */}
               <div className="space-y-1">
-                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "#7EDC5A" }}>
+                <label className="text-xs font-bold uppercase tracking-wider" style={{ color: "#116149" }}>
                   Last name{" "}
-                  <span className="text-xs font-normal normal-case" style={{ color: "#A8D4B0" }}>(optional)</span>
+                  <span className="text-xs font-normal normal-case" style={{ color: "#7E7A73" }}>(optional)</span>
                 </label>
                 <input
                   value={lastName}
@@ -255,18 +236,16 @@ export default function Welcome() {
                   autoCorrect="off"
                 />
               </div>
-
               {apiError && (
-                <div className="px-4 py-3 rounded-2xl" style={{ background: "#2D1515", border: "1.5px solid #FF6B6B" }}>
-                  <p className="text-sm font-semibold" style={{ color: "#FF6B6B" }}>{apiError}</p>
+                <div className="px-4 py-3 rounded-2xl" style={{ background: "#FEF2F2", border: "1.5px solid #FECACA" }}>
+                  <p className="text-sm font-semibold" style={{ color: "#DC2626" }}>{apiError}</p>
                 </div>
               )}
-
               <button
                 onClick={handleSubmit}
                 disabled={saving}
-                className="w-full font-bold text-base active:opacity-80 transition-opacity disabled:opacity-60"
-                style={{ background: "#7EDC5A", color: "#0F2D1C", borderRadius: 9999, padding: "18px 0", border: "none" }}
+                className="w-full font-bold text-base text-white active:opacity-80 transition-opacity disabled:opacity-60"
+                style={{ background: "#116149", borderRadius: 9999, padding: "18px 0", border: "none" }}
               >
                 {saving ? "Saving…" : "Let's go →"}
               </button>
