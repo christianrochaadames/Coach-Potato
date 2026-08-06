@@ -209,7 +209,7 @@ export default function Watchlist() {
             <img
               src="/spud-phone.png"
               alt="Spud"
-              style={{ width: 125, height: 125, objectFit: 'contain' }}
+              style={{ width: 250, height: 250, objectFit: 'contain' }}
             />
             <p className="text-sm text-center font-medium" style={{ color: '#7E7A73' }}>
               Your watchlist is empty.{'\n'}Search for something to save!
