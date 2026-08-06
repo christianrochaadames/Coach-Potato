@@ -64,10 +64,22 @@ export default function Watchlist() {
   };
 
   useEffect(() => {
-    const prev = document.body.style.background;
+    const prevHtml = document.documentElement.style.background;
+    const prevBody = document.body.style.background;
+    const main = document.querySelector('main') as HTMLElement | null;
+    const wrapper = main?.parentElement as HTMLElement | null;
+    const prevMain = main?.style.background ?? '';
+    const prevWrapper = wrapper?.style.background ?? '';
+    document.documentElement.style.background = '#EFE4D2';
     document.body.style.background = '#EFE4D2';
-
-    return () => { document.body.style.background = prev; };
+    if (main) main.style.background = '#EFE4D2';
+    if (wrapper) wrapper.style.background = '#EFE4D2';
+    return () => {
+      document.documentElement.style.background = prevHtml;
+      document.body.style.background = prevBody;
+      if (main) main.style.background = prevMain;
+      if (wrapper) wrapper.style.background = prevWrapper;
+    };
   }, []);
 
   return (

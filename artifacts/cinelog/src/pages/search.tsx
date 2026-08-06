@@ -70,14 +70,21 @@ export default function SearchPage() {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    const prevHtml = document.documentElement.style.background;
     const prevBody = document.body.style.background;
     const main = document.querySelector('main') as HTMLElement | null;
+    const wrapper = main?.parentElement as HTMLElement | null;
     const prevMain = main?.style.background ?? '';
+    const prevWrapper = wrapper?.style.background ?? '';
+    document.documentElement.style.background = '#FFBC4D';
     document.body.style.background = '#FFBC4D';
     if (main) main.style.background = '#FFBC4D';
+    if (wrapper) wrapper.style.background = '#FFBC4D';
     return () => {
+      document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
       if (main) main.style.background = prevMain;
+      if (wrapper) wrapper.style.background = prevWrapper;
     };
   }, []);
 
