@@ -84,7 +84,7 @@ export default function Welcome() {
         style={{ background: "#D4F5A0", borderRadius: 28 }}
       >
         {/* Hero: logo left + walking Spud right */}
-        <div className="relative flex-shrink-0" style={{ height: 220 }}>
+        <div className="relative flex-shrink-0" style={{ height: 220, marginTop: 32 }}>
           <img
             src="/spud-logo.png"
             alt="Spud"
@@ -155,7 +155,7 @@ export default function Welcome() {
               position: "absolute",
               bottom: 0,
               left: 10,
-              width: 210,
+              width: 170,
               height: "auto",
               objectFit: "contain",
               mixBlendMode: "multiply",
