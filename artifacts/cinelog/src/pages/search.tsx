@@ -273,8 +273,8 @@ export default function SearchPage() {
         className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
         style={
           item.type === 'movie'
-            ? { background: '#9BD6FF', color: '#116149' }
-            : { background: '#BDECC8', color: '#116149' }
+            ? { background: '#7C3AED', color: '#ffffff' }
+            : { background: '#4A1020', color: '#ffffff' }
         }
       >
         {item.type === 'movie' ? 'Movie' : 'TV Show'}
