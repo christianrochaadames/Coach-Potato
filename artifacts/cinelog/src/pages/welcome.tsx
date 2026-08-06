@@ -93,7 +93,7 @@ export default function Welcome() {
               position: "absolute",
               top: 20,
               left: 28,
-              height: 122,
+              height: 110,
               width: "auto",
               objectFit: "contain",
             }}
