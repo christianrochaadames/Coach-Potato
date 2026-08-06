@@ -274,7 +274,7 @@ export default function SearchPage() {
         style={
           item.type === 'movie'
             ? { background: '#7C3AED', color: '#ffffff' }
-            : { background: '#4A1020', color: '#ffffff' }
+            : { background: '#2D6A4F', color: '#ffffff' }
         }
       >
         {item.type === 'movie' ? 'Movie' : 'TV Show'}
