@@ -242,7 +242,7 @@ export default function SearchPage() {
       className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer active:opacity-70 transition-opacity"
       style={{
         background: alreadyAdded ? '#FAD4E0' : '#ffffff',
-        border: alreadyAdded ? '1px solid #F0A8BE' : '1px solid #E2D9CE',
+        border: alreadyAdded ? '2px solid #7A0020' : '1px solid #E2D9CE',
       }}
       onClick={() => setAddingItem(item)}
     >
@@ -262,7 +262,7 @@ export default function SearchPage() {
         <div className="flex items-center gap-1.5">
           <p className="font-bold text-sm truncate" style={{ color: '#111111' }}>{item.title}</p>
           {alreadyAdded && (
-            <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#FF2BAC' }}>
+            <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#7A0020' }}>
               <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
             </span>
           )}
