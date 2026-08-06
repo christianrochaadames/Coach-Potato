@@ -98,12 +98,12 @@ function CropModal({
       style={{ background: "rgba(0,0,0,0.65)" }}
       onClick={(e) => e.target === e.currentTarget && onCancel()}
     >
-      <div className="w-full max-w-sm rounded-3xl overflow-hidden" style={{ background: "#ffffff" }}>
+      <div className="w-full max-w-sm rounded-3xl overflow-hidden" style={{ background: "#1A4A2A" }}>
         <div className="px-6 pt-6 pb-2">
-          <p className="text-sm font-bold text-center mb-1" style={{ color: "#111111" }}>
+          <p className="text-sm font-bold text-center mb-1" style={{ color: "#ffffff" }}>
             Position your photo
           </p>
-          <p className="text-xs text-center mb-4" style={{ color: "#7E7A73" }}>
+          <p className="text-xs text-center mb-4" style={{ color: "#A8D4B0" }}>
             Drag to reposition · Slide to zoom
           </p>
 
@@ -117,7 +117,7 @@ function CropModal({
                 overflow: "hidden",
                 position: "relative",
                 cursor: dragging ? "grabbing" : "grab",
-                border: "3px solid #116149",
+                border: "3px solid #7EDC5A",
                 flexShrink: 0,
                 touchAction: "none",
               }}
@@ -142,16 +142,16 @@ function CropModal({
 
           {/* Zoom slider */}
           <div className="flex items-center gap-3 mx-2 mb-5">
-            <ZoomOut className="w-4 h-4 flex-shrink-0" style={{ color: "#7E7A73" }} />
+            <ZoomOut className="w-4 h-4 flex-shrink-0" style={{ color: "#A8D4B0" }} />
             <input
               type="range"
               min={1} max={3} step={0.02}
               value={scale}
               onChange={e => onScaleChange(Number(e.target.value))}
               className="flex-1"
-              style={{ accentColor: "#116149" }}
+              style={{ accentColor: "#7EDC5A" }}
             />
-            <ZoomIn className="w-4 h-4 flex-shrink-0" style={{ color: "#7E7A73" }} />
+            <ZoomIn className="w-4 h-4 flex-shrink-0" style={{ color: "#A8D4B0" }} />
           </div>
         </div>
 
@@ -159,15 +159,15 @@ function CropModal({
         <div className="flex gap-3 px-6 pb-6">
           <button
             onClick={confirm}
-            className="flex-1 py-3 rounded-2xl text-sm font-bold text-white"
-            style={{ background: "#116149" }}
+            className="flex-1 py-3 rounded-2xl text-sm font-bold"
+            style={{ background: "#7EDC5A", color: "#0F2D1C" }}
           >
             Use this photo
           </button>
           <button
             onClick={onCancel}
             className="px-5 py-3 rounded-2xl text-sm font-semibold"
-            style={{ background: "#EFE4D2", color: "#7E7A73" }}
+            style={{ background: "#1E5530", color: "#A8D4B0" }}
           >
             Cancel
           </button>
@@ -197,15 +197,15 @@ function InlineEditor({
       <div className="flex gap-2 mt-3">
         <button
           onClick={onSave} disabled={saving}
-          className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60"
-          style={{ background: "#116149" }}
+          className="flex-1 py-2.5 rounded-xl text-sm font-bold disabled:opacity-60"
+          style={{ background: "#7EDC5A", color: "#0F2D1C" }}
         >
           {saving ? "Saving…" : `Save ${label}`}
         </button>
         <button
           onClick={onCancel}
           className="px-4 py-2.5 rounded-xl text-sm font-semibold"
-          style={{ background: "#EFE4D2", color: "#7E7A73" }}
+          style={{ background: "#1E5530", color: "#A8D4B0" }}
         >
           Cancel
         </button>
@@ -248,7 +248,7 @@ function FriendAvatar({ friend }: { friend: FriendProfile }) {
   return (
     <div
       className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0"
-      style={{ background: "#EFE4D2" }}
+      style={{ background: "#1E5530" }}
     >
       {friend.avatarUrl ? (
         <img src={friend.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
@@ -259,7 +259,7 @@ function FriendAvatar({ friend }: { friend: FriendProfile }) {
           className="w-full h-full object-contain p-0.5"
         />
       ) : (
-        <span className="text-sm font-bold" style={{ color: "#116149" }}>{initials}</span>
+        <span className="text-sm font-bold" style={{ color: "#7EDC5A" }}>{initials}</span>
       )}
     </div>
   );
@@ -453,24 +453,40 @@ export default function Profile() {
     width: "100%",
     padding: "10px 14px",
     borderRadius: 12,
-    border: `1.5px solid ${hasError ? "#DC2626" : "#116149"}`,
-    background: "#FFF3E8",
-    color: "#111111",
+    border: `1.5px solid ${hasError ? "#DC2626" : "#7EDC5A"}`,
+    background: "#1A4A2A",
+    color: "#ffffff",
     fontSize: 14,
     fontWeight: 600,
     outline: "none",
   });
 
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.background;
+    const prevBody = document.body.style.background;
+    const main = document.querySelector("main") as HTMLElement | null;
+    const wrapper = main?.parentElement as HTMLElement | null;
+    const prevWrapper = wrapper?.style.background ?? "";
+    document.documentElement.style.background = "#0F2D1C";
+    document.body.style.background = "#0F2D1C";
+    if (wrapper) wrapper.style.background = "#0F2D1C";
+    return () => {
+      document.documentElement.style.background = prevHtml;
+      document.body.style.background = prevBody;
+      if (wrapper) wrapper.style.background = prevWrapper;
+    };
+  }, []);
+
   if (!isLoaded) {
     return (
-      <div className="min-h-full flex items-center justify-center" style={{ background: "#FFF3E8" }}>
-        <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "#EFE4D2" }} />
+      <div className="min-h-full flex items-center justify-center" style={{ background: "#0F2D1C" }}>
+        <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "#1A4A2A" }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-full pb-24" style={{ background: "#FFF3E8" }}>
+    <div className="min-h-full pb-24" style={{ background: "#0F2D1C" }}>
       {/* ── Interactive crop modal ── */}
       {cropSrc && (
         <CropModal
@@ -483,16 +499,16 @@ export default function Profile() {
       {/* ── Header: back button only, no logo ── */}
       <div className="px-5 pt-8 pb-4 flex items-center">
         <button onClick={() => setLocation("/")} className="p-2 -ml-2 active:opacity-60">
-          <ChevronLeft className="w-6 h-6" style={{ color: "#111111" }} />
+          <ChevronLeft className="w-6 h-6" style={{ color: "#A8D4B0" }} />
         </button>
-        <h1 className="text-base font-bold ml-2" style={{ color: "#111111" }}>My Profile</h1>
+        <h1 className="text-base font-bold ml-2" style={{ color: "#ffffff" }}>My Profile</h1>
       </div>
 
       {/* ── Avatar circle + name ── */}
       <div className="px-5 flex flex-col items-center pb-6">
         <div
           className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center"
-          style={{ background: "#EFE4D2" }}
+          style={{ background: "#1E5530", border: "3px solid #7EDC5A" }}
         >
           {avatarUrl ? (
             <img src={avatarUrl} alt="Profile photo" className="w-full h-full object-cover" />
@@ -503,25 +519,25 @@ export default function Profile() {
               className="w-full h-full object-contain p-1"
             />
           ) : (
-            <span className="text-3xl font-bold" style={{ color: "#116149" }}>{initials}</span>
+            <span className="text-3xl font-bold" style={{ color: "#7EDC5A" }}>{initials}</span>
           )}
         </div>
-        <h2 className="mt-3 text-xl font-bold text-center" style={{ color: "#111111" }}>
+        <h2 className="mt-3 text-xl font-bold text-center" style={{ color: "#ffffff" }}>
           {displayName}
         </h2>
         {user?.primaryEmailAddress && (
-          <p className="text-sm mt-0.5" style={{ color: "#7E7A73" }}>
+          <p className="text-sm mt-0.5" style={{ color: "#A8D4B0" }}>
             {user.primaryEmailAddress.emailAddress}
           </p>
         )}
         {memberSince && (
-          <p className="text-xs mt-1" style={{ color: "#7E7A73" }}>Member since {memberSince}</p>
+          <p className="text-xs mt-1" style={{ color: "#A8D4B0" }}>Member since {memberSince}</p>
         )}
       </div>
 
       {/* ── Avatar picker ── */}
-      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
-        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7E7A73" }}>
+      <div className="mx-5 mb-4 rounded-2xl p-4" style={{ background: "#1A4A2A" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7EDC5A" }}>
           Choose your avatar
         </p>
 
@@ -536,9 +552,9 @@ export default function Profile() {
                 aspectRatio: "1",
                 borderRadius: "50%",
                 overflow: "hidden",
-                background: "#EFE4D2",
+                background: "#1E5530",
                 border: avatarId === String(id) && !avatarUrl
-                  ? "3px solid #116149"
+                  ? "3px solid #7EDC5A"
                   : "2.5px solid transparent",
                 padding: 0,
                 cursor: "pointer",
@@ -560,8 +576,8 @@ export default function Profile() {
             style={{
               aspectRatio: "1",
               borderRadius: "50%",
-              background: avatarUrl ? "#EFE4D2" : "#F5F0EB",
-              border: avatarUrl ? "3px solid #116149" : "2.5px dashed #C4B9AD",
+              background: avatarUrl ? "#1E5530" : "#1E5530",
+              border: avatarUrl ? "3px solid #7EDC5A" : "2.5px dashed #FF6B9D",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -574,8 +590,8 @@ export default function Profile() {
               <img src={avatarUrl} alt="Your photo" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
             ) : (
               <>
-                <Camera style={{ width: 18, height: 18, color: "#7E7A73" }} />
-                <span style={{ fontSize: 8, fontWeight: 700, color: "#7E7A73", lineHeight: 1 }}>Photo</span>
+                <Camera style={{ width: 18, height: 18, color: "#FF6B9D" }} />
+                <span style={{ fontSize: 8, fontWeight: 700, color: "#FF6B9D", lineHeight: 1 }}>Photo</span>
               </>
             )}
           </button>
@@ -590,16 +606,16 @@ export default function Profile() {
         />
 
         {savingAvatar && (
-          <p className="text-xs text-center mt-2" style={{ color: "#7E7A73" }}>Saving avatar…</p>
+          <p className="text-xs text-center mt-2" style={{ color: "#A8D4B0" }}>Saving avatar…</p>
         )}
       </div>
 
       {/* ── Name card ── */}
-      <div className="mx-5 mb-3 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
+      <div className="mx-5 mb-3 rounded-2xl p-4" style={{ background: "#1A4A2A" }}>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#7E7A73" }}>Name</p>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#7EDC5A" }}>Name</p>
           {editing !== "name" && (
-            <button onClick={() => startEdit("name")}><Edit2 className="w-4 h-4" style={{ color: "#7E7A73" }} /></button>
+            <button onClick={() => startEdit("name")}><Edit2 className="w-4 h-4" style={{ color: "#A8D4B0" }} /></button>
           )}
         </div>
         {editing === "name" ? (
@@ -621,18 +637,18 @@ export default function Profile() {
             </div>
           </InlineEditor>
         ) : (
-          <p className="text-sm font-semibold" style={{ color: displayName !== "Your Account" ? "#111111" : "#7E7A73" }}>
+          <p className="text-sm font-semibold" style={{ color: displayName !== "Your Account" ? "#ffffff" : "#A8D4B0" }}>
             {[profile?.firstName, profile?.lastName].filter(Boolean).join(" ") || "Not set yet"}
           </p>
         )}
       </div>
 
       {/* ── Bio card ── */}
-      <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
+      <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#1A4A2A" }}>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#7E7A73" }}>Bio</p>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#7EDC5A" }}>Bio</p>
           {editing !== "bio" && (
-            <button onClick={() => startEdit("bio")}><Edit2 className="w-4 h-4" style={{ color: "#7E7A73" }} /></button>
+            <button onClick={() => startEdit("bio")}><Edit2 className="w-4 h-4" style={{ color: "#A8D4B0" }} /></button>
           )}
         </div>
         {editing === "bio" ? (
@@ -646,18 +662,18 @@ export default function Profile() {
               style={{ ...inputStyle(), resize: "none", lineHeight: 1.5 }}
               autoFocus
             />
-            <p className="text-xs mt-1 text-right" style={{ color: "#7E7A73" }}>{bioVal.length}/200</p>
+            <p className="text-xs mt-1 text-right" style={{ color: "#A8D4B0" }}>{bioVal.length}/200</p>
           </InlineEditor>
         ) : (
-          <p className="text-sm leading-relaxed" style={{ color: profile?.bio ? "#111111" : "#7E7A73" }}>
+          <p className="text-sm leading-relaxed" style={{ color: profile?.bio ? "#ffffff" : "#A8D4B0" }}>
             {profile?.bio ?? "Nothing here yet."}
           </p>
         )}
       </div>
 
-      {/* ── Friends on CouchPotato ── */}
-      <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#ffffff", border: "1px solid #E2D9CE" }}>
-        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7E7A73" }}>
+      {/* ── Friends on Spud ── */}
+      <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#1A4A2A" }}>
+        <p className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "#7EDC5A" }}>
           Friends on Spud
         </p>
 
@@ -666,10 +682,10 @@ export default function Profile() {
           <div className="space-y-3">
             {[0, 1].map(i => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "#EFE4D2" }} />
+                <div className="w-10 h-10 rounded-full animate-pulse" style={{ background: "#1E5530" }} />
                 <div className="flex-1 space-y-1.5">
-                  <div className="h-3 rounded-full animate-pulse" style={{ background: "#EFE4D2", width: "55%" }} />
-                  <div className="h-2.5 rounded-full animate-pulse" style={{ background: "#EFE4D2", width: "35%" }} />
+                  <div className="h-3 rounded-full animate-pulse" style={{ background: "#1E5530", width: "55%" }} />
+                  <div className="h-2.5 rounded-full animate-pulse" style={{ background: "#1E5530", width: "35%" }} />
                 </div>
               </div>
             ))}
@@ -678,8 +694,8 @@ export default function Profile() {
           /* Facebook not connected */
           <div className="text-center py-3">
             <p className="text-2xl mb-1">👥</p>
-            <p className="text-sm font-semibold" style={{ color: "#111111" }}>Connect Facebook to find friends</p>
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
+            <p className="text-sm font-semibold" style={{ color: "#ffffff" }}>Connect Facebook to find friends</p>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#A8D4B0" }}>
               Sign in with Facebook to see which of your friends are already on Spud.
             </p>
           </div>
@@ -694,14 +710,14 @@ export default function Profile() {
                 <div key={friend.userId} className="flex items-center gap-3">
                   <FriendAvatar friend={friend} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate" style={{ color: "#111111" }}>{name}</p>
+                    <p className="text-sm font-bold truncate" style={{ color: "#ffffff" }}>{name}</p>
                     {friend.username && (
-                      <p className="text-xs" style={{ color: "#7E7A73" }}>@{friend.username}</p>
+                      <p className="text-xs" style={{ color: "#A8D4B0" }}>@{friend.username}</p>
                     )}
                   </div>
                   <span
                     className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: "#BDECC8", color: "#116149" }}
+                    style={{ background: "#7EDC5A", color: "#0F2D1C" }}
                   >
                     🥔 Here
                   </span>
@@ -713,8 +729,8 @@ export default function Profile() {
           /* No friends found yet (or permission pending) */
           <div className="text-center py-3">
             <p className="text-2xl mb-1">🍿</p>
-            <p className="text-sm font-semibold" style={{ color: "#111111" }}>No friends here yet</p>
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#7E7A73" }}>
+            <p className="text-sm font-semibold" style={{ color: "#ffffff" }}>No friends here yet</p>
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#A8D4B0" }}>
               None of your Facebook friends have joined Spud yet — invite them!
             </p>
           </div>
@@ -726,7 +742,7 @@ export default function Profile() {
         <button
           onClick={() => signOut({ redirectUrl: basePath || "/" })}
           className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 active:opacity-70"
-          style={{ background: "#EFE4D2", color: "#111111" }}
+          style={{ background: "#1A4A2A", color: "#FF6B9D", border: "1.5px solid #FF6B9D" }}
         >
           <LogOut className="w-4 h-4" />
           Sign out
