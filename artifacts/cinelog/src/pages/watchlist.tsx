@@ -103,7 +103,7 @@ export default function Watchlist() {
             <div
               key={entry.id}
               className="rounded-2xl overflow-hidden"
-              style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}
+              style={{ background: '#ffffff' }}
             >
               <div className="p-4 flex gap-4 items-center">
                 {/* Poster */}
@@ -150,7 +150,7 @@ export default function Watchlist() {
                       onClick={() => markWatched(entry.id, entry.title)}
                       disabled={updateEntry.isPending}
                       className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-50"
-                      style={{ background: '#F06CB4' }}
+                      style={{ background: '#FF2BAC' }}
                     >
                       ✓ Watched
                     </button>
