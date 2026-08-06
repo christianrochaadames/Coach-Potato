@@ -241,8 +241,8 @@ export default function SearchPage() {
       key={item.tmdbId}
       className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer active:opacity-70 transition-opacity"
       style={{
-        background: '#ffffff',
-        border: '1px solid #E2D9CE',
+        background: alreadyAdded ? '#FAD4E0' : '#ffffff',
+        border: alreadyAdded ? '1px solid #F0A8BE' : '1px solid #E2D9CE',
       }}
       onClick={() => setAddingItem(item)}
     >
