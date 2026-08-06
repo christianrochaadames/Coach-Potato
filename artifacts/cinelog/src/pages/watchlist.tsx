@@ -70,10 +70,10 @@ export default function Watchlist() {
     const wrapper = main?.parentElement as HTMLElement | null;
     const prevMain = main?.style.background ?? '';
     const prevWrapper = wrapper?.style.background ?? '';
-    document.documentElement.style.background = '#EFE4D2';
-    document.body.style.background = '#EFE4D2';
-    if (main) main.style.background = '#EFE4D2';
-    if (wrapper) wrapper.style.background = '#EFE4D2';
+    document.documentElement.style.background = '#E4DFEF';
+    document.body.style.background = '#E4DFEF';
+    if (main) main.style.background = '#E4DFEF';
+    if (wrapper) wrapper.style.background = '#E4DFEF';
     return () => {
       document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
@@ -86,7 +86,7 @@ export default function Watchlist() {
     <div className="min-h-screen" style={{ background: '#C5B8FF', borderRadius: 28, marginTop: 8, marginBottom: 100 }}>
       <div className="px-5 pt-8 pb-4">
         <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-2xl font-bold" style={{ color: '#4A1020' }}>Watchlist</h1>
+          <h1 className="text-2xl font-bold" style={{ color: '#3B3275' }}>Watchlist</h1>
         </div>
         <p className="text-sm font-medium" style={{ color: '#7E7A73' }}>
           {entries ? `${entries.length} title${entries.length !== 1 ? 's' : ''} saved` : 'Loading...'}

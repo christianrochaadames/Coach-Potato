@@ -135,12 +135,11 @@ export default function Stats() {
         </div>
       ) : stats ? (
         <div
-          className="px-5 space-y-4 pt-6 pb-32"
+          className="px-5 space-y-4 pt-6 pb-8"
           style={{
             background: '#FFF3E8',
             borderRadius: 28,
             marginTop: 8,
-            marginBottom: 100,
           }}
         >
 
@@ -323,7 +322,7 @@ export default function Stats() {
       ) : (
         <div
           className="flex flex-col items-center py-16 gap-4 px-5"
-          style={{ background: '#FFF3E8', borderRadius: 28, marginTop: 8, marginBottom: 100 }}
+          style={{ background: '#FFF3E8', borderRadius: 28, marginTop: 8 }}
         >
           <SpudMascot pose="sleepy" size={96} />
           <p className="text-sm text-center font-medium" style={{ color: '#7E7A73' }}>
