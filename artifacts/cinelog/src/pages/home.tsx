@@ -89,7 +89,7 @@ export default function Home() {
       .then(r => r.ok ? r.json() : null)
       .then(p => {
         if (cancelled) return;
-        if (!p || !p.username) {
+        if (!p || !p.firstName) {
           setLocation('/welcome');
           return;
         }
