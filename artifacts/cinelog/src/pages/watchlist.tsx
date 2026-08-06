@@ -70,10 +70,10 @@ export default function Watchlist() {
     const wrapper = main?.parentElement as HTMLElement | null;
     const prevMain = main?.style.background ?? '';
     const prevWrapper = wrapper?.style.background ?? '';
-    document.documentElement.style.background = '#C5B8FF';
-    document.body.style.background = '#C5B8FF';
-    if (main) main.style.background = '#C5B8FF';
-    if (wrapper) wrapper.style.background = '#C5B8FF';
+    document.documentElement.style.background = '#E4DFEF';
+    document.body.style.background = '#E4DFEF';
+    if (main) main.style.background = '#E4DFEF';
+    if (wrapper) wrapper.style.background = '#E4DFEF';
     return () => {
       document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
