@@ -91,7 +91,7 @@ export default function Welcome() {
             draggable={false}
             style={{
               position: "absolute",
-              top: 0,
+              top: 20,
               left: 28,
               height: 110,
               width: "auto",
