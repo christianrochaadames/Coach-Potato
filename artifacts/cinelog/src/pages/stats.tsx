@@ -135,11 +135,12 @@ export default function Stats() {
         </div>
       ) : stats ? (
         <div
-          className="px-5 space-y-4 pt-6 pb-4"
+          className="px-5 space-y-4 pt-6 pb-6"
           style={{
             background: '#FFF3E8',
             borderRadius: 28,
             marginTop: 8,
+            marginBottom: 80,
           }}
         >
 

@@ -70,10 +70,10 @@ export default function Watchlist() {
     const wrapper = main?.parentElement as HTMLElement | null;
     const prevMain = main?.style.background ?? '';
     const prevWrapper = wrapper?.style.background ?? '';
-    document.documentElement.style.background = '#E4DFEF';
-    document.body.style.background = '#E4DFEF';
-    if (main) main.style.background = '#E4DFEF';
-    if (wrapper) wrapper.style.background = '#E4DFEF';
+    document.documentElement.style.background = '#C5B8FF';
+    document.body.style.background = '#C5B8FF';
+    if (main) main.style.background = '#C5B8FF';
+    if (wrapper) wrapper.style.background = '#C5B8FF';
     return () => {
       document.documentElement.style.background = prevHtml;
       document.body.style.background = prevBody;
@@ -150,7 +150,7 @@ export default function Watchlist() {
                       onClick={() => markWatched(entry.id, entry.title)}
                       disabled={updateEntry.isPending}
                       className="text-xs font-bold px-3 py-1.5 rounded-full text-white disabled:opacity-50"
-                      style={{ background: '#FF6B9D' }}
+                      style={{ background: '#F06CB4' }}
                     >
                       ✓ Watched
                     </button>
