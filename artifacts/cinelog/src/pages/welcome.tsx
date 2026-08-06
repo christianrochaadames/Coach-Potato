@@ -91,9 +91,9 @@ export default function Welcome() {
             draggable={false}
             style={{
               position: "absolute",
-              top: 20,
+              top: 8,
               left: 28,
-              height: 110,
+              height: 96,
               width: "auto",
               objectFit: "contain",
             }}
@@ -144,7 +144,7 @@ export default function Welcome() {
         {/* Bottom: couch Spud left, button right */}
         <div
           className="relative flex-shrink-0"
-          style={{ height: 200, marginBottom: 28 }}
+          style={{ height: 224, marginBottom: 28 }}
         >
           <img
             src="/spud-couch.png"
@@ -167,7 +167,7 @@ export default function Welcome() {
             style={{
               position: "absolute",
               right: 20,
-              top: "50%",
+              top: "38%",
               transform: "translateY(-50%)",
               background: "#0F2D1C",
               borderRadius: 9999,
