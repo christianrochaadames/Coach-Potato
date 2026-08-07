@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation } from 'wouter';
-import { Search as SearchIcon, X, Film, Tv, Check } from 'lucide-react';
+import { Search as SearchIcon, X, Film, Tv, Check, RefreshCw } from 'lucide-react';
 import {
   useCreateEntry,
   useListEntries,
@@ -43,20 +43,21 @@ function useTmdbSearch(query: string) {
   return { results, loading, noKey };
 }
 
-function useTmdbPopular() {
+function useTmdbPopular(page: number) {
   const [data, setData] = useState<{ movies: TmdbItem[]; shows: TmdbItem[] } | null>(null);
   const [noKey, setNoKey] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/tmdb/popular')
+    setLoading(true);
+    fetch(`/api/tmdb/popular?page=${page}`)
       .then(r => {
         if (r.status === 503) { setNoKey(true); setLoading(false); return null; }
         return r.json();
       })
-      .then(d => { if (d) setData(d); setLoading(false); })
+      .then(d => { if (d) { setData(d); } setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [page]);
 
   return { data, noKey, loading };
 }
@@ -67,7 +68,15 @@ export default function SearchPage() {
   const [addingItem, setAddingItem] = useState<TmdbItem | null>(null);
   const [quickAddYear, setQuickAddYear] = useState(new Date().getFullYear());
   const [watchedStep, setWatchedStep] = useState(false); // true = show year picker after clicking Watched
+  const [popularPage, setPopularPage] = useState(1);
+  const [spinning, setSpinning] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRefresh = () => {
+    setSpinning(true);
+    setPopularPage(p => (p % 5) + 1);
+    setTimeout(() => setSpinning(false), 600);
+  };
 
   useEffect(() => {
     const prevHtml = document.documentElement.style.background;
@@ -138,7 +147,7 @@ export default function SearchPage() {
     }
   }, []);
   const { results, loading: searchLoading, noKey: searchNoKey } = useTmdbSearch(query);
-  const { data: popular, noKey: popularNoKey, loading: popularLoading } = useTmdbPopular();
+  const { data: popular, noKey: popularNoKey, loading: popularLoading } = useTmdbPopular(popularPage);
   const createEntry = useCreateEntry();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -356,13 +365,37 @@ export default function SearchPage() {
                 <>
                   {freshShows.length > 0 && (
                     <>
-                      <p className="text-xs font-bold uppercase tracking-wider pb-1" style={{ color: '#7E7A73' }}>Popular TV Shows</p>
+                      <div className="flex items-center justify-between pb-1">
+                        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Popular TV Shows</p>
+                        <button
+                          onClick={handleRefresh}
+                          className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-opacity active:opacity-60"
+                          style={{ background: '#FFBC4D', color: '#111111' }}
+                          title="Refresh picks"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${spinning ? 'animate-spin' : ''}`} />
+                          Refresh
+                        </button>
+                      </div>
                       {freshShows.map((item, i) => renderItem(item, i))}
                     </>
                   )}
                   {freshMovies.length > 0 && (
                     <>
-                      <p className="text-xs font-bold uppercase tracking-wider pb-1 pt-3" style={{ color: '#7E7A73' }}>Popular Movies</p>
+                      <div className="flex items-center justify-between pb-1 pt-3">
+                        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Popular Movies</p>
+                        {freshShows.length === 0 && (
+                          <button
+                            onClick={handleRefresh}
+                            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-opacity active:opacity-60"
+                            style={{ background: '#FFBC4D', color: '#111111' }}
+                            title="Refresh picks"
+                          >
+                            <RefreshCw className={`w-3 h-3 ${spinning ? 'animate-spin' : ''}`} />
+                            Refresh
+                          </button>
+                        )}
+                      </div>
                       {freshMovies.map((item, i) => renderItem(item, i))}
                     </>
                   )}

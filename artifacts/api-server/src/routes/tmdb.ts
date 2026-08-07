@@ -155,7 +155,9 @@ router.get("/tmdb/trending", requireAuth, async (req, res) => {
   }
 });
 
-// GET /tmdb/popular
+// GET /tmdb/popular?page=1
+// page param (1–5) lets users manually refresh to see a fresh set; each page is
+// cached independently for 24 h so repeat requests are free.
 router.get("/tmdb/popular", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -163,15 +165,16 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
     return;
   }
 
+  const page = Math.min(5, Math.max(1, parseInt((req.query.page as string) || "1", 10) || 1));
   const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-  const popularKey = `popular:${today}`;
+  const popularKey = `popular:${today}:p${page}`;
   const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>(popularKey);
   if (cached) { res.json(cached); return; }
 
   try {
     const [moviesRes, showsRes] = await Promise.all([
-      fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=1`),
-      fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=1`),
+      fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=${page}`),
+      fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=${page}`),
     ]);
 
     const [moviesData, showsData] = await Promise.all([
@@ -187,7 +190,7 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
       .map((item) => mapItem(item, "tv"));
 
     const payload = { movies, shows };
-    cacheSet(popularKey, payload, TTL_HALF_HOUR);
+    cacheSet(popularKey, payload, TTL_DAY);
     res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb popular error");
