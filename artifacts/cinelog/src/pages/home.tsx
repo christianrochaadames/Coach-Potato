@@ -191,7 +191,7 @@ export default function Home() {
             className="px-2.5 py-0.5 rounded-full text-[10px] font-bold leading-none"
             style={{ background: '#FFD34D', color: '#111111' }}
           >
-            Edit Profile
+            My Profile
           </span>
         </button>
       </div>
