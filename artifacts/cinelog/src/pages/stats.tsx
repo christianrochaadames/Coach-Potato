@@ -28,6 +28,9 @@ function StarDisplay({ rating }: { rating: number }) {
 export default function Stats() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  type RatedSeason = { number: number; rating: number };
+  type TopRatedItem = { id: number; title: string; posterUrl: string | null; rating: number; ratedSeasons?: RatedSeason[] };
+  const [seasonPopup, setSeasonPopup] = useState<TopRatedItem | null>(null);
 
   // Paint the full viewport (including below the floating nav) in the page colour
   useEffect(() => {
@@ -94,24 +97,23 @@ export default function Stats() {
       .slice(0, 10);
   }, [allEntries]);
 
-  // Top rated: entries + individual season ratings, sorted desc.
-  // Rule: if a show has any rated seasons, show only those seasons (not the series).
-  // If no seasons are rated, fall back to the series-level rating.
-  type TopRatedItem = { id: number; title: string; posterUrl: string | null; rating: number; subtitle?: string };
+  // Top rated: one card per title. Shows with rated seasons use the series poster
+  // but carry the season breakdown — clicking opens a popup.
   const topRated = useMemo((): TopRatedItem[] => {
     if (!allEntries) return [];
     const items: TopRatedItem[] = [];
     for (const e of allEntries) {
       if (e.type === 'show') {
         const seasons = (e as any).seasons as Array<{ number: number; rating?: number | null }> | undefined;
-        const ratedSeasons = seasons?.filter(s => (s.rating ?? 0) > 0) ?? [];
+        const ratedSeasons: RatedSeason[] = (seasons ?? [])
+          .filter(s => (s.rating ?? 0) > 0)
+          .map(s => ({ number: s.number, rating: s.rating! }))
+          .sort((a, b) => a.number - b.number);
         if (ratedSeasons.length > 0) {
-          // Seasons rated — show each rated season, suppress the series entry
-          for (const s of ratedSeasons) {
-            items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: s.rating!, subtitle: `Season ${s.number}` });
-          }
+          // One series card; best season rating determines sort position
+          const maxRating = Math.max(...ratedSeasons.map(s => s.rating));
+          items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: maxRating, ratedSeasons });
         } else if ((e.rating ?? 0) > 0) {
-          // No season ratings — fall back to the series entry
           items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: e.rating! });
         }
       } else {
@@ -318,38 +320,78 @@ export default function Stats() {
                   <div
                     key={`${item.id}-${idx}`}
                     className="flex-shrink-0 w-24 cursor-pointer active:opacity-70 transition-opacity"
-                    onClick={() => setLocation(`/entry/${item.id}`)}
+                    onClick={() => item.ratedSeasons?.length ? setSeasonPopup(item) : setLocation(`/entry/${item.id}`)}
                   >
-                    <div
-                      className="aspect-[2/3] rounded-xl overflow-hidden mb-1.5"
-                      style={{ background: '#EFE4D2' }}
-                    >
+                    <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-1.5" style={{ background: '#EFE4D2' }}>
                       {item.posterUrl ? (
-                        <img
-                          src={item.posterUrl}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
+                        <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xl font-bold" style={{ color: '#116149' }}>
-                            {item.title[0]?.toUpperCase()}
-                          </span>
+                          <span className="text-xl font-bold" style={{ color: '#116149' }}>{item.title[0]?.toUpperCase()}</span>
+                        </div>
+                      )}
+                      {/* Badge when multiple seasons rated */}
+                      {(item.ratedSeasons?.length ?? 0) > 1 && (
+                        <div className="absolute bottom-1.5 right-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ background: '#116149', color: '#fff' }}>
+                          {item.ratedSeasons!.length}
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] font-bold truncate leading-tight" style={{ color: '#111111' }}>
-                      {item.title}
-                    </p>
-                    {item.subtitle && (
-                      <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>{item.subtitle}</p>
+                    <p className="text-[10px] font-bold truncate leading-tight" style={{ color: '#111111' }}>{item.title}</p>
+                    {item.ratedSeasons?.length === 1 && (
+                      <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>Season {item.ratedSeasons[0].number}</p>
                     )}
-                    {item.rating > 0 && (
-                      <StarDisplay rating={item.rating} />
+                    {item.ratedSeasons && item.ratedSeasons.length > 1 && (
+                      <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>{item.ratedSeasons.length} seasons</p>
                     )}
+                    {item.rating > 0 && <StarDisplay rating={item.rating} />}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Season breakdown popup */}
+          {seasonPopup && (
+            <div
+              className="fixed inset-0 z-50 flex items-end justify-center"
+              style={{ background: 'rgba(0,0,0,0.45)' }}
+              onClick={() => setSeasonPopup(null)}
+            >
+              <div
+                className="w-full max-w-sm rounded-t-3xl p-6 pb-8"
+                style={{ background: '#FFF3E8' }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: '#D4C9BC' }} />
+                <div className="flex gap-4 mb-5">
+                  {seasonPopup.posterUrl ? (
+                    <img src={seasonPopup.posterUrl} alt={seasonPopup.title} className="w-14 rounded-xl object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                  ) : (
+                    <div className="w-14 rounded-xl flex-shrink-0 flex items-center justify-center" style={{ aspectRatio: '2/3', background: '#EFE4D2' }}>
+                      <span className="font-bold text-lg" style={{ color: '#116149' }}>{seasonPopup.title[0]}</span>
+                    </div>
+                  )}
+                  <div className="flex flex-col justify-center">
+                    <p className="font-bold text-base leading-tight" style={{ color: '#111111' }}>{seasonPopup.title}</p>
+                    <p className="text-xs mt-1" style={{ color: '#7E7A73' }}>Your rated seasons</p>
+                  </div>
+                </div>
+                <div className="space-y-2 mb-4">
+                  {seasonPopup.ratedSeasons?.map(s => (
+                    <div key={s.number} className="flex items-center justify-between px-3 py-2.5 rounded-xl" style={{ background: '#EFE4D2' }}>
+                      <span className="text-sm font-semibold" style={{ color: '#111111' }}>Season {s.number}</span>
+                      <StarDisplay rating={s.rating} />
+                    </div>
+                  ))}
+                </div>
+                <button
+                  className="w-full py-3 rounded-xl text-sm font-bold"
+                  style={{ background: '#116149', color: '#ffffff' }}
+                  onClick={() => { setSeasonPopup(null); setLocation(`/entry/${seasonPopup.id}`); }}
+                >
+                  View Series
+                </button>
               </div>
             </div>
           )}
