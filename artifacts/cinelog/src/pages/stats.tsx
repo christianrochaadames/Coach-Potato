@@ -361,11 +361,11 @@ export default function Stats() {
                   >
                     <button
                       aria-label="Scroll right"
-                      className="w-14 h-14 flex items-center justify-center rounded-full active:scale-95 transition-transform"
+                      className="w-11 h-11 flex items-center justify-center rounded-full active:scale-95 transition-transform"
                       style={{ background: '#BDECC8', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
                       onClick={() => topRatedScrollRef.current?.scrollBy({ left: 250, behavior: 'smooth' })}
                     >
-                      <ChevronRight className="w-7 h-7" style={{ color: '#116149' }} />
+                      <ChevronRight className="w-6 h-6" style={{ color: '#116149' }} />
                     </button>
                   </div>
                 )}
