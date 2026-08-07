@@ -94,23 +94,29 @@ export default function Stats() {
       .slice(0, 10);
   }, [allEntries]);
 
-  // Top rated: entries + individual season ratings, sorted desc
+  // Top rated: entries + individual season ratings, sorted desc.
+  // Rule: if a show has any rated seasons, show only those seasons (not the series).
+  // If no seasons are rated, fall back to the series-level rating.
   type TopRatedItem = { id: number; title: string; posterUrl: string | null; rating: number; subtitle?: string };
   const topRated = useMemo((): TopRatedItem[] => {
     if (!allEntries) return [];
     const items: TopRatedItem[] = [];
     for (const e of allEntries) {
-      if ((e.rating ?? 0) > 0) {
-        items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: e.rating! });
-      }
       if (e.type === 'show') {
         const seasons = (e as any).seasons as Array<{ number: number; rating?: number | null }> | undefined;
-        if (seasons) {
-          for (const s of seasons) {
-            if ((s.rating ?? 0) > 0) {
-              items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: s.rating!, subtitle: `Season ${s.number}` });
-            }
+        const ratedSeasons = seasons?.filter(s => (s.rating ?? 0) > 0) ?? [];
+        if (ratedSeasons.length > 0) {
+          // Seasons rated — show each rated season, suppress the series entry
+          for (const s of ratedSeasons) {
+            items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: s.rating!, subtitle: `Season ${s.number}` });
           }
+        } else if ((e.rating ?? 0) > 0) {
+          // No season ratings — fall back to the series entry
+          items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: e.rating! });
+        }
+      } else {
+        if ((e.rating ?? 0) > 0) {
+          items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: e.rating! });
         }
       }
     }
