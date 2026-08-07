@@ -167,49 +167,90 @@ function useRecommendations(tmdbId: number | null | undefined, type: string | un
 const SHARE_CARD_W = 320;
 const SHARE_CARD_H = 480;
 
-function PosterShareCard({ posterUrl, title, year, rating, type }: {
+function PosterShareCard({ posterUrl, title, rating }: {
   posterUrl: string | null | undefined;
   title: string;
-  year: number | null | undefined;
   rating: number;
-  type: string | undefined;
 }) {
   const stars = rating > 0 ? '⭐'.repeat(rating) : null;
-  const typeLabel = type === 'movie' ? 'Movie' : type === 'show' ? 'TV Show' : null;
   return (
     <View style={pcStyles.root}>
-      {posterUrl
-        ? <Image source={{ uri: posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-        : <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0F2D1C' }]} />}
-      <View style={pcStyles.overlay}>
-        <Text style={pcStyles.title} numberOfLines={2}>{title}</Text>
-        {(year || typeLabel) ? (
-          <Text style={pcStyles.meta}>{[year, typeLabel].filter(Boolean).join(' · ')}</Text>
+      {/* Poster — centered with soft shadow */}
+      <View style={pcStyles.posterShadow}>
+        {posterUrl
+          ? <Image source={{ uri: posterUrl }} style={pcStyles.poster} resizeMode="cover" />
+          : <View style={[pcStyles.poster, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />}
+      </View>
+
+      {/* Branding + rating */}
+      <View style={pcStyles.textSection}>
+        <Text style={pcStyles.appName}>Tracked on Spud</Text>
+        <Text style={pcStyles.tagline}>TV &amp; Movie Tracker</Text>
+        {stars ? (
+          <View style={pcStyles.ratingPill}>
+            <Text style={pcStyles.ratingText}>My rating: {stars}</Text>
+          </View>
         ) : null}
-        {stars ? <Text style={pcStyles.stars}>{stars}</Text> : null}
-        <View style={pcStyles.brand}>
-          <Text style={pcStyles.brandText}>🥔 Tracked on Spud</Text>
-        </View>
       </View>
     </View>
   );
 }
 
 const pcStyles = StyleSheet.create({
-  root: { width: SHARE_CARD_W, height: SHARE_CARD_H, overflow: 'hidden', backgroundColor: '#0F2D1C' },
-  overlay: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 16, paddingTop: 24, paddingBottom: 18,
-    backgroundColor: 'rgba(0,0,0,0.72)', gap: 4,
+  root: {
+    width: SHARE_CARD_W,
+    height: SHARE_CARD_H,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: '#5B50D0',
+    alignItems: 'center',
+    paddingTop: 36,
+    paddingBottom: 32,
+    paddingHorizontal: 24,
   },
-  title: { color: '#ffffff', fontSize: 20, fontFamily: 'Manrope_700Bold', lineHeight: 26 },
-  meta: { color: 'rgba(255,255,255,0.6)', fontSize: 13, fontFamily: 'Manrope_400Regular', marginTop: 2 },
-  stars: { fontSize: 16, marginTop: 6 },
-  brand: {
-    marginTop: 10, borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.2)', paddingTop: 8,
+  posterShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.45,
+    shadowRadius: 18,
+    elevation: 14,
+    borderRadius: 14,
   },
-  brandText: { color: '#7EDC5A', fontSize: 13, fontFamily: 'Manrope_600SemiBold' },
+  poster: {
+    width: 188,
+    height: 282,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  textSection: {
+    alignItems: 'center',
+    marginTop: 22,
+    gap: 4,
+  },
+  appName: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontFamily: 'Manrope_700Bold',
+    textAlign: 'center',
+  },
+  tagline: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
+    textAlign: 'center',
+  },
+  ratingPill: {
+    marginTop: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  ratingText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontFamily: 'Manrope_600SemiBold',
+  },
 });
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -503,9 +544,7 @@ export default function EntryDetailScreen() {
         <PosterShareCard
           posterUrl={entry.posterUrl}
           title={entry.title}
-          year={entry.year}
           rating={localRating}
-          type={entry.type}
         />
       </View>
 
