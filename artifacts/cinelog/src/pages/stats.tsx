@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useGetStats, useListYears, useListEntries } from '@workspace/api-client-react';
 import { useLocation } from 'wouter';
 import {
@@ -32,6 +32,7 @@ export default function Stats() {
   type RatedSeason = { number: number; rating: number };
   type TopRatedItem = { id: number; title: string; posterUrl: string | null; rating: number; ratedSeasons?: RatedSeason[] };
   const [seasonPopup, setSeasonPopup] = useState<TopRatedItem | null>(null);
+  const topRatedScrollRef = useRef<HTMLDivElement>(null);
 
   // Paint the full viewport (including below the floating nav) in the page colour
   useEffect(() => {
@@ -318,7 +319,7 @@ export default function Stats() {
               <p className="font-bold mb-4" style={{ color: '#111111' }}>Top Rated</p>
               {/* Relative wrapper so the scroll-hint circle can float over the right edge */}
               <div className="relative">
-                <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide items-start">
+                <div ref={topRatedScrollRef} className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide items-start">
                   {topRated.map((item, idx) => (
                     <div
                       key={`${item.id}-${idx}`}
@@ -352,18 +353,20 @@ export default function Stats() {
                   ))}
                 </div>
 
-                {/* Scroll hint — floats over the right edge of the poster row */}
+                {/* Scroll hint — floats over the right edge, same style as home page "+" button */}
                 {topRated.length > 3 && (
                   <div
-                    className="absolute right-0 pointer-events-none flex items-center justify-center"
-                    style={{ top: 0, width: 40, height: 144 /* poster height: w-24 × 3/2 */ }}
+                    className="absolute right-0 flex items-center justify-center"
+                    style={{ top: 0, height: 144, width: 56 }}
                   >
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
-                      style={{ background: '#116149' }}
+                    <button
+                      aria-label="Scroll right"
+                      className="w-14 h-14 flex items-center justify-center rounded-full active:scale-95 transition-transform"
+                      style={{ background: '#BDECC8', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
+                      onClick={() => topRatedScrollRef.current?.scrollBy({ left: 250, behavior: 'smooth' })}
                     >
-                      <ChevronRight className="w-5 h-5 text-white" />
-                    </div>
+                      <ChevronRight className="w-7 h-7" style={{ color: '#116149' }} />
+                    </button>
                   </div>
                 )}
               </div>
