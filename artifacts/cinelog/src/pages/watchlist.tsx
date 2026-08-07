@@ -105,7 +105,7 @@ export default function Watchlist() {
               className="rounded-2xl overflow-hidden"
               style={{ background: '#ffffff' }}
             >
-              <div className="p-4 flex gap-4 items-center">
+              <div className="p-4 flex gap-4 items-start">
                 {/* Poster */}
                 <div
                   className="w-14 h-20 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer"

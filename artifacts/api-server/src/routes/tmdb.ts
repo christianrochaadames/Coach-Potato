@@ -155,9 +155,73 @@ router.get("/tmdb/trending", requireAuth, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Curated pools — Hollywood blockbusters + big-streamer TV only.
+// The full pool is searched & cached once per day. Pages rotate a window of
+// 10 from each pool so every refresh tab shows a different set.
+// ---------------------------------------------------------------------------
+
+const MOVIE_QUERIES = [
+  "A Minecraft Movie 2025",
+  "Captain America Brave New World 2025",
+  "Thunderbolts 2025",
+  "Sonic the Hedgehog 3 2024",
+  "Gladiator II 2024",
+  "Wicked 2024",
+  "Moana 2 2024",
+  "Deadpool Wolverine 2024",
+  "Inside Out 2 2024",
+  "Dune Part Two 2024",
+  "Despicable Me 4 2024",
+  "Godzilla Kong New Empire 2024",
+  "Beetlejuice Beetlejuice 2024",
+  "Wonka 2023",
+  "Oppenheimer 2023",
+  "Barbie 2023",
+  "The Super Mario Bros Movie 2023",
+  "Puss in Boots The Last Wish",
+  "Avatar The Way of Water",
+  "Top Gun Maverick",
+  "Alien Romulus 2024",
+  "Twisters 2024",
+];
+
+const SHOW_QUERIES = [
+  "Severance",           // Apple TV+
+  "The Last of Us",      // HBO
+  "The White Lotus",     // HBO
+  "Squid Game",          // Netflix
+  "Wednesday",           // Netflix
+  "Stranger Things",     // Netflix
+  "Nobody Wants This",   // Netflix
+  "Silo",                // Apple TV+
+  "Succession",          // HBO
+  "House of the Dragon", // HBO
+  "Yellowstone",         // Paramount+
+  "Tulsa King",          // Paramount+
+  "The Morning Show",    // Apple TV+
+  "Ted Lasso",           // Apple TV+
+  "Shrinking",           // Apple TV+
+  "Hacks",               // Max (HBO)
+  "Ozark",               // Netflix
+  "The Diplomat",        // Netflix
+  "The Penguin",         // HBO
+  "Landman",             // Paramount+
+  "Adolescence",         // Netflix
+  "Emily in Paris",      // Netflix
+];
+
+function rotateSlice<T>(arr: T[], page: number, count: number): T[] {
+  if (arr.length === 0) return [];
+  const offset = ((page - 1) * Math.floor(count / 2)) % arr.length;
+  const result: T[] = [];
+  for (let i = 0; i < Math.min(count, arr.length); i++) {
+    result.push(arr[(offset + i) % arr.length]);
+  }
+  return result;
+}
+
 // GET /tmdb/popular?page=1
-// page param (1–5) lets users manually refresh to see a fresh set; each page is
-// cached independently for 24 h so repeat requests are free.
 router.get("/tmdb/popular", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -166,74 +230,48 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
   }
 
   const page = Math.min(5, Math.max(1, parseInt((req.query.page as string) || "1", 10) || 1));
-  const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-  const popularKey = `popular:${today}:p${page}`;
-  const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>(popularKey);
-  if (cached) { res.json(cached); return; }
+  const today = new Date().toISOString().slice(0, 10);
+  const poolKey = `popular-pool-v1:${today}`;
 
-  // Fetch three consecutive pages so we have enough results after filtering
-  const page2 = (page % 5) + 1;
-  const page3 = (page2 % 5) + 1;
+  let pool = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>(poolKey);
 
-  // Six months ago cutoff
-  const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - 6);
-  const cutoffStr = cutoff.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  if (!pool) {
+    try {
+      const [movieResults, showResults] = await Promise.all([
+        Promise.all(
+          MOVIE_QUERIES.map((q) =>
+            fetch(`${TMDB_BASE}/search/movie?api_key=${apiKey}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "movie") : null; })
+              .catch(() => null)
+          )
+        ),
+        Promise.all(
+          SHOW_QUERIES.map((q) =>
+            fetch(`${TMDB_BASE}/search/tv?api_key=${apiKey}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "tv") : null; })
+              .catch(() => null)
+          )
+        ),
+      ]);
 
-  try {
-    const [movRes1, movRes2, movRes3, tvRes1, tvRes2, tvRes3] = await Promise.all([
-      fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=${page}`),
-      fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=${page2}`),
-      fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=${page3}`),
-      fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=${page}`),
-      fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=${page2}`),
-      fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=${page3}`),
-    ]);
-
-    const [movData1, movData2, movData3, tvData1, tvData2, tvData3] = await Promise.all([
-      movRes1.json() as Promise<{ results?: Record<string, unknown>[] }>,
-      movRes2.json() as Promise<{ results?: Record<string, unknown>[] }>,
-      movRes3.json() as Promise<{ results?: Record<string, unknown>[] }>,
-      tvRes1.json() as Promise<{ results?: Record<string, unknown>[] }>,
-      tvRes2.json() as Promise<{ results?: Record<string, unknown>[] }>,
-      tvRes3.json() as Promise<{ results?: Record<string, unknown>[] }>,
-    ]);
-
-    // Only English-language titles — filters out anime, Asian cinema, etc.
-    const isEnglish = (item: Record<string, unknown>) => item.original_language === "en";
-    // Exclude animation genre (16) from TV to avoid anime series
-    const isNotAnime = (item: Record<string, unknown>) => {
-      const genres = (item.genre_ids as number[] | undefined) ?? [];
-      return !genres.includes(16);
-    };
-    // Released within the last 2 months
-    const isRecent = (dateField: string) => (item: Record<string, unknown>) => {
-      const d = item[dateField] as string | undefined;
-      return !!d && d >= cutoffStr;
-    };
-
-    const allMovies = [
-      ...(movData1.results ?? []),
-      ...(movData2.results ?? []),
-      ...(movData3.results ?? []),
-    ].filter(isEnglish).filter(isRecent("release_date"));
-
-    const allShows = [
-      ...(tvData1.results ?? []),
-      ...(tvData2.results ?? []),
-      ...(tvData3.results ?? []),
-    ].filter(isEnglish).filter(isNotAnime).filter(isRecent("first_air_date"));
-
-    const movies: TmdbResult[] = allMovies.slice(0, 8).map((item) => mapItem(item, "movie"));
-    const shows: TmdbResult[] = allShows.slice(0, 8).map((item) => mapItem(item, "tv"));
-
-    const payload = { movies, shows };
-    cacheSet(popularKey, payload, TTL_DAY);
-    res.json(payload);
-  } catch (err) {
-    req.log.error({ err }, "tmdb popular error");
-    res.status(500).json({ error: "Internal server error" });
+      pool = {
+        movies: movieResults.filter(Boolean) as TmdbResult[],
+        shows:  showResults.filter(Boolean) as TmdbResult[],
+      };
+      cacheSet(poolKey, pool, TTL_DAY);
+    } catch (err) {
+      req.log.error({ err }, "tmdb popular pool error");
+      res.status(500).json({ error: "Internal server error" });
+      return;
+    }
   }
+
+  res.json({
+    movies: rotateSlice(pool.movies, page, 10),
+    shows:  rotateSlice(pool.shows,  page, 10),
+  });
 });
 
 // GET /tmdb/top-rated — curated recent picks for onboarding (fixed, never changes)
