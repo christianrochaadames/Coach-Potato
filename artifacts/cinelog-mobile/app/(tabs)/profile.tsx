@@ -130,11 +130,11 @@ export default function ProfileScreen() {
       <View style={[styles.footerContainer, { marginBottom: insets.bottom + 12 }]}>
         <Text style={[styles.footer, { color: colors.mutedForeground }]}>Spud v1.0.0</Text>
         <View style={styles.legalRow}>
-          <TouchableOpacity onPress={() => Linking.openURL('https://spudapp.io/privacy')} activeOpacity={0.6}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://couch-potato.replit.app/privacy')} activeOpacity={0.6}>
             <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Privacy Policy</Text>
           </TouchableOpacity>
           <Text style={[styles.legalDot, { color: colors.mutedForeground }]}>·</Text>
-          <TouchableOpacity onPress={() => Linking.openURL('https://spudapp.io/terms')} activeOpacity={0.6}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://couch-potato.replit.app/terms')} activeOpacity={0.6}>
             <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Terms of Service</Text>
           </TouchableOpacity>
         </View>
