@@ -356,8 +356,8 @@ export default function Stats() {
                 {/* Scroll hint — floats over the right edge, same style as home page "+" button */}
                 {topRated.length > 3 && (
                   <div
-                    className="absolute right-0 flex items-center justify-center"
-                    style={{ top: 0, height: 144, width: 56 }}
+                    className="absolute flex items-center justify-center"
+                    style={{ top: 0, height: 144, width: 40, right: -20 }}
                   >
                     <button
                       aria-label="Scroll right"
