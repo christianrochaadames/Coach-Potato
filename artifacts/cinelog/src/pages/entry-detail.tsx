@@ -955,7 +955,7 @@ export default function EntryDetail() {
             <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: '#D4C9BC' }} />
             <p className="text-base font-bold mb-4" style={{ color: '#111111' }}>Season {seasonRatingSheet.num} — Rate</p>
             <div className="mb-5">
-              <p className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: '#7E7A73' }}>Rating (optional)</p>
+              <p className="text-xs font-bold mb-2 uppercase tracking-wider" style={{ color: '#7E7A73' }}>Your Rating</p>
               <div className="flex gap-2">
                 {[1, 2, 3, 4, 5].map(star => (
                   <button key={star} type="button"
