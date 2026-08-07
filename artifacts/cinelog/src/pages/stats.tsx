@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis,
 } from 'recharts';
 import { SpudMascot } from '@/components/spud-mascot';
+import { ChevronRight } from 'lucide-react';
 
 const MONTH_LABELS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
@@ -315,7 +316,7 @@ export default function Stats() {
           {topRated.length > 0 && (
             <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
               <p className="font-bold mb-4" style={{ color: '#111111' }}>Top Rated</p>
-              <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+              <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide items-start">
                 {topRated.map((item, idx) => (
                   <div
                     key={`${item.id}-${idx}`}
@@ -332,7 +333,7 @@ export default function Stats() {
                       )}
                       {/* Badge when multiple seasons rated */}
                       {(item.ratedSeasons?.length ?? 0) > 1 && (
-                        <div className="absolute bottom-1.5 right-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ background: '#116149', color: '#fff' }}>
+                        <div className="absolute bottom-1.5 right-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ background: '#FF4BAE', color: '#fff' }}>
                           {item.ratedSeasons!.length}
                         </div>
                       )}
@@ -347,6 +348,18 @@ export default function Stats() {
                     {item.rating > 0 && <StarDisplay rating={item.rating} />}
                   </div>
                 ))}
+
+                {/* Scroll hint — visible when there are more than 3 items */}
+                {topRated.length > 3 && (
+                  <div className="flex-shrink-0 flex items-center self-center pl-1">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ background: '#EFE4D2', border: '1.5px solid #D4C9BC' }}
+                    >
+                      <ChevronRight className="w-5 h-5" style={{ color: '#116149' }} />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
