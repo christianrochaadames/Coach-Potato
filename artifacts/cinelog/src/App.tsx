@@ -21,6 +21,7 @@ import SignUpPage from "@/pages/sign-up";
 import Onboarding from "@/pages/onboarding";
 import Welcome from "@/pages/welcome";
 import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 
 const queryClient = new QueryClient();
 
@@ -301,6 +302,9 @@ function Router() {
           <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
           <Route path="/entry/:id" component={() => <ProtectedRoute component={EntryDetail} />} />
           <Route path="/privacy" component={Privacy} />
+          <Route path="/privacy-policy" component={Privacy} />
+          <Route path="/terms" component={Terms} />
+          <Route path="/terms-of-service" component={Terms} />
           <Route component={NotFound} />
         </Switch>
       </main>

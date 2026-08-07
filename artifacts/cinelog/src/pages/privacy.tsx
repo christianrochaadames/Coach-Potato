@@ -1,84 +1,141 @@
+import { useLocation } from 'wouter';
+
 export default function Privacy() {
+  const [, setLocation] = useLocation();
+
   return (
-    <div className="min-h-full pb-12 px-5 pt-8 max-w-2xl mx-auto" style={{ background: '#FFF3E8', color: '#111111' }}>
-      <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>Privacy Policy</h1>
-      <p className="text-sm mb-8" style={{ color: '#7E7A73' }}>Last updated: August 2, 2026</p>
+    <div className="min-h-full pb-20 px-5 pt-8 max-w-2xl mx-auto" style={{ background: '#FFF3E8', color: '#111111' }}>
 
-      <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">What Spud is</h2>
+      {/* Back button — only shown when navigating from within the app */}
+      <button
+        onClick={() => window.history.back()}
+        className="flex items-center gap-1.5 text-sm font-semibold mb-6 active:opacity-60"
+        style={{ color: '#116149' }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M12 5l-7 7 7 7" />
+        </svg>
+        Back
+      </button>
+
+      <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
+        Privacy Policy
+      </h1>
+      <p className="text-sm mb-8" style={{ color: '#7E7A73' }}>Last updated: August 7, 2026</p>
+
+      <p className="text-sm leading-relaxed mb-8" style={{ color: '#3D3A35' }}>
+        Spud is a movie and TV tracking app. This policy explains what information Spud collects, why, and what your options are. It only covers what Spud actually does — there's no advertising, no analytics tracking, and no data sold to anyone.
+      </p>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>1. Who runs Spud</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          Spud is a personal movie and TV show tracker. You log what you watch,
-          rate titles, and view stats about your viewing habits. All your data belongs to you.
+          Spud is operated by Christian Rocha Adames, trading as an individual (sole trader) based in Australia. Contact details are at the bottom of this page.
         </p>
       </section>
 
-      <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">Data we collect</h2>
-        <ul className="text-sm leading-relaxed space-y-2" style={{ color: '#3D3A35' }}>
-          <li><strong>Account information</strong> — your name and email address, provided when you sign up via Clerk.</li>
-          <li><strong>Watch history</strong> — titles you log, ratings, notes, and viewing dates you enter manually.</li>
-          <li><strong>Profile photo</strong> — only if you choose to upload one.</li>
-        </ul>
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-3" style={{ color: '#111111' }}>2. Information you give us</h2>
+        <div className="space-y-3">
+          <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+            <strong className="font-semibold" style={{ color: '#111111' }}>Account details.</strong> When you sign up, you create a profile with a first name, last name, username, and optional bio. You can choose an avatar from Spud's built-in character set, or upload your own photo.
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+            <strong className="font-semibold" style={{ color: '#111111' }}>Login.</strong> Spud doesn't store your password. Sign-in is handled by our authentication provider, Clerk, either by email and password or by connecting a Google, Apple, GitHub, or X account. Clerk holds your email address, your OAuth login tokens, and session information on their servers, not ours.
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+            <strong className="font-semibold" style={{ color: '#111111' }}>What you log.</strong> Every title you add to your list — its watch status, your rating, the date, your notes, and which streaming service you watched it on — is saved to your Spud account so the app can build your history and recommendations.
+          </p>
+          <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+            <strong className="font-semibold" style={{ color: '#111111' }}>Facebook (optional).</strong> If you choose to connect Facebook, Spud uses it for one purpose only: finding other Spud users who are also your Facebook friends and who have also connected their account. This is entirely optional, and disconnecting Facebook removes that connection from our records straight away.
+          </p>
+        </div>
       </section>
 
-      <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">Data we do not collect</h2>
-        <ul className="text-sm leading-relaxed space-y-2" style={{ color: '#3D3A35' }}>
-          <li>We do not collect location data.</li>
-          <li>We do not track you across other apps or websites.</li>
-          <li>We do not sell your data to third parties.</li>
-          <li>We do not use your data for advertising.</li>
-        </ul>
-      </section>
-
-      <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">Third-party services</h2>
-        <ul className="text-sm leading-relaxed space-y-2" style={{ color: '#3D3A35' }}>
-          <li>
-            <strong>Clerk</strong> — handles authentication. Your email and name are stored
-            by Clerk under their{' '}
-            <a
-              href="https://clerk.com/legal/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-              style={{ color: '#116149' }}
-            >
-              Privacy Policy
-            </a>.
-          </li>
-          <li>
-            <strong>TMDB (The Movie Database)</strong> — we fetch movie and show metadata
-            (titles, posters, genres) from TMDB's public API. We do not share your personal
-            data with TMDB.
-          </li>
-        </ul>
-      </section>
-
-      <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">Data retention and deletion</h2>
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>3. Information we collect automatically</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          Your data is stored for as long as you have an account. You can delete your
-          account at any time from the Profile page. Upon deletion, all your watch history
-          and personal information is permanently removed.
+          Spud's web app sets one functional cookie to remember whether your sidebar is open or closed, and briefly uses your browser's session storage to manage search focus. Neither is used for tracking or advertising. Our servers may briefly log technical request data (like IP address) as part of normal web traffic, but this isn't stored against your account or kept long-term.
         </p>
       </section>
 
-      <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">Children's privacy</h2>
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>4. What we don't collect</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          Spud is not directed at children under 13. We do not knowingly collect
-          personal information from children under 13.
+          Spud does not collect: your location, advertising or device identifiers, analytics on how you use the app, or any data for the purpose of showing you ads. There are no ad networks or analytics tools built into Spud at all.
         </p>
       </section>
 
-      <section className="mb-6">
-        <h2 className="text-lg font-bold mb-2">Contact</h2>
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>5. How we use your information</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          If you have questions about this policy, please reach out via the App Store
-          support link on the Spud listing.
+          We use your information to run your account, save your watch history, show you personalised recommendations, verify your identity when you sign in, and provide customer support. We don't use your data for marketing, and we don't sell it to anyone.
         </p>
       </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>6. Services we rely on</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          Clerk (sign-up, login, password resets), TMDB (show/movie details, posters, streaming availability), OMDB (IMDb/Rotten Tomatoes scores), Facebook (only if you connect it, finds mutual friends who use Spud), Replit (hosts our servers and database), Expo/EAS (builds and distributes the mobile app, sees no personal data). None of these are ad networks, and we don't use any analytics or crash-reporting tools.
+        </p>
+      </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>7. Where your data lives</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          Spud's servers, database, and authentication provider are all hosted in the United States. If you're using Spud from Australia or elsewhere, your information will be transferred to and stored in the US.
+        </p>
+      </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>8. How long we keep your data</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          We keep your account and log data for as long as your account is active. If you delete your account, your profile and log entries are removed from our database.
+        </p>
+      </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>9. Your rights</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          Under Australia's Privacy Act, you can ask us to tell you what personal information we hold about you, correct anything wrong, or delete your account entirely by emailing us. If you're outside Australia, you may have additional rights under your local law (such as GDPR); we'll honour reasonable requests regardless.
+        </p>
+      </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>10. Security</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          We take reasonable steps to protect your information, including relying on Clerk's security practices. No online service can guarantee complete security.
+        </p>
+      </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>11. Age requirement</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          Spud is intended for people aged 18 and over. By creating an account, you're confirming you meet that requirement.
+        </p>
+      </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>12. Changes to this policy</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          If we make meaningful changes to how we handle your data, we'll update this page and the date at the top.
+        </p>
+      </section>
+
+      <section className="mb-7">
+        <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>13. Contact us</h2>
+        <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
+          Email:{' '}
+          <a
+            href="mailto:christian.rocha.adames@outlook.com"
+            className="underline font-medium"
+            style={{ color: '#116149' }}
+          >
+            christian.rocha.adames@outlook.com
+          </a>
+        </p>
+      </section>
+
     </div>
   );
 }

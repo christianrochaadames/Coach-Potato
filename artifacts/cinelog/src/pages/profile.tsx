@@ -763,6 +763,25 @@ export default function Profile() {
           Sign out
         </button>
       </div>
+
+      {/* ── Legal footer ── */}
+      <div className="flex items-center justify-center gap-3 px-5 pb-2 pt-1">
+        <a
+          href="/privacy"
+          className="text-xs font-medium underline underline-offset-2 active:opacity-60"
+          style={{ color: '#A8D4B0' }}
+        >
+          Privacy Policy
+        </a>
+        <span className="text-xs" style={{ color: '#A8D4B0' }}>·</span>
+        <a
+          href="/terms"
+          className="text-xs font-medium underline underline-offset-2 active:opacity-60"
+          style={{ color: '#A8D4B0' }}
+        >
+          Terms of Service
+        </a>
+      </div>
     </div>
   );
 }
