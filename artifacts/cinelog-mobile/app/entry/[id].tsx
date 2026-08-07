@@ -367,7 +367,7 @@ export default function EntryDetailScreen() {
     const yearText = entry.year ? ` (${entry.year})` : '';
     const ratingText = entry.rating ? ` ${'⭐'.repeat(entry.rating)}` : '';
     const actionText = entry.status === 'watching' ? 'watching' : entry.status === 'plan_to_watch' ? 'planning to watch' : 'watched';
-    try { await Share.share({ message: `I just ${actionText} "${entry.title}"${yearText}${ratingText}\n\nTracked on CouchPotato 🥔`, title: entry.title }); } catch {}
+    try { await Share.share({ message: `I just ${actionText} "${entry.title}"${yearText}${ratingText}\n\nTracked on Spud 🥔`, title: entry.title }); } catch {}
   }
 
   async function handleShareInstagram() {

@@ -63,7 +63,7 @@ function StatsShareCard({
       {/* Branding */}
       <View style={cardStyles.topRow}>
         <Text style={cardStyles.logo}>🥔</Text>
-        <Text style={cardStyles.appName}>CouchPotato</Text>
+        <Text style={cardStyles.appName}>Spud</Text>
       </View>
 
       {/* Heading */}
@@ -118,7 +118,7 @@ function StatsShareCard({
       <Text style={cardStyles.bigPotato}>🥔</Text>
 
       {/* Footer */}
-      <Text style={cardStyles.footer}>couch potato · track what you watch</Text>
+      <Text style={cardStyles.footer}>spud · track what you watch</Text>
     </View>
   );
 }
@@ -397,7 +397,7 @@ export default function StatsScreen() {
       await Sharing.shareAsync(uri, {
         mimeType: 'image/jpeg',
         UTI: 'public.jpeg',
-        dialogTitle: 'Share your CouchPotato stats',
+        dialogTitle: 'Share your Spud stats',
       });
     } catch {
       Alert.alert('Error', 'Could not generate your stats card. Please try again.');

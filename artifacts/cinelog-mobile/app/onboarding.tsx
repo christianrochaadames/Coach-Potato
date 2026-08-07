@@ -23,7 +23,7 @@ const SLIDES = [
     bg: '#E8F5EF',
     accent: '#116149',
     title: 'Your movie memory,\nall in one place',
-    body: 'CouchPotato keeps track of every film and show you watch — so you never forget what you loved.',
+    body: 'Spud keeps track of every film and show you watch — so you never forget what you loved.',
   },
   {
     key: 'log',
@@ -124,7 +124,7 @@ export default function OnboardingScreen() {
         <View style={styles.brandRow}>
           <View style={styles.brandPill}>
             <Text style={styles.brandEmoji}>🥔</Text>
-            <Text style={styles.brandText}>CouchPotato</Text>
+            <Text style={styles.brandText}>Spud</Text>
           </View>
         </View>
 

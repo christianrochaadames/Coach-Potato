@@ -65,7 +65,7 @@ function useTmdbSearch(query: string) {
       try {
         const domain = process.env.EXPO_PUBLIC_DOMAIN;
         if (!domain) {
-          console.error('[CouchPotato] EXPO_PUBLIC_DOMAIN not set — TMDB search will not work on native.');
+          console.error('[Spud] EXPO_PUBLIC_DOMAIN not set — TMDB search will not work on native.');
           setResults([]);
           setLoading(false);
           return;

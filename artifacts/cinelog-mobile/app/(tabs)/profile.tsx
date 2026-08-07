@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Image,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
@@ -156,8 +157,8 @@ export default function ProfileScreen() {
                   <Text style={[styles.fbTitle, { color: colors.foreground }]}>Facebook connected</Text>
                   <Text style={[styles.fbSub, { color: colors.mutedForeground }]}>
                     {fb.friends.length > 0
-                      ? `${fb.friends.length} friend${fb.friends.length !== 1 ? 's' : ''} on CouchPotato`
-                      : 'No friends on CouchPotato yet'}
+                      ? `${fb.friends.length} friend${fb.friends.length !== 1 ? 's' : ''} on Spud`
+                      : 'No friends on Spud yet'}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -181,7 +182,7 @@ export default function ProfileScreen() {
               ) : (
                 <View style={styles.fbEmpty}>
                   <Text style={[styles.fbEmptyText, { color: colors.mutedForeground }]}>
-                    None of your Facebook friends are on CouchPotato yet. Invite them!
+                    None of your Facebook friends are on Spud yet. Invite them!
                   </Text>
                 </View>
               )}
@@ -204,7 +205,7 @@ export default function ProfileScreen() {
               <View style={styles.fbInfo}>
                 <Text style={[styles.fbTitle, { color: colors.foreground }]}>Connect Facebook</Text>
                 <Text style={[styles.fbSub, { color: colors.mutedForeground }]}>
-                  See which friends are also on CouchPotato
+                  See which friends are also on Spud
                 </Text>
               </View>
               <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -229,9 +230,18 @@ export default function ProfileScreen() {
       </View>
 
       {/* Footer */}
-      <Text style={[styles.footer, { color: colors.mutedForeground, marginBottom: insets.bottom + 12 }]}>
-        CouchPotato v1.0.0
-      </Text>
+      <View style={[styles.footerContainer, { marginBottom: insets.bottom + 12 }]}>
+        <Text style={[styles.footer, { color: colors.mutedForeground }]}>Spud v1.0.0</Text>
+        <View style={styles.legalRow}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://spudapp.io/privacy')} activeOpacity={0.6}>
+            <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <Text style={[styles.legalDot, { color: colors.mutedForeground }]}>·</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://spudapp.io/terms')} activeOpacity={0.6}>
+            <Text style={[styles.legalLink, { color: colors.mutedForeground }]}>Terms of Service</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -239,7 +249,7 @@ export default function ProfileScreen() {
 // ── Friend row sub-component ──────────────────────────────────────────────────
 
 function FriendRow({ friend, colors }: { friend: FbFriend; colors: ReturnType<typeof import('@/hooks/useColors').useColors> }) {
-  const name = friend.fbName ?? [friend.firstName, friend.lastName].filter(Boolean).join(' ') ?? friend.username ?? 'CouchPotato user';
+  const name = friend.fbName ?? [friend.firstName, friend.lastName].filter(Boolean).join(' ') ?? friend.username ?? 'Spud user';
   const initials = name
     .split(' ')
     .slice(0, 2)
@@ -459,10 +469,28 @@ const styles = StyleSheet.create({
     fontFamily: 'Manrope_600SemiBold',
     color: '#e53e3e',
   },
+  footerContainer: {
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
   footer: {
     fontSize: 12,
     fontFamily: 'Manrope_400Regular',
     textAlign: 'center',
-    marginTop: 4,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legalLink: {
+    fontSize: 12,
+    fontFamily: 'Manrope_500Medium',
+    textDecorationLine: 'underline',
+  },
+  legalDot: {
+    fontSize: 12,
+    fontFamily: 'Manrope_400Regular',
   },
 });

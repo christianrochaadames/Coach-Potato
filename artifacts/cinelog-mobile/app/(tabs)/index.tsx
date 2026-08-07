@@ -56,7 +56,7 @@ export default function HomeScreen() {
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
         <View>
-          <Text style={[styles.brand, { color: colors.primary }]}>CouchPotato</Text>
+          <Text style={[styles.brand, { color: colors.primary }]}>Spud</Text>
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
             Your watch history
           </Text>
