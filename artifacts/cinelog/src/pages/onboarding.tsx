@@ -34,19 +34,11 @@ export default function Onboarding() {
       })
       .catch(() => {});
 
-    // Load all-time classic titles for onboarding
+    // Load curated recent picks for onboarding
     fetch("/api/tmdb/top-rated")
-      .then((r) => r.ok ? r.json() : { movies: [], shows: [] })
+      .then((r) => r.ok ? r.json() : { items: [] })
       .then((data) => {
-        const mixed: TmdbItem[] = [];
-        const movies: TmdbItem[] = (data.movies ?? []).slice(0, 8);
-        const shows: TmdbItem[] = (data.shows ?? []).slice(0, 8);
-        // Interleave movies and shows
-        for (let i = 0; i < Math.max(movies.length, shows.length); i++) {
-          if (movies[i]) mixed.push(movies[i]);
-          if (shows[i]) mixed.push(shows[i]);
-        }
-        setItems(mixed.slice(0, 16));
+        setItems((data.items ?? []).slice(0, 15));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -119,10 +111,10 @@ export default function Onboarding() {
         <CouchPotatoLogo size="lg" />
         <div className="mt-5">
           <h1 className="text-2xl font-bold" style={{ color: "#111111" }}>
-            What have you already watched?
+            Let's get acquainted.
           </h1>
           <p className="text-sm mt-1" style={{ color: "#7E7A73" }}>
-            Tap the titles you've seen — we'll use them to kickstart your recommendations.
+            Tap anything you've already watched. I'll handle the recommendations.
           </p>
         </div>
       </div>
@@ -186,7 +178,7 @@ export default function Onboarding() {
           onClick={handleContinue}
           disabled={submitting}
           className="w-full py-4 rounded-2xl font-bold text-base text-white disabled:opacity-50"
-          style={{ background: "#116149" }}
+          style={{ background: "#6B46C1" }}
         >
           {submitting ? "Saving…" : selected.size > 0 ? `Add ${selected.size} title${selected.size !== 1 ? "s" : ""} & continue` : "Continue"}
         </button>

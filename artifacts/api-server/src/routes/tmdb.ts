@@ -195,7 +195,7 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
   }
 });
 
-// GET /tmdb/top-rated — hand-curated all-time iconic titles for onboarding picker
+// GET /tmdb/top-rated — curated recent picks for onboarding (fixed, never changes)
 router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -203,66 +203,47 @@ router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
     return;
   }
 
-  const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>("top-rated");
+  const TTL_WEEK = 7 * 24 * 60 * 60 * 1000;
+  const cached = cacheGet<{ items: TmdbResult[] }>("top-rated-v2");
   if (cached) { res.json(cached); return; }
 
+  // Curated list — ordered by display preference, searched by name+type so
+  // posters are always fresh and no hard-coded TMDB IDs can go stale.
+  const PICKS: { query: string; type: "movie" | "tv" }[] = [
+    { query: "Stranger Things",        type: "tv" },
+    { query: "Wednesday",              type: "tv" },
+    { query: "The White Lotus",        type: "tv" },
+    { query: "Silo",                   type: "tv" },
+    { query: "The Last of Us",         type: "tv" },
+    { query: "Severance",              type: "tv" },
+    { query: "Nobody Wants This",      type: "tv" },
+    { query: "A Minecraft Movie",      type: "movie" },
+    { query: "Jack Ryan",              type: "tv" },
+    { query: "In the Land of Saints and Sinners", type: "movie" },
+    { query: "Apex",                   type: "movie" },
+    { query: "Toy Story 5",            type: "movie" },
+    { query: "Mobland",                type: "tv" },
+    { query: "The Devil Wears Prada",  type: "movie" },
+    { query: "Squid Game",             type: "tv" },
+  ];
+
   try {
-    // The most universally recognised movies and TV shows ever made
-    const movieIds = [
-      278,    // The Shawshank Redemption (1994)
-      238,    // The Godfather (1972)
-      155,    // The Dark Knight (2008)
-      680,    // Pulp Fiction (1994)
-      13,     // Forrest Gump (1994)
-      27205,  // Inception (2010)
-      597,    // Titanic (1997)
-      329,    // Jurassic Park (1993)
-      424,    // Schindler's List (1993)
-      550,    // Fight Club (1999)
-      157336, // Interstellar (2014)
-      19404,  // Dilwale Dulhania Le Jayenge — swapped for Home Alone
-    ];
-    // Use Home Alone instead of that last one
-    const finalMovieIds = [278, 238, 155, 680, 13, 27205, 597, 329, 424, 550, 157336, 771];
+    const results = await Promise.all(
+      PICKS.map(async ({ query, type }) => {
+        const mediaType = type === "tv" ? "tv" : "movie";
+        const url = `${TMDB_BASE}/search/${mediaType}?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`;
+        const r = await fetch(url).catch(() => null);
+        if (!r || !r.ok) return null;
+        const data = (await r.json()) as { results?: Record<string, unknown>[] };
+        const first = (data.results ?? [])[0];
+        if (!first) return null;
+        return mapItem(first, type === "movie" ? "movie" : "tv");
+      })
+    );
 
-    const showIds = [
-      1668,   // Friends
-      1396,   // Breaking Bad
-      1435,   // The Sopranos
-      1399,   // Game of Thrones
-      66732,  // Stranger Things
-      2316,   // The Office (US)
-      1400,   // Seinfeld
-      1438,   // The Wire
-      63351,  // Succession
-      87108,  // Chernobyl
-      4809,   // Lost
-      1412,   // Grey's Anatomy
-    ];
-
-    const [movieResults, showResults] = await Promise.all([
-      Promise.all(
-        finalMovieIds.map((id) =>
-          fetch(`${TMDB_BASE}/movie/${id}?api_key=${apiKey}&language=en-US`)
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) => (d ? mapItem(d as Record<string, unknown>, "movie") : null))
-            .catch(() => null)
-        )
-      ),
-      Promise.all(
-        showIds.map((id) =>
-          fetch(`${TMDB_BASE}/tv/${id}?api_key=${apiKey}&language=en-US`)
-            .then((r) => (r.ok ? r.json() : null))
-            .then((d) => (d ? mapItem(d as Record<string, unknown>, "tv") : null))
-            .catch(() => null)
-        )
-      ),
-    ]);
-
-    const movies = movieResults.filter(Boolean) as TmdbResult[];
-    const shows  = showResults.filter(Boolean) as TmdbResult[];
-    const payload = { movies, shows };
-    cacheSet("top-rated", payload, TTL_DAY);
+    const items = results.filter(Boolean) as TmdbResult[];
+    const payload = { items };
+    cacheSet("top-rated-v2", payload, TTL_WEEK);
     res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb top-rated error");
