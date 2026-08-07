@@ -692,12 +692,27 @@ export default function Profile() {
           </div>
         ) : friendsResult?.status === "not_connected" ? (
           /* Facebook not connected */
-          <div className="text-center py-3">
-            <p className="text-2xl mb-1">👥</p>
-            <p className="text-sm font-semibold" style={{ color: "#ffffff" }}>Connect Facebook to find friends</p>
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: "#A8D4B0" }}>
-              Sign in with Facebook to see which of your friends are already on Spud.
+          <div className="text-center py-3 flex flex-col items-center gap-3">
+            <p className="text-sm font-bold" style={{ color: "#ffffff" }}>Find your fellow couch potatoes</p>
+            <p className="text-xs leading-relaxed" style={{ color: "#A8D4B0" }}>
+              Connect Facebook and see which of your mates are already hanging out on Spud.
             </p>
+            <button
+              onClick={() =>
+                user?.createExternalAccount({
+                  strategy: "oauth_facebook",
+                  redirectUrl: window.location.href,
+                })
+              }
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm text-white active:opacity-80 transition-opacity"
+              style={{ background: "#1877F2", border: "none" }}
+            >
+              {/* Facebook "f" logo */}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.885v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+              </svg>
+              Connect Facebook
+            </button>
           </div>
         ) : friendsResult?.friends && friendsResult.friends.length > 0 ? (
           /* Friend list */
