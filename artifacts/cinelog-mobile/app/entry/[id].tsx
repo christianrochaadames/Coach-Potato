@@ -14,6 +14,7 @@ import {
   ActionSheetIOS,
   Animated,
   Modal,
+  Linking,
 } from 'react-native';
 import { Paths, downloadAsync as fsDownload } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -220,13 +221,12 @@ export default function EntryDetailScreen() {
   }, [entry]);
 
   useEffect(() => {
-    if (Platform.OS === 'ios') {
-      import('react-native').then(({ Linking }) =>
-        Linking.canOpenURL('instagram://app').then(setInstagramAvailable).catch(() => setInstagramAvailable(false))
-      );
-    } else {
-      setInstagramAvailable(true);
-    }
+    // Scope to iOS only — Android Stories sharing uses a different intent flow
+    if (Platform.OS !== 'ios') { setInstagramAvailable(false); return; }
+    // Check if Instagram is installed; instagram:// is the stable scheme to query
+    Linking.canOpenURL('instagram://app')
+      .then(setInstagramAvailable)
+      .catch(() => setInstagramAvailable(false));
   }, []);
 
   // ── Autosave ──────────────────────────────────────────────────────────────────
@@ -376,10 +376,18 @@ export default function EntryDetailScreen() {
       const tmpPath = Paths.join(Paths.cache, `poster-${entry.id}.jpg`);
       const { status } = await fsDownload(entry.posterUrl, tmpPath);
       if (status !== 200) throw new Error('Download failed');
+
+      // The iOS system share sheet surfaces Instagram's "Add to Your Story" action
+      // when Instagram is installed. This is the supported path for managed Expo —
+      // the deeper Stories pasteboard contract requires a native module.
       const canShare = await Sharing.isAvailableAsync();
-      if (!canShare) { Alert.alert('Not supported', 'Sharing is not available.'); return; }
-      await Sharing.shareAsync(tmpPath, { mimeType: 'image/jpeg', UTI: 'public.jpeg', dialogTitle: 'Share poster' });
-    } catch { Alert.alert('Error', 'Could not load the poster.'); }
+      if (!canShare) { Alert.alert('Not supported', 'Sharing is not available on this device.'); return; }
+      await Sharing.shareAsync(tmpPath, {
+        mimeType: 'image/jpeg',
+        UTI: 'public.jpeg',
+        dialogTitle: 'Share to Instagram Stories',
+      });
+    } catch { Alert.alert('Error', 'Could not load the poster image.'); }
   }
 
   function handleShare() {
