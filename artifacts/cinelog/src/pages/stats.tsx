@@ -104,7 +104,7 @@ export default function Stats() {
   }, [allEntries]);
 
   return (
-    <div className="pb-8" style={{ background: '#4A1020', borderRadius: 28, marginTop: 8, marginBottom: 100 }}>
+    <div className="pb-8" style={{ background: '#4A1020', borderRadius: 28, marginTop: 24, marginBottom: 100 }}>
       {/* Header */}
       <div className="px-5 pt-8 pb-16 flex items-center justify-between">
         <h1 className="text-2xl font-bold" style={{ color: '#FFF3E8' }}>Your Stats</h1>
