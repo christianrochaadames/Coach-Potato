@@ -175,9 +175,9 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
   const page2 = (page % 5) + 1;
   const page3 = (page2 % 5) + 1;
 
-  // Two months ago cutoff
+  // Six months ago cutoff
   const cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - 2);
+  cutoff.setMonth(cutoff.getMonth() - 6);
   const cutoffStr = cutoff.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
   try {
