@@ -132,6 +132,11 @@ export default function Stats() {
             I'd love to show off your stats, but you haven't given me anything yet. Add what you've watched and I'll turn your viewing habits into beautiful stats.
           </p>
         )}
+        {!isLoading && stats?.total > 0 && (
+          <p className="text-sm mt-1" style={{ color: '#FFD6E7', opacity: 0.75 }}>
+            A completely unnecessary but oddly satisfying breakdown of your viewing habits.
+          </p>
+        )}
       </div>
 
       {isLoading ? (
