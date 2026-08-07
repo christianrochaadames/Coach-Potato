@@ -279,25 +279,25 @@ export default function SearchPage() {
     return (
     <div
       key={item.tmdbId}
-      className="flex items-center gap-3 p-3 rounded-2xl transition-opacity"
+      className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer active:opacity-70 transition-opacity"
       style={{ background: cardBg, border: cardBorder }}
+      onClick={() => setDetailItem(item)}
     >
-      {/* Poster — opens full detail sheet */}
+      {/* Poster */}
       <div
-        className="w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center cursor-pointer active:opacity-70"
+        className="w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
         style={{ background: '#EFE4D2' }}
-        onClick={() => setDetailItem(item)}
       >
         {item.posterUrl ? (
-          <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover pointer-events-none" />
+          <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" />
         ) : (
           item.type === 'movie'
-            ? <Film className="w-5 h-5 pointer-events-none" style={{ color: '#7E7A73' }} />
-            : <Tv className="w-5 h-5 pointer-events-none" style={{ color: '#7E7A73' }} />
+            ? <Film className="w-5 h-5" style={{ color: '#7E7A73' }} />
+            : <Tv className="w-5 h-5" style={{ color: '#7E7A73' }} />
         )}
       </div>
-      {/* Info area — opens quick-add sheet */}
-      <div className="flex-1 min-w-0 cursor-pointer active:opacity-70" onClick={() => setAddingItem(item)}>
+      {/* Info area */}
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="font-bold text-sm truncate" style={{ color: '#111111' }}>{item.title}</p>
           {alreadyAdded && (
@@ -310,15 +310,14 @@ export default function SearchPage() {
           {item.year ?? '—'} · {item.type === 'movie' ? 'Movie' : 'TV Show'}{alreadyAdded ? ' · In your collection' : ''}
         </p>
       </div>
-      {/* Badge — also opens quick-add sheet */}
+      {/* Badge */}
       <span
-        className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0 cursor-pointer active:opacity-70"
+        className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0"
         style={
           item.type === 'movie'
             ? { background: '#E5FAB0', color: '#2D6A4F', border: '1.5px solid #2D6A4F' }
             : { background: '#DDD8FF', color: '#5B50D0', border: '1.5px solid #5B50D0' }
         }
-        onClick={() => setAddingItem(item)}
       >
         {item.type === 'movie' ? 'Movie' : 'TV Show'}
       </span>
