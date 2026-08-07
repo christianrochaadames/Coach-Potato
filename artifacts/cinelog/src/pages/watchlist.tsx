@@ -207,7 +207,7 @@ export default function Watchlist() {
         ) : (
           <div className="flex flex-col items-center py-16 gap-4">
             <img
-              src="/spud-sleeping.png"
+              src="/spud-phone2.png"
               alt="Spud"
               style={{ width: 250, height: 250, objectFit: 'contain' }}
             />

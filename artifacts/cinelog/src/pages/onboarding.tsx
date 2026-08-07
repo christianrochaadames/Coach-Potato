@@ -120,7 +120,7 @@ export default function Onboarding() {
       </div>
 
       {/* Grid */}
-      <div className="flex-1 px-5 pb-4">
+      <div className="px-5 pb-4">
         {loading ? (
           <div className="grid grid-cols-4 gap-2">
             {[...Array(16)].map((_, i) => (
