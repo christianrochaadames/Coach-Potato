@@ -192,7 +192,7 @@ export default function Welcome() {
             onClick={() => setShowForm(false)}
           />
           <div
-            className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-6 pt-5 pb-10"
+            className="fixed bottom-0 left-0 right-0 z-30 rounded-t-3xl px-6 pt-5 pb-28"
             style={{ background: "#ffffff", maxHeight: "88dvh", overflowY: "auto" }}
           >
             <div className="flex justify-center mb-5">
