@@ -361,7 +361,7 @@ export default function Stats() {
                   >
                     <button
                       aria-label="Scroll right"
-                      className="w-11 h-11 flex items-center justify-center rounded-full active:scale-95 transition-transform"
+                      className="w-10 h-10 flex items-center justify-center rounded-full active:scale-95 transition-transform"
                       style={{ background: '#BDECC8', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}
                       onClick={() => topRatedScrollRef.current?.scrollBy({ left: 250, behavior: 'smooth' })}
                     >
