@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Manrope', sans-serif; background: #FFF3E8; width: 390px; min-height: 844px; }
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .status-bar .time { font-weight: 700; font-size: 15px; }
+  .header { padding: 12px 20px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #116149; }
+  .count-badge { background: #116149; color: white; font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+  .card { background: white; margin: 0 20px 10px; border-radius: 16px; padding: 14px; display: flex; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .poster { width: 54px; height: 80px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+  .info { flex: 1; }
+  .title { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+  .meta { font-size: 12px; color: #888; margin-top: 3px; }
+  .tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .tag { background: #F0EDE8; color: #666; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 20px; }
+  .tag.green { background: #BDECC8; color: #116149; }
+  .action-btn { background: #116149; color: white; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 12px; align-self: center; white-space: nowrap; flex-shrink: 0; }
+  .section-label { padding: 4px 20px 10px; font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.8px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 390px; height: 80px; background: white; display: flex; align-items: flex-start; padding-top: 10px; border-top: 1px solid #F0EDE8; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 600; color: #bbb; }
+</style>
+</head>
+<body>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div style="display:flex;gap:6px;align-items:center;font-size:13px;"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+  </div>
+
+  <div class="header">
+    <h1>Watchlist</h1>
+    <div class="count-badge">8 titles</div>
+  </div>
+
+  <div class="section-label">Want to Watch</div>
+
+  <div class="card">
+    <div class="poster" style="background:linear-gradient(135deg,#1a0533,#6b21a8);">✨</div>
+    <div class="info">
+      <div class="title">Wicked</div>
+      <div class="meta">2024 · Musical · Peacock</div>
+      <div class="tags"><div class="tag">Movie</div><div class="tag green">In theatres</div></div>
+    </div>
+    <div class="action-btn">▶ Log</div>
+  </div>
+
+  <div class="card">
+    <div class="poster" style="background:linear-gradient(135deg,#0f2027,#203a43);">🌌</div>
+    <div class="info">
+      <div class="title">Severance</div>
+      <div class="meta">2025 · Thriller · Apple TV+</div>
+      <div class="tags"><div class="tag">TV Show</div><div class="tag">Season 2</div></div>
+    </div>
+    <div class="action-btn">▶ Log</div>
+  </div>
+
+  <div class="card">
+    <div class="poster" style="background:linear-gradient(135deg,#1a1a2e,#e94560);">🎬</div>
+    <div class="info">
+      <div class="title">Anora</div>
+      <div class="meta">2024 · Drama</div>
+      <div class="tags"><div class="tag">Movie</div><div class="tag green">🍅 95%</div></div>
+    </div>
+    <div class="action-btn">▶ Log</div>
+  </div>
+
+  <div class="card">
+    <div class="poster" style="background:linear-gradient(135deg,#11998e,#38ef7d);">🎭</div>
+    <div class="info">
+      <div class="title">The Penguin</div>
+      <div class="meta">2024 · Crime · Max</div>
+      <div class="tags"><div class="tag">TV Show</div></div>
+    </div>
+    <div class="action-btn">▶ Log</div>
+  </div>
+
+  <div class="card">
+    <div class="poster" style="background:linear-gradient(135deg,#2c3e50,#4ca1af);">🚢</div>
+    <div class="info">
+      <div class="title">A Complete Unknown</div>
+      <div class="meta">2024 · Drama · Biopic</div>
+      <div class="tags"><div class="tag">Movie</div></div>
+    </div>
+    <div class="action-btn">▶ Log</div>
+  </div>
+
+  <div style="height:90px;"></div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+    <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Search</div></div>
+    <div class="nav-item"><div class="nav-icon">🔖</div><div class="nav-label" style="color:#116149;">Watchlist</div></div>
+    <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Stats</div></div>
+    <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></div>
+  </div>
+</body>
+</html>

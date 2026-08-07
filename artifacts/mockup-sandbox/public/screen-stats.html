@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Manrope', sans-serif; background: #FFF3E8; width: 390px; min-height: 844px; }
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .status-bar .time { font-weight: 700; font-size: 15px; }
+  .header { padding: 12px 20px 16px; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #116149; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px 16px; }
+  .stat-card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .stat-card.green { background: #116149; }
+  .stat-num { font-size: 32px; font-weight: 800; color: #116149; line-height: 1; }
+  .stat-num.white { color: white; }
+  .stat-label { font-size: 12px; color: #888; margin-top: 4px; font-weight: 600; }
+  .stat-label.white { color: #BDECC8; }
+  .section { padding: 0 20px 16px; }
+  .section-title { font-size: 13px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+  .genre-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .genre-name { font-size: 14px; font-weight: 600; color: #1a1a1a; width: 80px; flex-shrink: 0; }
+  .genre-bar-bg { flex: 1; background: #F0EDE8; border-radius: 6px; height: 8px; }
+  .genre-bar { background: #116149; border-radius: 6px; height: 8px; }
+  .genre-count { font-size: 12px; color: #888; font-weight: 600; width: 24px; text-align: right; }
+  .platform-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .platform-chip { background: white; border-radius: 12px; padding: 8px 14px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+  .platform-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .platform-name { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+  .platform-count { font-size: 12px; color: #888; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 390px; height: 80px; background: white; display: flex; align-items: flex-start; padding-top: 10px; border-top: 1px solid #F0EDE8; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 600; color: #bbb; }
+</style>
+</head>
+<body>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div style="display:flex;gap:6px;align-items:center;font-size:13px;"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+  </div>
+
+  <div class="header">
+    <h1>Your Stats</h1>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card green">
+      <div class="stat-num white">63</div>
+      <div class="stat-label white">Titles logged</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">4.2</div>
+      <div class="stat-label">Avg rating ⭐</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="font-size:24px;">127 hrs</div>
+      <div class="stat-label">Time watched</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">12</div>
+      <div class="stat-label">This month</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Top Genres</div>
+    <div class="genre-row">
+      <div class="genre-name">Drama</div>
+      <div class="genre-bar-bg"><div class="genre-bar" style="width:80%"></div></div>
+      <div class="genre-count">21</div>
+    </div>
+    <div class="genre-row">
+      <div class="genre-name">Sci-Fi</div>
+      <div class="genre-bar-bg"><div class="genre-bar" style="width:55%"></div></div>
+      <div class="genre-count">14</div>
+    </div>
+    <div class="genre-row">
+      <div class="genre-name">Comedy</div>
+      <div class="genre-bar-bg"><div class="genre-bar" style="width:42%"></div></div>
+      <div class="genre-count">11</div>
+    </div>
+    <div class="genre-row">
+      <div class="genre-name">Thriller</div>
+      <div class="genre-bar-bg"><div class="genre-bar" style="width:30%"></div></div>
+      <div class="genre-count">8</div>
+    </div>
+    <div class="genre-row">
+      <div class="genre-name">Action</div>
+      <div class="genre-bar-bg"><div class="genre-bar" style="width:22%"></div></div>
+      <div class="genre-count">6</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Streaming Platforms</div>
+    <div class="platform-row">
+      <div class="platform-chip"><div class="platform-dot" style="background:#E8151B;"></div><div class="platform-name">Netflix</div><div class="platform-count">18</div></div>
+      <div class="platform-chip"><div class="platform-dot" style="background:#00A8E0;"></div><div class="platform-name">Max</div><div class="platform-count">14</div></div>
+      <div class="platform-chip"><div class="platform-dot" style="background:#0063E5;"></div><div class="platform-name">Disney+</div><div class="platform-count">10</div></div>
+      <div class="platform-chip"><div class="platform-dot" style="background:#1DB954;"></div><div class="platform-name">Apple TV+</div><div class="platform-count">8</div></div>
+    </div>
+  </div>
+
+  <div style="height:90px;"></div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+    <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label">Search</div></div>
+    <div class="nav-item"><div class="nav-icon">🔖</div><div class="nav-label">Watchlist</div></div>
+    <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label" style="color:#116149;">Stats</div></div>
+    <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></div>
+  </div>
+</body>
+</html>

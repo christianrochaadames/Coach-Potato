@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Manrope', sans-serif; background: #FFF3E8; width: 390px; min-height: 844px; overflow-x: hidden; }
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .status-bar .time { font-weight: 700; font-size: 15px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+  .header { padding: 12px 20px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .header-left h1 { font-size: 22px; font-weight: 800; color: #116149; }
+  .header-left p { font-size: 13px; color: #888; margin-top: 1px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #BDECC8; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #116149; }
+  .section { padding: 14px 20px 0; }
+  .section-title { font-size: 13px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+  .card { background: white; border-radius: 16px; padding: 14px; display: flex; gap: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .poster { width: 54px; height: 80px; border-radius: 8px; flex-shrink: 0; object-fit: cover; }
+  .poster-placeholder { width: 54px; height: 80px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .card-info { flex: 1; padding-top: 2px; }
+  .card-title { font-size: 15px; font-weight: 700; color: #1a1a1a; margin-bottom: 3px; }
+  .card-meta { font-size: 12px; color: #888; margin-bottom: 8px; }
+  .stars { display: flex; gap: 2px; }
+  .star { font-size: 14px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; background: #BDECC8; color: #116149; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; margin-top: 6px; }
+  .status-watching { background: #FEF3C7; color: #92400E; }
+  .continue-section { padding: 14px 20px 0; }
+  .continue-card { background: #116149; border-radius: 16px; padding: 16px; display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+  .continue-info h3 { font-size: 15px; font-weight: 700; color: white; }
+  .continue-info p { font-size: 12px; color: #BDECC8; margin-top: 3px; }
+  .continue-btn { background: #BDECC8; color: #116149; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; margin-top: 10px; display: inline-block; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 390px; height: 80px; background: white; display: flex; align-items: flex-start; padding-top: 10px; border-top: 1px solid #F0EDE8; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 600; color: #bbb; }
+  .nav-item.active .nav-label { color: #116149; }
+  .nav-item.active .nav-icon { filter: none; }
+  .spacer { height: 90px; }
+</style>
+</head>
+<body>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <div class="header">
+    <div class="header-left">
+      <h1>My Log</h1>
+      <p>Thursday, Aug 7</p>
+    </div>
+    <div class="avatar">CR</div>
+  </div>
+
+  <div class="continue-section">
+    <div class="section-title">Currently Watching</div>
+    <div class="continue-card">
+      <div class="poster-placeholder" style="background:#0f4d37; width:54px; height:80px; border-radius:8px; font-size:28px;">📺</div>
+      <div class="continue-info">
+        <h3>The Bear</h3>
+        <p>Season 3 · Episode 6</p>
+        <p style="font-size:11px; color:#8ecfb0; margin-top:2px;">FX on Hulu</p>
+        <div class="continue-btn">Continue logging</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="margin-top:4px;">
+    <div class="section-title">Recently Watched</div>
+
+    <div class="card">
+      <div class="poster-placeholder" style="background: linear-gradient(135deg,#1a1a2e,#16213e);">🎬</div>
+      <div class="card-info">
+        <div class="card-title">Dune: Part Two</div>
+        <div class="card-meta">2024 · Sci-Fi</div>
+        <div class="stars">⭐⭐⭐⭐⭐</div>
+        <div class="badge">Max</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="poster-placeholder" style="background: linear-gradient(135deg,#2d1b69,#11047a);">🎭</div>
+      <div class="card-info">
+        <div class="card-title">Succession</div>
+        <div class="card-meta">2023 · Drama · Season 4</div>
+        <div class="stars">⭐⭐⭐⭐⭐</div>
+        <div class="badge">HBO</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="poster-placeholder" style="background: linear-gradient(135deg,#1f4037,#99f2c8);">🏃</div>
+      <div class="card-info">
+        <div class="card-title">Oppenheimer</div>
+        <div class="card-meta">2023 · Drama</div>
+        <div class="stars">⭐⭐⭐⭐</div>
+        <div class="badge">Peacock</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active">
+      <div class="nav-icon">🏠</div>
+      <div class="nav-label" style="color:#116149;">Home</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">🔍</div>
+      <div class="nav-label">Search</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">🔖</div>
+      <div class="nav-label">Watchlist</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">📊</div>
+      <div class="nav-label">Stats</div>
+    </div>
+    <div class="nav-item">
+      <div class="nav-icon">👤</div>
+      <div class="nav-label">Profile</div>
+    </div>
+  </div>
+</body>
+</html>

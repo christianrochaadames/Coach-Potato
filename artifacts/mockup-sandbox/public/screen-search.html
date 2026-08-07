@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Manrope', sans-serif; background: #FFF3E8; width: 390px; min-height: 844px; }
+  .status-bar { height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+  .status-bar .time { font-weight: 700; font-size: 15px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+  .header { padding: 12px 20px 14px; }
+  .header h1 { font-size: 22px; font-weight: 800; color: #116149; margin-bottom: 12px; }
+  .search-bar { background: white; border-radius: 14px; padding: 12px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .search-icon { font-size: 18px; }
+  .search-text { font-size: 15px; color: #1a1a1a; font-weight: 500; }
+  .result { background: white; margin: 0 20px 10px; border-radius: 16px; padding: 14px; display: flex; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .poster { width: 54px; height: 80px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+  .info { flex: 1; }
+  .title { font-size: 15px; font-weight: 700; color: #1a1a1a; }
+  .meta { font-size: 12px; color: #888; margin-top: 3px; }
+  .score { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .rt { background: #FF3B3B; color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; }
+  .rt.fresh { background: #FF6B35; }
+  .add-btn { background: #BDECC8; color: #116149; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; align-self: center; white-space: nowrap; flex-shrink: 0; }
+  .section-label { padding: 10px 20px 8px; font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.8px; }
+  .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; width: 390px; height: 80px; background: white; display: flex; align-items: flex-start; padding-top: 10px; border-top: 1px solid #F0EDE8; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 600; color: #bbb; }
+</style>
+</head>
+<body>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+  </div>
+
+  <div class="header">
+    <h1>Search</h1>
+    <div class="search-bar">
+      <div class="search-icon">🔍</div>
+      <div class="search-text">Interstellar</div>
+    </div>
+  </div>
+
+  <div class="section-label">Results</div>
+
+  <div class="result">
+    <div class="poster" style="background:linear-gradient(135deg,#0a0a1a,#1a1a3e);">🚀</div>
+    <div class="info">
+      <div class="title">Interstellar</div>
+      <div class="meta">2014 · Sci-Fi · Christopher Nolan</div>
+      <div class="score">
+        <div class="rt fresh">🍅 73%</div>
+        <span style="font-size:12px;color:#888;">Paramount+</span>
+      </div>
+    </div>
+    <div class="add-btn">+ Log</div>
+  </div>
+
+  <div class="result">
+    <div class="poster" style="background:linear-gradient(135deg,#1a0a2e,#2d1b69);">🪐</div>
+    <div class="info">
+      <div class="title">Interstellar: The IMAX Experience</div>
+      <div class="meta">2014 · Documentary</div>
+      <div class="score">
+        <div class="rt" style="background:#ccc; color:#666;">N/A</div>
+      </div>
+    </div>
+    <div class="add-btn">+ Log</div>
+  </div>
+
+  <div class="section-label" style="margin-top:6px;">Trending This Week</div>
+
+  <div class="result">
+    <div class="poster" style="background:linear-gradient(135deg,#1f1f1f,#444);">🎭</div>
+    <div class="info">
+      <div class="title">The Brutalist</div>
+      <div class="meta">2024 · Drama</div>
+      <div class="score"><div class="rt fresh">🍅 88%</div></div>
+    </div>
+    <div class="add-btn">+ Log</div>
+  </div>
+
+  <div class="result">
+    <div class="poster" style="background:linear-gradient(135deg,#0d3349,#1a6b8a);">🌊</div>
+    <div class="info">
+      <div class="title">Conclave</div>
+      <div class="meta">2024 · Thriller</div>
+      <div class="score"><div class="rt fresh">🍅 91%</div></div>
+    </div>
+    <div class="add-btn">+ Log</div>
+  </div>
+
+  <div style="height:90px;"></div>
+
+  <div class="bottom-nav">
+    <div class="nav-item"><div class="nav-icon">🏠</div><div class="nav-label">Home</div></div>
+    <div class="nav-item"><div class="nav-icon">🔍</div><div class="nav-label" style="color:#116149;">Search</div></div>
+    <div class="nav-item"><div class="nav-icon">🔖</div><div class="nav-label">Watchlist</div></div>
+    <div class="nav-item"><div class="nav-icon">📊</div><div class="nav-label">Stats</div></div>
+    <div class="nav-item"><div class="nav-icon">👤</div><div class="nav-label">Profile</div></div>
+  </div>
+</body>
+</html>
