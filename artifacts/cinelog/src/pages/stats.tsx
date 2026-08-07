@@ -316,47 +316,53 @@ export default function Stats() {
           {topRated.length > 0 && (
             <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
               <p className="font-bold mb-4" style={{ color: '#111111' }}>Top Rated</p>
-              <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide items-start">
-                {topRated.map((item, idx) => (
-                  <div
-                    key={`${item.id}-${idx}`}
-                    className="flex-shrink-0 w-24 cursor-pointer active:opacity-70 transition-opacity"
-                    onClick={() => item.ratedSeasons?.length ? setSeasonPopup(item) : setLocation(`/entry/${item.id}`)}
-                  >
-                    <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-1.5" style={{ background: '#EFE4D2' }}>
-                      {item.posterUrl ? (
-                        <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xl font-bold" style={{ color: '#116149' }}>{item.title[0]?.toUpperCase()}</span>
-                        </div>
-                      )}
-                      {/* Badge when multiple seasons rated */}
-                      {(item.ratedSeasons?.length ?? 0) > 1 && (
-                        <div className="absolute bottom-1.5 right-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ background: '#FF4BAE', color: '#fff' }}>
-                          {item.ratedSeasons!.length}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-[10px] font-bold truncate leading-tight" style={{ color: '#111111' }}>{item.title}</p>
-                    {item.ratedSeasons?.length === 1 && (
-                      <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>Season {item.ratedSeasons[0].number}</p>
-                    )}
-                    {item.ratedSeasons && item.ratedSeasons.length > 1 && (
-                      <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>{item.ratedSeasons.length} seasons</p>
-                    )}
-                    {item.rating > 0 && <StarDisplay rating={item.rating} />}
-                  </div>
-                ))}
-
-                {/* Scroll hint — visible when there are more than 3 items */}
-                {topRated.length > 3 && (
-                  <div className="flex-shrink-0 flex items-center self-center pl-1">
+              {/* Relative wrapper so the scroll-hint circle can float over the right edge */}
+              <div className="relative">
+                <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide items-start">
+                  {topRated.map((item, idx) => (
                     <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center"
-                      style={{ background: '#EFE4D2', border: '1.5px solid #D4C9BC' }}
+                      key={`${item.id}-${idx}`}
+                      className="flex-shrink-0 w-24 cursor-pointer active:opacity-70 transition-opacity"
+                      onClick={() => item.ratedSeasons?.length ? setSeasonPopup(item) : setLocation(`/entry/${item.id}`)}
                     >
-                      <ChevronRight className="w-5 h-5" style={{ color: '#116149' }} />
+                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-1.5" style={{ background: '#EFE4D2' }}>
+                        {item.posterUrl ? (
+                          <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="text-xl font-bold" style={{ color: '#116149' }}>{item.title[0]?.toUpperCase()}</span>
+                          </div>
+                        )}
+                        {/* Badge when multiple seasons rated */}
+                        {(item.ratedSeasons?.length ?? 0) > 1 && (
+                          <div className="absolute bottom-1.5 right-1.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold" style={{ background: '#FF4BAE', color: '#fff' }}>
+                            {item.ratedSeasons!.length}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-bold truncate leading-tight" style={{ color: '#111111' }}>{item.title}</p>
+                      {item.ratedSeasons?.length === 1 && (
+                        <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>Season {item.ratedSeasons[0].number}</p>
+                      )}
+                      {item.ratedSeasons && item.ratedSeasons.length > 1 && (
+                        <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>{item.ratedSeasons.length} seasons</p>
+                      )}
+                      {item.rating > 0 && <StarDisplay rating={item.rating} />}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scroll hint — floats over the right edge of the poster row */}
+                {topRated.length > 3 && (
+                  <div
+                    className="absolute right-0 pointer-events-none flex items-center justify-center"
+                    style={{ top: 0, width: 40, height: 144 /* poster height: w-24 × 3/2 */ }}
+                  >
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center shadow-md"
+                      style={{ background: '#116149' }}
+                    >
+                      <ChevronRight className="w-5 h-5 text-white" />
                     </div>
                   </div>
                 )}

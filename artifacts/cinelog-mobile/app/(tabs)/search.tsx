@@ -78,7 +78,7 @@ function useTmdbSearch(query: string) {
       } finally {
         setLoading(false);
       }
-    }, 350);
+    }, 250);
     return () => clearTimeout(timer);
   }, [query]);
 

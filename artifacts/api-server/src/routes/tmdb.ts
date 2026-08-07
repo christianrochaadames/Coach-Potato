@@ -83,6 +83,10 @@ function mapItem(item: Record<string, unknown>, mediaType: "movie" | "tv"): Tmdb
 }
 
 // GET /tmdb/search?q=...
+// Strategy: fire /search/multi + /search/movie + /search/tv in parallel for
+// maximum recall, deduplicate by TMDB id, sort by popularity, then slice.
+// If the combined result is empty and the query has multiple words, fall back
+// to the single longest word so partial/misspelled queries still find something.
 router.get("/tmdb/search", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -95,22 +99,59 @@ router.get("/tmdb/search", requireAuth, async (req, res) => {
     return;
   }
 
-  try {
-    const url = `${TMDB_BASE}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      req.log.error({ status: response.status }, "TMDB search upstream error");
-      res.status(502).json({ error: "TMDB search failed" });
-      return;
+  const query = q.trim();
+
+  type SearchResp = { results?: Record<string, unknown>[] };
+  async function fetchSearchResults(url: string): Promise<SearchResp> {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) return { results: [] };
+      return r.json() as Promise<SearchResp>;
+    } catch { return { results: [] }; }
+  }
+
+  async function runSearch(term: string): Promise<TmdbResult[]> {
+    const enc = encodeURIComponent(term);
+    const base = `&language=en-US&page=1&include_adult=false`;
+    const [multiRaw, movieRaw, tvRaw] = await Promise.all([
+      fetchSearchResults(`${TMDB_BASE}/search/multi?api_key=${apiKey}&query=${enc}${base}`),
+      fetchSearchResults(`${TMDB_BASE}/search/movie?api_key=${apiKey}&query=${enc}${base}`),
+      fetchSearchResults(`${TMDB_BASE}/search/tv?api_key=${apiKey}&query=${enc}${base}`),
+    ]);
+
+    // Collect raw items (popularity field preserved) and deduplicate by id+type
+    const seen = new Set<string>();
+    const raw: Record<string, unknown>[] = [];
+
+    for (const item of (multiRaw.results ?? [])) {
+      const mt = item.media_type as string;
+      if (mt !== "movie" && mt !== "tv") continue;
+      const key = `${mt}:${item.id}`;
+      if (!seen.has(key)) { seen.add(key); raw.push(item); }
     }
-    const data = (await response.json()) as { results?: Record<string, unknown>[] };
-    const results: TmdbResult[] = (data.results ?? [])
-      .filter(
-        (item) =>
-          (item.media_type as string) === "movie" || (item.media_type as string) === "tv"
-      )
-      .slice(0, 12)
-      .map((item) => mapItem(item, (item.media_type as string) === "movie" ? "movie" : "tv"));
+    for (const item of (movieRaw.results ?? [])) {
+      const key = `movie:${item.id}`;
+      if (!seen.has(key)) { seen.add(key); raw.push({ ...item, media_type: "movie" }); }
+    }
+    for (const item of (tvRaw.results ?? [])) {
+      const key = `tv:${item.id}`;
+      if (!seen.has(key)) { seen.add(key); raw.push({ ...item, media_type: "tv" }); }
+    }
+
+    return raw
+      .sort((a, b) => ((b.popularity as number) ?? 0) - ((a.popularity as number) ?? 0))
+      .slice(0, 15)
+      .map(item => mapItem(item, (item.media_type as string) === "movie" ? "movie" : "tv"));
+  }
+
+  try {
+    let results = await runSearch(query);
+
+    // Nothing found and multi-word query → retry with the longest single word
+    if (results.length === 0 && /\s/.test(query)) {
+      const fallback = query.split(/\s+/).sort((a, b) => b.length - a.length)[0];
+      results = await runSearch(fallback);
+    }
 
     res.json({ results });
   } catch (err) {
@@ -244,7 +285,7 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
           MOVIE_QUERIES.map((q) =>
             fetch(`${TMDB_BASE}/search/movie?api_key=${apiKey}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`)
               .then((r) => (r.ok ? r.json() : null))
-              .then((d) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "movie") : null; })
+              .then((d: { results?: Record<string, unknown>[] } | null) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "movie") : null; })
               .catch(() => null)
           )
         ),
@@ -252,7 +293,7 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
           SHOW_QUERIES.map((q) =>
             fetch(`${TMDB_BASE}/search/tv?api_key=${apiKey}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`)
               .then((r) => (r.ok ? r.json() : null))
-              .then((d) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "tv") : null; })
+              .then((d: { results?: Record<string, unknown>[] } | null) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "tv") : null; })
               .catch(() => null)
           )
         ),

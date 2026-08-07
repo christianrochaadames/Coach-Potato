@@ -36,7 +36,7 @@ function useTmdbSearch(query: string) {
         setResults(data.results ?? []);
         setNoKey(false);
       } catch { /* ignore */ } finally { setLoading(false); }
-    }, 400);
+    }, 250);
     return () => clearTimeout(timer);
   }, [query]);
 
