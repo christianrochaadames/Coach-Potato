@@ -137,31 +137,31 @@ export default function Watchlist() {
                   <p className="text-xs mb-2" style={{ color: '#7E7A73' }}>
                     {entry.year ?? (entry.type === 'movie' ? 'Movie' : 'TV Show')}
                   </p>
-                  <div className="flex gap-1.5 flex-nowrap">
+                  <div className="flex gap-1 flex-nowrap">
                     <button
                       onClick={() => startWatching(entry.id, entry.title)}
                       disabled={updateEntry.isPending}
-                      className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white disabled:opacity-50 whitespace-nowrap"
+                      className="flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full text-white disabled:opacity-50 whitespace-nowrap"
                       style={{ background: '#4A78FF' }}
                     >
-                      <Play className="w-3 h-3 flex-shrink-0" /> Watch
+                      <Play className="w-2.5 h-2.5 flex-shrink-0" /> Watch
                     </button>
                     <button
                       onClick={() => markWatched(entry.id, entry.title)}
                       disabled={updateEntry.isPending}
-                      className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full text-white disabled:opacity-50 whitespace-nowrap"
+                      className="flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full text-white disabled:opacity-50 whitespace-nowrap"
                       style={{ background: '#FF2BAC' }}
                     >
-                      <Check className="w-3 h-3 flex-shrink-0" strokeWidth={3} /> Watched
+                      <Check className="w-2.5 h-2.5 flex-shrink-0" strokeWidth={3} /> Watched
                     </button>
                     <button
                       onClick={() => setConfirmDeleteId(entry.id)}
                       disabled={deleteEntry.isPending}
-                      className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full disabled:opacity-50 whitespace-nowrap"
+                      className="flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full disabled:opacity-50 whitespace-nowrap"
                       style={{ background: '#FFF3E8', border: '1px solid #E2D9CE', color: '#7E7A73' }}
                       aria-label="Remove from watchlist"
                     >
-                      <Trash2 className="w-3 h-3 flex-shrink-0" /> Remove
+                      <Trash2 className="w-2.5 h-2.5 flex-shrink-0" /> Remove
                     </button>
                   </div>
                 </div>

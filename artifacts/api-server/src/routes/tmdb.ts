@@ -162,28 +162,30 @@ router.get("/tmdb/trending", requireAuth, async (req, res) => {
 // ---------------------------------------------------------------------------
 
 const MOVIE_QUERIES = [
-  "A Minecraft Movie 2025",
-  "Captain America Brave New World 2025",
-  "Thunderbolts 2025",
-  "Sonic the Hedgehog 3 2024",
-  "Gladiator II 2024",
-  "Wicked 2024",
-  "Moana 2 2024",
-  "Deadpool Wolverine 2024",
-  "Inside Out 2 2024",
-  "Dune Part Two 2024",
-  "Despicable Me 4 2024",
-  "Godzilla Kong New Empire 2024",
-  "Beetlejuice Beetlejuice 2024",
-  "Wonka 2023",
-  "Oppenheimer 2023",
-  "Barbie 2023",
-  "The Super Mario Bros Movie 2023",
-  "Puss in Boots The Last Wish",
+  "A Minecraft Movie",
+  "Deadpool Wolverine",
+  "Inside Out 2",
+  "Dune Part Two",
+  "Gladiator II",
+  "Moana 2",
+  "Sonic the Hedgehog 3",
+  "Godzilla x Kong The New Empire",
+  "Beetlejuice Beetlejuice",
+  "Oppenheimer",
+  "Barbie",
+  "The Super Mario Bros Movie",
   "Avatar The Way of Water",
   "Top Gun Maverick",
-  "Alien Romulus 2024",
-  "Twisters 2024",
+  "Alien Romulus",
+  "Twisters",
+  "Mission Impossible Dead Reckoning Part One",
+  "Bad Boys Ride or Die",
+  "Despicable Me 4",
+  "Captain America Brave New World",
+  "Thunderbolts Marvel 2025",
+  "Wonka",
+  "Puss in Boots The Last Wish",
+  "Fast X",
 ];
 
 const SHOW_QUERIES = [
@@ -231,7 +233,7 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
 
   const page = Math.min(5, Math.max(1, parseInt((req.query.page as string) || "1", 10) || 1));
   const today = new Date().toISOString().slice(0, 10);
-  const poolKey = `popular-pool-v1:${today}`;
+  const poolKey = `popular-pool-v2:${today}`;
 
   let pool = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>(poolKey);
 
