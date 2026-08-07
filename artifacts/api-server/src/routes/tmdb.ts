@@ -204,7 +204,7 @@ router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
   }
 
   const TTL_WEEK = 7 * 24 * 60 * 60 * 1000;
-  const cached = cacheGet<{ items: TmdbResult[] }>("top-rated-v2");
+  const cached = cacheGet<{ items: TmdbResult[] }>("top-rated-v3");
   if (cached) { res.json(cached); return; }
 
   // Curated list — ordered by display preference, searched by name+type so
@@ -223,8 +223,9 @@ router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
     { query: "Apex",                   type: "movie" },
     { query: "Toy Story 5",            type: "movie" },
     { query: "Mobland",                type: "tv" },
-    { query: "The Devil Wears Prada",  type: "movie" },
-    { query: "Squid Game",             type: "tv" },
+    { query: "The Devil Wears Prada 2", type: "movie" },
+    { query: "Squid Game",              type: "tv" },
+    { query: "Succession",              type: "tv" },
   ];
 
   try {

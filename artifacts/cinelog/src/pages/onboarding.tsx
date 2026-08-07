@@ -38,7 +38,7 @@ export default function Onboarding() {
     fetch("/api/tmdb/top-rated")
       .then((r) => r.ok ? r.json() : { items: [] })
       .then((data) => {
-        setItems((data.items ?? []).slice(0, 15));
+        setItems((data.items ?? []).slice(0, 16));
         setLoading(false);
       })
       .catch(() => setLoading(false));
