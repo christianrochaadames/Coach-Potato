@@ -252,7 +252,7 @@ export default function Home() {
           </div>
         ) : (
           <p className="px-5 text-sm" style={{ color: '#7E7A73' }}>
-            Add TV shows or movies that you're currently watching. They'll appear here.
+            Nothing here yet. We've got some serious watching to do.
           </p>
         )}
       </section>
@@ -274,7 +274,7 @@ export default function Home() {
         {/* No watched entries yet — just a quiet message, no posters */}
         {watchedCount === 0 && (
           <p className="px-5 text-sm" style={{ color: '#7E7A73' }}>
-            Once you've added TV shows or movies to your Watched list, recommendations will appear here for you.
+            Spud needs to know your taste first. Add a few things you've watched and recommendations will appear here for you.
           </p>
         )}
 
@@ -354,23 +354,25 @@ export default function Home() {
             ))}
           </div>
         ) : yearGroups.length === 0 ? (
-          <div className="flex flex-col items-center py-12 gap-4" data-testid="empty-state">
-            <img
-              src="/spud-browsing.png"
-              alt="Spud"
-              style={{ width: 250, height: 250, objectFit: 'contain' }}
-            />
-            <p className="text-center font-medium text-sm" style={{ color: '#7E7A73' }}>
-              Nothing logged yet — start tracking what you watch!
+          <div data-testid="empty-state">
+            <p className="text-sm mb-8" style={{ color: '#7E7A73' }}>
+              Well, this is awkward… nothing here yet, start tracking what you have watched!
             </p>
-            <button
-              onClick={() => setLocation('/search')}
-              className="px-6 py-3 rounded-full font-bold text-sm text-white"
-              style={{ background: '#5B50D0', border: 'none' }}
-              data-testid="button-add-first"
-            >
-              Find something to watch
-            </button>
+            <div className="flex flex-col items-center gap-4">
+              <img
+                src="/spud-browsing.png"
+                alt="Spud"
+                style={{ width: 250, height: 250, objectFit: 'contain' }}
+              />
+              <button
+                onClick={() => setLocation('/search')}
+                className="px-6 py-3 rounded-full font-bold text-sm text-white"
+                style={{ background: '#5B50D0', border: 'none' }}
+                data-testid="button-add-first"
+              >
+                Find something to watch
+              </button>
+            </div>
           </div>
         ) : (
           yearGroups.map(([year, entries]) => (
