@@ -106,7 +106,8 @@ export default function Stats() {
   return (
     <div className="pb-8" style={{ background: '#4A1020', borderRadius: 28, marginTop: 24, marginBottom: 100 }}>
       {/* Header */}
-      <div className="px-5 pt-8 pb-16 flex items-center justify-between">
+      <div className="px-5 pt-8 pb-16">
+        <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-bold" style={{ color: '#FFF3E8' }}>Your Stats</h1>
         <select
           value={selectedYear}
@@ -125,6 +126,12 @@ export default function Stats() {
         >
           {years.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
+        </div>
+        {!isLoading && stats?.total === 0 && (
+          <p className="text-sm mt-4 leading-relaxed" style={{ color: '#FFD6E7', opacity: 0.85 }}>
+            I'd love to show off your stats, but you haven't given me anything yet. Add what you've watched and I'll turn your viewing habits into beautiful stats.
+          </p>
+        )}
       </div>
 
       {isLoading ? (
