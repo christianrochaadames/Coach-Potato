@@ -83,7 +83,7 @@ export default function Watchlist() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: '#C5B8FF', borderRadius: 28, marginTop: 8, marginBottom: 100 }}>
+    <div className="min-h-screen" style={{ background: '#C5B8FF', borderRadius: 28, marginTop: 24, marginBottom: 100 }}>
       <div className="px-5 pt-8 pb-4">
         <div className="flex items-center gap-2 mb-1">
           <h1 className="text-2xl font-bold" style={{ color: '#3B3275' }}>Watchlist</h1>
@@ -207,19 +207,19 @@ export default function Watchlist() {
         ) : (
           <div className="flex flex-col items-center py-16 gap-4">
             <img
-              src="/spud-phone.png"
+              src="/spud-watchlist.png"
               alt="Spud"
               style={{ width: 250, height: 250, objectFit: 'contain' }}
             />
             <p className="text-sm text-center font-medium" style={{ color: '#7E7A73' }}>
-              Your watchlist is empty.{'\n'}Search for something to save!
+              Your future self needs something to binge.
             </p>
             <button
               onClick={() => setLocation('/search')}
               className="px-6 py-3 rounded-full font-bold text-sm text-white"
               style={{ background: '#5B50D0', border: 'none' }}
             >
-              Browse Search
+              Let's fix that
             </button>
           </div>
         )}
