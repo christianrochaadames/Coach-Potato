@@ -360,7 +360,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col items-center gap-4">
               <img
-                src="/spud-browsing.png"
+                src="/spud-sleeping.png"
                 alt="Spud"
                 style={{ width: 250, height: 250, objectFit: 'contain' }}
               />
