@@ -185,7 +185,6 @@ function PosterShareCard({ posterUrl, title, rating }: {
       {/* Branding + rating */}
       <View style={pcStyles.textSection}>
         <Text style={pcStyles.appName}>Tracked on Spud</Text>
-        <Text style={pcStyles.tagline}>TV &amp; Movie Tracker</Text>
         {stars ? (
           <View style={pcStyles.ratingPill}>
             <Text style={pcStyles.ratingText}>My rating: {stars}</Text>
