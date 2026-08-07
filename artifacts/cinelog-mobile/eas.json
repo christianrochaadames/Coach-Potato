@@ -25,7 +25,8 @@
   "submit": {
     "production": {
       "ios": {
-        "ascAppId": "6799059190"
+        "ascAppId": "6799059190",
+        "appleId": "christian.rocha.adames@outlook.com"
       }
     }
   }
