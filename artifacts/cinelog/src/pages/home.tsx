@@ -257,30 +257,29 @@ export default function Home() {
         )}
       </section>
 
-      {/* ── You Might Like — always rendered so it never disappears ── */}
+      {/* ── You Might Like — only shown once the user has watched something ── */}
       <section className="mb-6">
-        <div className="px-5 mb-3 flex items-start justify-between gap-2">
-          <div>
-            <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
+        <div className="px-5 mb-3">
+          <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>Based on what you've watched</h2>
+          {watchedCount > 0 && (
             <span
               className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold"
               style={{ background: '#6B46C1', color: '#ffffff' }}
             >
               Picked for you
             </span>
-          </div>
-          <button
-            onClick={refetchRecs}
-            className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold active:opacity-60 mt-0.5"
-            style={{ background: '#EFE4D2', color: '#116149' }}
-          >
-            <RefreshCw className="w-3 h-3" />
-            Refresh
-          </button>
+          )}
         </div>
 
-        {/* Loading skeleton */}
-        {recsLoading && (
+        {/* No watched entries yet — just a quiet message, no posters */}
+        {watchedCount === 0 && (
+          <p className="px-5 text-sm" style={{ color: '#7E7A73' }}>
+            Once you've added TV shows or movies to your Watched list, recommendations will appear here for you.
+          </p>
+        )}
+
+        {/* Loading skeleton — only when user has entries */}
+        {watchedCount > 0 && recsLoading && (
           <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
             {[1,2,3,4].map(i => (
               <div key={i} className="flex-shrink-0 w-28">
@@ -292,34 +291,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Empty state */}
-        {!recsLoading && recs.length === 0 && (
-          <div className="flex flex-col items-center py-10 px-5 gap-4">
-            <img
-              src="/spud-heart.png"
-              alt="Spud"
-              style={{ width: 250, height: 250, objectFit: 'contain' }}
-            />
-            <p className="text-sm text-center font-medium" style={{ color: '#7E7A73', maxWidth: 260 }}>
-              Start adding shows to your watchlist so we can recommend new TV shows and movies to watch.
-            </p>
-            <button
-              onClick={() => setLocation('/search')}
-              className="px-6 py-3 rounded-full font-bold text-sm text-white"
-              style={{ background: '#5B50D0', border: 'none' }}
-            >
-              Find something to watch
-            </button>
-          </div>
-        )}
-
         {/* Results */}
-        {!recsLoading && recs.length > 0 && (
-          <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
-            {recs.filter(r => !skippedIds.has(r.tmdbId)).map((rec) => {
-              return (
+        {watchedCount > 0 && !recsLoading && recs.length > 0 && (
+          <>
+            <div className="flex gap-3 px-5 overflow-x-auto pb-1 scrollbar-hide">
+              {recs.filter(r => !skippedIds.has(r.tmdbId)).map((rec) => (
                 <div key={rec.tmdbId} className="flex-shrink-0 w-28">
-                  {/* Poster — tappable to open the add sheet */}
                   <div
                     className="aspect-[2/3] rounded-xl overflow-hidden mb-1.5 relative cursor-pointer active:opacity-80 transition-opacity"
                     style={{ background: '#EFE4D2' }}
@@ -332,18 +309,12 @@ export default function Home() {
                         {rec.title[0]?.toUpperCase()}
                       </div>
                     )}
-
-                    {/* Skip overlay — bottom-right */}
                     <div className="absolute bottom-1.5 right-1.5 pointer-events-none">
                       <button
                         className="pointer-events-auto w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90"
-                        style={{
-                          background: 'rgba(0,0,0,0.55)',
-                          backdropFilter: 'blur(4px)',
-                        }}
+                        style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
                         onClick={(e) => { e.stopPropagation(); sendFeedback(rec.tmdbId, 'skip'); }}
                         aria-label="Not interested"
-                        title="Not interested"
                       >
                         <X className="w-3.5 h-3.5 text-white" />
                       </button>
@@ -354,9 +325,19 @@ export default function Home() {
                     {rec.year} · {rec.type === 'movie' ? 'Movie' : 'TV Show'}
                   </p>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+            <div className="flex justify-end px-5 mt-2">
+              <button
+                onClick={refetchRecs}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold active:opacity-60"
+                style={{ background: '#EFE4D2', color: '#116149' }}
+              >
+                <RefreshCw className="w-3 h-3" />
+                Refresh
+              </button>
+            </div>
+          </>
         )}
       </section>
 
@@ -374,14 +355,18 @@ export default function Home() {
           </div>
         ) : yearGroups.length === 0 ? (
           <div className="flex flex-col items-center py-12 gap-4" data-testid="empty-state">
-            <SpudMascot pose="sleepy" size={100} round={false} />
+            <img
+              src="/spud-browsing.png"
+              alt="Spud"
+              style={{ width: 250, height: 250, objectFit: 'contain' }}
+            />
             <p className="text-center font-medium text-sm" style={{ color: '#7E7A73' }}>
               Nothing logged yet — start tracking what you watch!
             </p>
             <button
               onClick={() => setLocation('/search')}
               className="px-6 py-3 rounded-full font-bold text-sm text-white"
-              style={{ background: '#116149' }}
+              style={{ background: '#5B50D0', border: 'none' }}
               data-testid="button-add-first"
             >
               Find something to watch
