@@ -171,41 +171,58 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
   const cached = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>(popularKey);
   if (cached) { res.json(cached); return; }
 
-  // Fetch two consecutive pages so we have enough results after English-only filtering
+  // Fetch three consecutive pages so we have enough results after filtering
   const page2 = (page % 5) + 1;
+  const page3 = (page2 % 5) + 1;
+
+  // Two months ago cutoff
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 2);
+  const cutoffStr = cutoff.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
   try {
-    const [movRes1, movRes2, tvRes1, tvRes2] = await Promise.all([
+    const [movRes1, movRes2, movRes3, tvRes1, tvRes2, tvRes3] = await Promise.all([
       fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=${page}`),
       fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=${page2}`),
+      fetch(`${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-US&page=${page3}`),
       fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=${page}`),
       fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=${page2}`),
+      fetch(`${TMDB_BASE}/tv/popular?api_key=${apiKey}&language=en-US&page=${page3}`),
     ]);
 
-    const [movData1, movData2, tvData1, tvData2] = await Promise.all([
+    const [movData1, movData2, movData3, tvData1, tvData2, tvData3] = await Promise.all([
       movRes1.json() as Promise<{ results?: Record<string, unknown>[] }>,
       movRes2.json() as Promise<{ results?: Record<string, unknown>[] }>,
+      movRes3.json() as Promise<{ results?: Record<string, unknown>[] }>,
       tvRes1.json() as Promise<{ results?: Record<string, unknown>[] }>,
       tvRes2.json() as Promise<{ results?: Record<string, unknown>[] }>,
+      tvRes3.json() as Promise<{ results?: Record<string, unknown>[] }>,
     ]);
 
     // Only English-language titles — filters out anime, Asian cinema, etc.
     const isEnglish = (item: Record<string, unknown>) => item.original_language === "en";
-    // Also exclude animation genre (16) from TV to avoid anime series
+    // Exclude animation genre (16) from TV to avoid anime series
     const isNotAnime = (item: Record<string, unknown>) => {
       const genres = (item.genre_ids as number[] | undefined) ?? [];
       return !genres.includes(16);
+    };
+    // Released within the last 2 months
+    const isRecent = (dateField: string) => (item: Record<string, unknown>) => {
+      const d = item[dateField] as string | undefined;
+      return !!d && d >= cutoffStr;
     };
 
     const allMovies = [
       ...(movData1.results ?? []),
       ...(movData2.results ?? []),
-    ].filter(isEnglish);
+      ...(movData3.results ?? []),
+    ].filter(isEnglish).filter(isRecent("release_date"));
 
     const allShows = [
       ...(tvData1.results ?? []),
       ...(tvData2.results ?? []),
-    ].filter(isEnglish).filter(isNotAnime);
+      ...(tvData3.results ?? []),
+    ].filter(isEnglish).filter(isNotAnime).filter(isRecent("first_air_date"));
 
     const movies: TmdbResult[] = allMovies.slice(0, 8).map((item) => mapItem(item, "movie"));
     const shows: TmdbResult[] = allShows.slice(0, 8).map((item) => mapItem(item, "tv"));
