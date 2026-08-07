@@ -1,9 +1,8 @@
 import { Router } from "express";
 import { db, profilesTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { clerkClient } from "@clerk/express";
 
 const router = Router();
 
@@ -47,106 +46,9 @@ router.get("/profile", requireAuth, async (req, res) => {
       }
     }
 
-    // Auto-sync Facebook user ID from Clerk external accounts (non-fatal)
-    if (profile && !profile.facebookId) {
-      try {
-        const tokens = await clerkClient.users.getUserOauthAccessToken(
-          req.userId,
-          "oauth_facebook"
-        );
-        const tokenList = Array.isArray(tokens) ? tokens : (tokens as any)?.data ?? [];
-        const fbToken = tokenList[0]?.token;
-        if (fbToken) {
-          const fbRes = await fetch(
-            `https://graph.facebook.com/v19.0/me?fields=id&access_token=${fbToken}`
-          );
-          if (fbRes.ok) {
-            const fbData = (await fbRes.json()) as { id?: string };
-            if (fbData.id) {
-              [profile] = await db
-                .update(profilesTable)
-                .set({ facebookId: fbData.id, updatedAt: new Date() })
-                .where(eq(profilesTable.userId, req.userId))
-                .returning();
-            }
-          }
-        }
-      } catch {
-        // Non-fatal — user may not have Facebook connected
-      }
-    }
-
     res.json(profile);
   } catch (err) {
     req.log.error({ err }, "getProfile error");
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// GET /profile/friends — return CouchPotato profiles for the user's FB friends
-router.get("/profile/friends", requireAuth, async (req, res) => {
-  try {
-    // Get the user's Facebook access token from Clerk
-    let fbToken: string | undefined;
-    try {
-      const tokens = await clerkClient.users.getUserOauthAccessToken(
-        req.userId,
-        "oauth_facebook"
-      );
-      const tokenList = Array.isArray(tokens) ? tokens : (tokens as any)?.data ?? [];
-      fbToken = tokenList[0]?.token;
-    } catch {
-      // User hasn't connected Facebook — fall through
-    }
-
-    if (!fbToken) {
-      res.json({ friends: [], status: "not_connected" });
-      return;
-    }
-
-    // Fetch the current user's friend list from Facebook Graph API.
-    // NOTE: /me/friends only returns friends who have also authorised this app
-    // with the user_friends permission (requires Meta App Review).
-    let friendFbIds: string[] = [];
-    try {
-      const fbRes = await fetch(
-        `https://graph.facebook.com/v19.0/me/friends?fields=id&limit=500&access_token=${fbToken}`
-      );
-      if (fbRes.ok) {
-        const fbData = (await fbRes.json()) as { data?: { id: string }[] };
-        friendFbIds = (fbData.data ?? []).map((f) => f.id);
-      }
-    } catch {
-      res.json({ friends: [], status: "fb_error" });
-      return;
-    }
-
-    if (friendFbIds.length === 0) {
-      // Either no friends use the app yet or user_friends permission not granted
-      res.json({ friends: [], status: "no_friends" });
-      return;
-    }
-
-    // Match Facebook IDs against CouchPotato profiles
-    const matched = await db
-      .select({
-        userId: profilesTable.userId,
-        username: profilesTable.username,
-        firstName: profilesTable.firstName,
-        lastName: profilesTable.lastName,
-        avatarId: profilesTable.avatarId,
-        avatarUrl: profilesTable.avatarUrl,
-        bio: profilesTable.bio,
-      })
-      .from(profilesTable)
-      .where(inArray(profilesTable.facebookId, friendFbIds));
-
-    // Never include the requesting user's own profile
-    const friends = matched.filter((p) => p.userId !== req.userId);
-
-    res.json({ friends, status: "ok" });
-  } catch (err) {
-    req.log.error({ err }, "getProfileFriends error");
     res.status(500).json({ error: "Internal server error" });
   }
 });

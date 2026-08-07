@@ -33,7 +33,7 @@ export default function SignUpScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState('');
-  const [ssoLoading, setSsoLoading] = useState<'google' | 'facebook' | null>(null);
+  const [ssoLoading, setSsoLoading] = useState<'google' | null>(null);
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -46,8 +46,8 @@ export default function SignUpScreen() {
     return () => { void WebBrowser.coolDownAsync(); };
   }, []);
 
-  const handleSSOSignUp = useCallback(async (provider: 'oauth_google' | 'oauth_facebook') => {
-    setSsoLoading(provider === 'oauth_google' ? 'google' : 'facebook');
+  const handleSSOSignUp = useCallback(async (provider: 'oauth_google') => {
+    setSsoLoading('google');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const { createdSessionId, setActive } = await startSSOFlow({
@@ -176,23 +176,6 @@ export default function SignUpScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Facebook SSO */}
-        <TouchableOpacity
-          style={[styles.ssoBtn, { backgroundColor: '#1877F2', borderColor: '#1877F2' }]}
-          onPress={() => handleSSOSignUp('oauth_facebook')}
-          disabled={!!ssoLoading}
-          activeOpacity={0.8}
-        >
-          {ssoLoading === 'facebook' ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Text style={styles.fbIcon}>f</Text>
-              <Text style={[styles.ssoBtnText, { color: '#fff' }]}>Continue with Facebook</Text>
-            </>
-          )}
-        </TouchableOpacity>
-
         {/* Divider */}
         <View style={styles.divider}>
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
@@ -283,7 +266,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14, borderRadius: 12, borderWidth: 1, gap: 10,
   },
   googleIcon: { fontSize: 18, fontWeight: '700', color: '#4285F4' },
-  fbIcon: { fontSize: 18, fontWeight: '700', color: '#fff' },
   ssoBtnText: { fontSize: 15, fontFamily: 'Manrope_600SemiBold' },
   divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
   dividerLine: { flex: 1, height: 1 },

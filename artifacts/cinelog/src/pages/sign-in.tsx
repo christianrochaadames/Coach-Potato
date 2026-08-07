@@ -36,9 +36,9 @@ export default function SignInPage() {
   useEffect(() => {
     if (!isLoaded || !signIn) return;
     const sso = params.get("sso");
-    if (sso === "google" || sso === "apple" || sso === "facebook") {
+    if (sso === "google" || sso === "apple") {
       signIn.authenticateWithRedirect({
-        strategy: `oauth_${sso}` as "oauth_google" | "oauth_apple" | "oauth_facebook",
+        strategy: `oauth_${sso}` as "oauth_google" | "oauth_apple",
         redirectUrl: `${basePath}/sign-in/sso-callback`,
         // Honour the saved return path for OAuth sign-ins too
         redirectUrlComplete: returnTo ?? `${basePath}/`,

@@ -46,9 +46,6 @@ export default function Privacy() {
           <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
             <strong className="font-semibold" style={{ color: '#111111' }}>What you log.</strong> Every title you add to your list — its watch status, your rating, the date, your notes, and which streaming service you watched it on — is saved to your Spud account so the app can build your history and recommendations.
           </p>
-          <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-            <strong className="font-semibold" style={{ color: '#111111' }}>Facebook (optional).</strong> If you choose to connect Facebook, Spud uses it for one purpose only: finding other Spud users who are also your Facebook friends and who have also connected their account. This is entirely optional, and disconnecting Facebook removes that connection from our records straight away.
-          </p>
         </div>
       </section>
 
@@ -76,7 +73,7 @@ export default function Privacy() {
       <section className="mb-7">
         <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>6. Services we rely on</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          Clerk (sign-up, login, password resets), TMDB (show/movie details, posters, streaming availability), OMDB (IMDb/Rotten Tomatoes scores), Facebook (only if you connect it, finds mutual friends who use Spud), Replit (hosts our servers and database), Expo/EAS (builds and distributes the mobile app, sees no personal data). None of these are ad networks, and we don't use any analytics or crash-reporting tools.
+          Clerk (sign-up, login, password resets), TMDB (show/movie details, posters, streaming availability), OMDB (IMDb/Rotten Tomatoes scores), Replit (hosts our servers and database), Expo/EAS (builds and distributes the mobile app, sees no personal data). None of these are ad networks, and we don't use any analytics or crash-reporting tools.
         </p>
       </section>
 

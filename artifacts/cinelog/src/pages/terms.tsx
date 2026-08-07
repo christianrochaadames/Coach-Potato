@@ -47,14 +47,14 @@ export default function Terms() {
       <section className="mb-7">
         <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>3. Your account</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          You'll need an account to use Spud, created either with an email and password or by signing in through Google, Apple, GitHub, or X. You're responsible for keeping your login secure and for anything that happens under your account. If you notice any unauthorised use, let us know straight away. We can suspend or close accounts that break these terms.
+          You'll need an account to use Spud, created either with an email and password or by signing in through Google or Apple. You're responsible for keeping your login secure and for anything that happens under your account. If you notice any unauthorised use, let us know straight away. We can suspend or close accounts that break these terms.
         </p>
       </section>
 
       <section className="mb-7">
         <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>4. What you log stays yours</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          Everything you add to Spud — ratings, notes, watch history — belongs to you. We only use it to run the app for you. Your entries are private by default. The only exception is the optional Facebook friend-finding feature, which only shows your basic profile (name, username, bio, avatar) to mutual friends who've also opted in, and only after both of you connect Facebook.
+          Everything you add to Spud — ratings, notes, watch history — belongs to you. We only use it to run the app for you. Your entries are private by default.
         </p>
       </section>
 
