@@ -370,7 +370,7 @@ export default function SearchPage() {
                         <button
                           onClick={handleRefresh}
                           className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-opacity active:opacity-60"
-                          style={{ background: '#FFBC4D', color: '#111111' }}
+                          style={{ background: '#EFE4D2', color: '#116149' }}
                           title="Refresh picks"
                         >
                           <RefreshCw className={`w-3 h-3 ${spinning ? 'animate-spin' : ''}`} />
@@ -388,7 +388,7 @@ export default function SearchPage() {
                           <button
                             onClick={handleRefresh}
                             className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-opacity active:opacity-60"
-                            style={{ background: '#FFBC4D', color: '#111111' }}
+                            style={{ background: '#EFE4D2', color: '#116149' }}
                             title="Refresh picks"
                           >
                             <RefreshCw className={`w-3 h-3 ${spinning ? 'animate-spin' : ''}`} />
