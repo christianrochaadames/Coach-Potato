@@ -94,19 +94,33 @@ export default function Stats() {
       .slice(0, 10);
   }, [allEntries]);
 
-  // Top rated: entries with a rating, sorted desc
-  const topRated = useMemo(() => {
+  // Top rated: entries + individual season ratings, sorted desc
+  type TopRatedItem = { id: number; title: string; posterUrl: string | null; rating: number; subtitle?: string };
+  const topRated = useMemo((): TopRatedItem[] => {
     if (!allEntries) return [];
-    return [...allEntries]
-      .filter(e => (e.rating ?? 0) > 0)
-      .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-      .slice(0, 20);
+    const items: TopRatedItem[] = [];
+    for (const e of allEntries) {
+      if ((e.rating ?? 0) > 0) {
+        items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: e.rating! });
+      }
+      if (e.type === 'show') {
+        const seasons = (e as any).seasons as Array<{ number: number; rating?: number | null }> | undefined;
+        if (seasons) {
+          for (const s of seasons) {
+            if ((s.rating ?? 0) > 0) {
+              items.push({ id: e.id, title: e.title, posterUrl: e.posterUrl ?? null, rating: s.rating!, subtitle: `Season ${s.number}` });
+            }
+          }
+        }
+      }
+    }
+    return items.sort((a, b) => b.rating - a.rating).slice(0, 20);
   }, [allEntries]);
 
   return (
     <div className="pb-8" style={{ background: '#4A1020', borderRadius: 28, marginTop: 24, marginBottom: 100 }}>
       {/* Header */}
-      <div className="px-5 pt-8 pb-16">
+      <div className="px-5 pt-8 pb-4">
         <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-bold" style={{ color: '#FFF3E8' }}>Your Stats</h1>
         <select
@@ -132,7 +146,7 @@ export default function Stats() {
             I'd love to show off your stats, but you haven't given me anything yet. Add what you've watched and I'll turn your viewing habits into beautiful stats.
           </p>
         )}
-        {!isLoading && stats?.total > 0 && (
+        {!isLoading && (stats?.total ?? 0) > 0 && (
           <p className="text-sm mt-1" style={{ color: '#FFD6E7', opacity: 0.75 }}>
             A completely unnecessary but oddly satisfying breakdown of your viewing habits.
           </p>
@@ -294,36 +308,39 @@ export default function Stats() {
             <div className="rounded-2xl p-5" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
               <p className="font-bold mb-4" style={{ color: '#111111' }}>Top Rated</p>
               <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-                {topRated.map(entry => (
+                {topRated.map((item, idx) => (
                   <div
-                    key={entry.id}
+                    key={`${item.id}-${idx}`}
                     className="flex-shrink-0 w-24 cursor-pointer active:opacity-70 transition-opacity"
-                    onClick={() => setLocation(`/entry/${entry.id}`)}
+                    onClick={() => setLocation(`/entry/${item.id}`)}
                   >
                     <div
                       className="aspect-[2/3] rounded-xl overflow-hidden mb-1.5"
                       style={{ background: '#EFE4D2' }}
                     >
-                      {entry.posterUrl ? (
+                      {item.posterUrl ? (
                         <img
-                          src={entry.posterUrl}
-                          alt={entry.title}
+                          src={item.posterUrl}
+                          alt={item.title}
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
                           <span className="text-xl font-bold" style={{ color: '#116149' }}>
-                            {entry.title[0]?.toUpperCase()}
+                            {item.title[0]?.toUpperCase()}
                           </span>
                         </div>
                       )}
                     </div>
                     <p className="text-[10px] font-bold truncate leading-tight" style={{ color: '#111111' }}>
-                      {entry.title}
+                      {item.title}
                     </p>
-                    {entry.rating != null && entry.rating > 0 && (
-                      <StarDisplay rating={entry.rating} />
+                    {item.subtitle && (
+                      <p className="text-[9px] truncate leading-tight" style={{ color: '#7E7A73' }}>{item.subtitle}</p>
+                    )}
+                    {item.rating > 0 && (
+                      <StarDisplay rating={item.rating} />
                     )}
                   </div>
                 ))}

@@ -97,35 +97,36 @@ export default function SearchPage() {
     };
   }, []);
 
-  // Streaming providers for the selected TV show
+  // Provider dedup helper
+  const dedupProviders = (raw: { providerId: number; providerName: string; logoUrl: string }[]) => {
+    const normalize = (name: string) =>
+      name
+        .replace(/\s+(Premium|Essential|Basic|Standard)(?=\s|$)/gi, '')
+        .replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '')
+        .replace(/\s+(Apple\s+TV|Roku|Amazon|Google\s+Play|Microsoft|Vudu|Xfinity|Cox)(\s+Channel)?/gi, '')
+        .replace(/\s+with\s+\S+/gi, '')
+        .replace(/\s+on\s+\S+/gi, '')
+        .trim();
+    const seen = new Map<string, typeof raw[0]>();
+    for (const p of raw) {
+      const key = normalize(p.providerName).toLowerCase();
+      const existing = seen.get(key);
+      if (!existing || p.providerName.length < existing.providerName.length) seen.set(key, p);
+    }
+    return [...seen.values()];
+  };
+
+  // Streaming providers for the quick-add sheet
   const [streamingProviders, setStreamingProviders] = useState<{ providerId: number; providerName: string; logoUrl: string }[]>([]);
   useEffect(() => {
     if (!addingItem || addingItem.type !== 'show') { setStreamingProviders([]); return; }
     fetch(`/api/tmdb/tv/${addingItem.tmdbId}/providers?region=US`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => {
-        const raw: { providerId: number; providerName: string; logoUrl: string }[] = d?.streaming ?? [];
-        // Dedup: strip ad-tier variants, prefer base service name
-        const normalize = (name: string) =>
-          name
-            .replace(/\s+(Premium|Essential|Basic|Standard)(?=\s|$)/gi, '')
-            .replace(/\s*(standard\s+with\s+ads|with\s+ads|basic\s+with\s+ads|\+\s*ads|[\(\[][^)\]]*ads[^)\]]*[\)\]])/gi, '')
-            .replace(/\s+(Apple\s+TV|Roku|Amazon|Google\s+Play|Microsoft|Vudu|Xfinity|Cox)(\s+Channel)?/gi, '')
-            .replace(/\s+with\s+\S+/gi, '')
-            .replace(/\s+on\s+\S+/gi, '')
-            .trim();
-        const seen = new Map<string, typeof raw[0]>();
-        for (const p of raw) {
-          const key = normalize(p.providerName).toLowerCase();
-          const existing = seen.get(key);
-          if (!existing || p.providerName.length < existing.providerName.length) seen.set(key, p);
-        }
-        setStreamingProviders([...seen.values()]);
-      })
+      .then(d => setStreamingProviders(dedupProviders(d?.streaming ?? [])))
       .catch(() => setStreamingProviders([]));
   }, [addingItem?.tmdbId]);
 
-  // TMDB community score for the selected item
+  // TMDB community score for the quick-add sheet
   const [sheetTmdbScore, setSheetTmdbScore] = useState<number | null>(null);
   useEffect(() => {
     if (!addingItem) { setSheetTmdbScore(null); return; }
@@ -137,6 +138,34 @@ export default function SearchPage() {
       .then(d => setSheetTmdbScore(d?.voteAverage ?? null))
       .catch(() => {});
   }, [addingItem?.tmdbId]);
+
+  // Full detail view state
+  type CastMember = { name: string; character: string; profileUrl: string | null };
+  const [detailItem, setDetailItem] = useState<TmdbItem | null>(null);
+  const [detailCast, setDetailCast] = useState<CastMember[]>([]);
+  const [detailProviders, setDetailProviders] = useState<{ providerId: number; providerName: string; logoUrl: string }[]>([]);
+  const [detailScore, setDetailScore] = useState<number | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (!detailItem) { setDetailCast([]); setDetailProviders([]); setDetailScore(null); return; }
+    setDetailLoading(true);
+    const endpoint = detailItem.type === 'movie'
+      ? `/api/tmdb/movie/${detailItem.tmdbId}`
+      : `/api/tmdb/tv/${detailItem.tmdbId}`;
+    const provPromise = detailItem.type === 'show'
+      ? fetch(`/api/tmdb/tv/${detailItem.tmdbId}/providers?region=US`).then(r => r.ok ? r.json() : null)
+      : Promise.resolve(null);
+    Promise.all([
+      fetch(endpoint).then(r => r.ok ? r.json() : null),
+      provPromise,
+    ]).then(([detail, provData]) => {
+      setDetailCast((detail?.cast ?? []).slice(0, 8));
+      setDetailScore(detail?.voteAverage ?? null);
+      setDetailProviders(provData ? dedupProviders(provData.streaming ?? []) : []);
+      setDetailLoading(false);
+    }).catch(() => setDetailLoading(false));
+  }, [detailItem?.tmdbId]);
 
   // Auto-focus when arriving from the FAB
   useEffect(() => {
@@ -256,8 +285,9 @@ export default function SearchPage() {
       onClick={() => setAddingItem(item)}
     >
       <div
-        className="w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
+        className="w-12 h-16 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center flex-shrink-0"
         style={{ background: '#EFE4D2' }}
+        onClick={e => { e.stopPropagation(); setDetailItem(item); }}
       >
         {item.posterUrl ? (
           <img src={item.posterUrl} alt={item.title} className="w-full h-full object-cover" />
@@ -414,6 +444,160 @@ export default function SearchPage() {
           ))
         ) : null}
       </div>
+
+      {/* Full detail sheet — opens when poster is tapped */}
+      {detailItem && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end"
+          style={{ background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setDetailItem(null)}
+        >
+          <div
+            className="w-full rounded-t-3xl overflow-y-auto"
+            style={{ background: '#ffffff', maxHeight: '90vh' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: '#E2D9CE' }} />
+            </div>
+
+            <div className="p-6 space-y-5">
+              {/* Hero row */}
+              <div className="flex gap-4 items-start">
+                {detailItem.posterUrl && (
+                  <img
+                    src={detailItem.posterUrl}
+                    alt={detailItem.title}
+                    className="w-24 h-36 object-cover rounded-2xl flex-shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0 pt-1">
+                  <p className="font-bold text-xl leading-snug" style={{ color: '#111111' }}>{detailItem.title}</p>
+                  <p className="text-sm mt-1" style={{ color: '#7E7A73' }}>
+                    {detailItem.year ?? '—'} · {detailItem.type === 'movie' ? 'Movie' : 'TV Show'}
+                  </p>
+                  {detailScore != null && (
+                    <p className="text-sm font-bold mt-2" style={{ color: '#116149' }}>
+                      ★ {detailScore.toFixed(1)} <span className="font-normal text-xs" style={{ color: '#7E7A73' }}>TMDB</span>
+                    </p>
+                  )}
+                  {/* Collection status badge */}
+                  {(() => {
+                    const ce = getCollectionEntry(detailItem.tmdbId);
+                    if (!ce) return null;
+                    const label = ce.status === 'watching' ? '▶ Watching' : ce.status === 'completed' ? '✓ Watched' : '⊞ Watchlist';
+                    return (
+                      <span className="inline-block mt-2 text-xs font-bold px-2.5 py-1 rounded-full text-white" style={{ background: '#116149' }}>
+                        {label}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Overview */}
+              {detailItem.overview && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#7E7A73' }}>About</p>
+                  <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>{detailItem.overview}</p>
+                </div>
+              )}
+
+              {/* Cast */}
+              {detailLoading && (
+                <div className="flex gap-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="flex-shrink-0 w-14 h-14 rounded-full animate-pulse" style={{ background: '#EFE4D2' }} />
+                  ))}
+                </div>
+              )}
+              {!detailLoading && detailCast.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{ color: '#7E7A73' }}>Cast</p>
+                  <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+                    {detailCast.map((member, i) => (
+                      <div key={i} className="flex-shrink-0 w-16 text-center">
+                        <div
+                          className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-1 flex items-center justify-center"
+                          style={{ background: '#EFE4D2' }}
+                        >
+                          {member.profileUrl ? (
+                            <img src={member.profileUrl} alt={member.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-sm font-bold" style={{ color: '#116149' }}>{member.name[0]}</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] font-bold leading-tight truncate" style={{ color: '#111111' }}>{member.name}</p>
+                        <p className="text-[9px] leading-tight truncate" style={{ color: '#7E7A73' }}>{member.character}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Where to watch */}
+              {!detailLoading && detailProviders.length > 0 && (
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Where to Watch</p>
+                  <div className="flex flex-wrap gap-2.5 items-center">
+                    {detailProviders.map(p => (
+                      <div key={p.providerName} className="flex items-center gap-1.5">
+                        <img src={p.logoUrl} alt={p.providerName} className="w-7 h-7 rounded-lg" />
+                        <span className="text-xs font-semibold" style={{ color: '#111111' }}>{p.providerName}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Already in collection */}
+              {inCollection.has(detailItem.tmdbId) ? (
+                <button
+                  className="w-full py-3.5 rounded-full font-bold text-sm"
+                  style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                  onClick={() => {
+                    const match = getCollectionEntry(detailItem.tmdbId);
+                    if (match) { setDetailItem(null); setLocation(`/entry/${match.id}`); }
+                  }}
+                >
+                  View in your collection →
+                </button>
+              ) : (
+                /* Action buttons */
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => { setDetailItem(null); markWatching(detailItem); }}
+                    disabled={createEntry.isPending}
+                    className="w-full py-3.5 rounded-full font-bold text-sm text-white disabled:opacity-50"
+                    style={{ background: '#116149' }}
+                  >
+                    Currently Watching
+                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => { setDetailItem(null); addToWatchlist(detailItem); }}
+                      disabled={createEntry.isPending}
+                      className="py-3.5 rounded-full font-bold text-sm disabled:opacity-50"
+                      style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                    >
+                      Watchlist
+                    </button>
+                    <button
+                      onClick={() => { setDetailItem(null); setAddingItem(detailItem); setWatchedStep(true); }}
+                      disabled={createEntry.isPending}
+                      className="py-3.5 rounded-full font-bold text-sm disabled:opacity-50"
+                      style={{ border: '2px solid #116149', color: '#116149', background: 'transparent' }}
+                    >
+                      Watched
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick-add bottom sheet */}
       {addingItem && (

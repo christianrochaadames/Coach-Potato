@@ -621,16 +621,16 @@ export default function EntryDetail() {
         </div>
 
         {/* ── Seasons — TV shows only ── */}
-        {entry.type === 'show' && tmdbSeasons.filter(s => s.number > 0).length > 0 && (
+        {entry.type === 'show' && tmdbSeasons.filter(s => s.number > 0 && (s.posterUrl || s.episodeCount > 0)).length > 0 && (
           <div className="rounded-2xl overflow-hidden mb-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
             <div className="px-4 pt-4 pb-2 flex items-center justify-between">
               <p className="text-xs font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Seasons</p>
               <p className="text-xs font-bold" style={{ color: '#116149' }}>
-                {watchedNums.size} / {tmdbSeasons.filter(s => s.number > 0).length} watched
+                {watchedNums.size} / {tmdbSeasons.filter(s => s.number > 0 && (s.posterUrl || s.episodeCount > 0)).length} watched
               </p>
             </div>
             <div className="divide-y" style={{ borderColor: '#F0EAE2' }}>
-              {tmdbSeasons.filter(s => s.number > 0).map(season => {
+              {tmdbSeasons.filter(s => s.number > 0 && (s.posterUrl || s.episodeCount > 0)).map(season => {
                 const sd = savedSeasons.find(s => s.number === season.number);
                 const isWatched = watchedNums.has(season.number);
                 const epList = sd?.episodes ?? [];
