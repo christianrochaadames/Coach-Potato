@@ -871,15 +871,31 @@ export default function EntryDetailScreen() {
         {epSheet && (
           <View style={[styles.episodeSheet, { backgroundColor: colors.background, paddingBottom: tabBarClearance }]}>
             <View style={styles.modalHandle} />
-            {/* Header row: title + close button */}
+
+            {/* ── Sticky header: close | title | save ── */}
             <View style={styles.sheetHeader}>
-              <Text style={[styles.modalTitle, { color: colors.foreground, marginBottom: 0 }]}>Season Progress</Text>
+              {/* Close — always reachable */}
               <TouchableOpacity
                 onPress={() => setEpSheet(null)}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
                 style={[styles.sheetCloseBtn, { backgroundColor: colors.muted }]}
               >
-                <Feather name="x" size={16} color={colors.foreground} />
+                <Feather name="x" size={18} color={colors.foreground} />
+              </TouchableOpacity>
+
+              <Text style={[styles.modalTitle, { color: colors.foreground, marginBottom: 0, flex: 1, textAlign: 'center' }]}>
+                Season Progress
+              </Text>
+
+              {/* Save — always reachable */}
+              <TouchableOpacity
+                onPress={saveEpisodes}
+                disabled={updateEntry.isPending}
+                style={[styles.sheetSaveBtn, { backgroundColor: colors.primary, opacity: updateEntry.isPending ? 0.6 : 1 }]}
+              >
+                <Text style={{ color: colors.primaryForeground, fontFamily: 'Manrope_700Bold', fontSize: 14 }}>
+                  {updateEntry.isPending ? 'Saving…' : 'Save'}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -900,10 +916,8 @@ export default function EntryDetailScreen() {
               const t = activeEps.length;
               return (
                 <View style={styles.progressContainer}>
-                  <View style={[styles.progressTrack, { backgroundColor: colors.muted }]}>
-                    <View style={[styles.progressFill, { backgroundColor: colors.primary, width: `${Math.round(w / t * 100)}%` as any }]} />
-                  </View>
-                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>{w}/{t} eps</Text>
+                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>{w} / {t} episodes watched</Text>
+                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>{Math.round(w / t * 100)}%</Text>
                 </View>
               );
             })()}
@@ -914,7 +928,7 @@ export default function EntryDetailScreen() {
               : activeEps.length === 0
                 ? <Text style={[styles.synopsisText, { color: colors.mutedForeground, textAlign: 'center', margin: 24 }]}>No episode data available</Text>
                 : (
-                  <ScrollView style={styles.epList} showsVerticalScrollIndicator={false}>
+                  <ScrollView style={styles.epList} showsVerticalScrollIndicator={true}>
                     {activeEps.map(ep => (
                       <TouchableOpacity
                         key={ep.number}
@@ -953,18 +967,6 @@ export default function EntryDetailScreen() {
                     ))}
                   </ScrollView>
                 )}
-
-            {/* Footer */}
-            <View style={[styles.modalActions, { marginTop: 8 }]}>
-              <TouchableOpacity style={[styles.modalCancel, { borderColor: colors.border }]} onPress={() => setEpSheet(null)}>
-                <Text style={{ color: colors.mutedForeground, fontFamily: 'Manrope_600SemiBold', fontSize: 14 }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalSave, { backgroundColor: colors.primary }]} onPress={saveEpisodes} disabled={updateEntry.isPending}>
-                <Text style={{ color: colors.primaryForeground, fontFamily: 'Manrope_700Bold', fontSize: 14 }}>
-                  {updateEntry.isPending ? 'Saving…' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
         )}
       </Modal>
@@ -1092,8 +1094,9 @@ const styles = StyleSheet.create({
   modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '60%' },
   episodeSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '88%', flex: 1 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D4C9BC', alignSelf: 'center', marginBottom: 16 },
-  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  sheetCloseBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  sheetCloseBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  sheetSaveBtn: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { fontSize: 16, fontFamily: 'Manrope_700Bold', marginBottom: 16 },
   modalActions: { flexDirection: 'row', gap: 12 },
   modalCancel: { flex: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
