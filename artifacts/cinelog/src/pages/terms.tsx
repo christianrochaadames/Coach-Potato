@@ -28,11 +28,11 @@ export default function Terms() {
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
           Spud is operated by Christian Rocha Adames as a sole trader based in Australia. You can reach us at{' '}
           <a
-            href="mailto:christian.rocha.adames@outlook.com"
+            href="mailto:mrspudcouchpotato@gmail.com"
             className="underline font-medium"
             style={{ color: '#116149' }}
           >
-            christian.rocha.adames@outlook.com
+            mrspudcouchpotato@gmail.com
           </a>.
         </p>
       </section>
@@ -119,11 +119,11 @@ export default function Terms() {
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
           Email:{' '}
           <a
-            href="mailto:christian.rocha.adames@outlook.com"
+            href="mailto:mrspudcouchpotato@gmail.com"
             className="underline font-medium"
             style={{ color: '#116149' }}
           >
-            christian.rocha.adames@outlook.com
+            mrspudcouchpotato@gmail.com
           </a>
         </p>
       </section>

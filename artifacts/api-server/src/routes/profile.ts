@@ -6,6 +6,26 @@ import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
+// GET /check-username?username=xxx — public, no auth required
+// Returns { available: true } if the username is free to use.
+router.get('/check-username', async (req, res) => {
+  const username = (req.query.username as string | undefined)?.trim();
+  if (!username || username.length < 2) {
+    res.json({ available: false });
+    return;
+  }
+  try {
+    const [existing] = await db
+      .select({ id: profilesTable.userId })
+      .from(profilesTable)
+      .where(eq(profilesTable.username, username))
+      .limit(1);
+    res.json({ available: !existing });
+  } catch {
+    res.json({ available: true }); // optimistic fallback
+  }
+});
+
 const profileUpdateSchema = z.object({
   firstName: z.string().min(1).max(50).optional(),
   lastName: z.string().max(50).optional().nullable(),

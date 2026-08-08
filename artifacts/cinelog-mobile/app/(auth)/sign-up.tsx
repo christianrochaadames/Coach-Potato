@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import * as SecureStore from 'expo-secure-store';
 import { useSignUp, useSSO } from '@clerk/expo';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +22,20 @@ import { useColors } from '@/hooks/useColors';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app'}`;
+
+async function checkUsernameAvailability(username: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/api/check-username?username=${encodeURIComponent(username)}`);
+    const data = await res.json();
+    return data.available === true;
+  } catch {
+    return true; // optimistic — server validates on save too
+  }
+}
+
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
+
 export default function SignUpScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -29,22 +44,41 @@ export default function SignUpScreen() {
   const { signUp, errors, fetchStatus } = useSignUp();
   const { startSSOFlow } = useSSO();
 
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode] = useState('');
   const [ssoLoading, setSsoLoading] = useState<'google' | null>(null);
 
+  const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
   const isFetching = fetchStatus === 'fetching';
 
-  // Warm up browser on Android for faster OAuth
   useEffect(() => {
     if (Platform.OS !== 'android') return;
     void WebBrowser.warmUpAsync();
     return () => { void WebBrowser.coolDownAsync(); };
   }, []);
+
+  const handleUsernameChange = (val: string) => {
+    const cleaned = val.replace(/[^a-zA-Z0-9_]/g, '');
+    setUsername(cleaned);
+    setUsernameStatus('idle');
+    if (usernameTimer.current) clearTimeout(usernameTimer.current);
+    if (cleaned.length >= 2) {
+      setUsernameStatus('checking');
+      usernameTimer.current = setTimeout(async () => {
+        const available = await checkUsernameAvailability(cleaned);
+        setUsernameStatus(available ? 'available' : 'taken');
+      }, 500);
+    }
+  };
 
   const handleSSOSignUp = useCallback(async (provider: 'oauth_google') => {
     setSsoLoading('google');
@@ -72,6 +106,7 @@ export default function SignUpScreen() {
 
   const handleSignUp = async () => {
     if (!email || !password) return;
+    if (usernameStatus === 'taken') return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { error } = await signUp.password({ emailAddress: email, password });
     if (error) return;
@@ -79,6 +114,15 @@ export default function SignUpScreen() {
   };
 
   const handleVerify = async () => {
+    // Stash profile data before finalize — AuthTokenSync will save it once the session is active
+    const profileData: Record<string, string> = {};
+    if (firstName.trim()) profileData.firstName = firstName.trim();
+    if (lastName.trim()) profileData.lastName = lastName.trim();
+    if (username.trim() && usernameStatus !== 'taken') profileData.username = username.trim();
+    if (Object.keys(profileData).length > 0) {
+      await SecureStore.setItemAsync('pendingProfile', JSON.stringify(profileData));
+    }
+
     await signUp.verifications.verifyEmailCode({ code });
     if (signUp.status === 'complete') {
       await signUp.finalize({
@@ -90,15 +134,15 @@ export default function SignUpScreen() {
     }
   };
 
-  // Email verification step
   const needsVerification =
     signUp.status === 'missing_requirements' &&
     signUp.unverifiedFields.includes('email_address') &&
     signUp.missingFields.length === 0;
 
+  // ── Email verification step ────────────────────────────────────────────────
   if (needsVerification) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad + 40, paddingHorizontal: 24 }]}>
+      <View style={[{ flex: 1, backgroundColor: colors.background, paddingTop: topPad + 40, paddingHorizontal: 24, gap: 16 }]}>
         <View style={styles.brand}>
           <View style={[styles.logoBox, { backgroundColor: colors.primary }]}>
             <Feather name="mail" size={28} color={colors.primaryForeground} />
@@ -114,7 +158,10 @@ export default function SignUpScreen() {
           placeholder="000000"
           placeholderTextColor={colors.mutedForeground}
           keyboardType="numeric"
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground, textAlign: 'center', fontSize: 24, letterSpacing: 8 }]}
+          style={[styles.input, {
+            backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground,
+            textAlign: 'center', fontSize: 24, letterSpacing: 8,
+          }]}
           maxLength={6}
         />
         {errors.fields.code && (
@@ -139,13 +186,14 @@ export default function SignUpScreen() {
     );
   }
 
+  // ── Sign-up form ───────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingTop: topPad + 20, paddingBottom: bottomPad + 20, paddingHorizontal: 24, gap: 12 }]}
+        contentContainerStyle={{ paddingTop: topPad + 20, paddingBottom: bottomPad + 20, paddingHorizontal: 24, gap: 12 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -179,10 +227,81 @@ export default function SignUpScreen() {
         {/* Divider */}
         <View style={styles.divider}>
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>or</Text>
+          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>or sign up with email</Text>
           <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
         </View>
 
+        {/* First + Last name row */}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <View style={{ flex: 1, gap: 6 }}>
+            <Text style={[styles.label, { color: colors.mutedForeground }]}>First name</Text>
+            <TextInput
+              value={firstName}
+              onChangeText={setFirstName}
+              placeholder="First"
+              placeholderTextColor={colors.mutedForeground}
+              autoCorrect={false}
+              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+            />
+          </View>
+          <View style={{ flex: 1, gap: 6 }}>
+            <Text style={[styles.label, { color: colors.mutedForeground }]}>Last name</Text>
+            <TextInput
+              value={lastName}
+              onChangeText={setLastName}
+              placeholder="Last"
+              placeholderTextColor={colors.mutedForeground}
+              autoCorrect={false}
+              style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+            />
+          </View>
+        </View>
+
+        {/* Username */}
+        <Text style={[styles.label, { color: colors.mutedForeground }]}>Username</Text>
+        <View style={{ position: 'relative' }}>
+          <TextInput
+            value={username}
+            onChangeText={handleUsernameChange}
+            placeholder="spud_fan"
+            placeholderTextColor={colors.mutedForeground}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.card,
+                borderColor:
+                  usernameStatus === 'taken' ? colors.destructive
+                  : usernameStatus === 'available' ? '#116149'
+                  : colors.border,
+                color: colors.foreground,
+                paddingRight: 44,
+              },
+            ]}
+          />
+          {usernameStatus === 'checking' && (
+            <ActivityIndicator
+              size="small"
+              color={colors.mutedForeground}
+              style={{ position: 'absolute', right: 12, top: 13 }}
+            />
+          )}
+          {usernameStatus === 'available' && (
+            <Feather name="check-circle" size={18} color="#116149" style={{ position: 'absolute', right: 12, top: 14 }} />
+          )}
+          {usernameStatus === 'taken' && (
+            <Feather name="x-circle" size={18} color={colors.destructive} style={{ position: 'absolute', right: 12, top: 14 }} />
+          )}
+        </View>
+        {usernameStatus === 'taken' && (
+          <Text style={[styles.hint, { color: colors.destructive }]}>Username already taken — try another.</Text>
+        )}
+        {usernameStatus === 'available' && (
+          <Text style={[styles.hint, { color: '#116149' }]}>Username is available!</Text>
+        )}
+
+        {/* Email */}
         <Text style={[styles.label, { color: colors.mutedForeground }]}>Email</Text>
         <TextInput
           value={email}
@@ -198,6 +317,7 @@ export default function SignUpScreen() {
           <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.emailAddress.message}</Text>
         )}
 
+        {/* Password */}
         <Text style={[styles.label, { color: colors.mutedForeground }]}>Password</Text>
         <View style={[styles.passwordRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TextInput
@@ -222,10 +342,10 @@ export default function SignUpScreen() {
         <TouchableOpacity
           style={[
             styles.primaryBtn,
-            { backgroundColor: (!email || !password || isFetching) ? colors.muted : colors.primary },
+            { backgroundColor: (!email || !password || isFetching || usernameStatus === 'taken') ? colors.muted : colors.primary },
           ]}
           onPress={handleSignUp}
-          disabled={!email || !password || isFetching}
+          disabled={!email || !password || isFetching || usernameStatus === 'taken'}
           activeOpacity={0.8}
         >
           {isFetching ? (
@@ -253,7 +373,6 @@ export default function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1 },
   brand: { alignItems: 'center', gap: 8, marginBottom: 8 },
   logoBox: {
     width: 64, height: 64, borderRadius: 20,
@@ -267,10 +386,10 @@ const styles = StyleSheet.create({
   },
   googleIcon: { fontSize: 18, fontWeight: '700', color: '#4285F4' },
   ssoBtnText: { fontSize: 15, fontFamily: 'Manrope_600SemiBold' },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
+  divider: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
   dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 13, fontFamily: 'Manrope_400Regular' },
-  label: { fontSize: 12, fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.4, marginBottom: -4 },
+  dividerText: { fontSize: 12, fontFamily: 'Manrope_400Regular' },
+  label: { fontSize: 12, fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.4 },
   input: {
     borderRadius: 12, borderWidth: 1,
     paddingHorizontal: 14, paddingVertical: 13,
@@ -283,6 +402,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: { flex: 1, fontSize: 15, fontFamily: 'Manrope_400Regular', padding: 0 },
   error: { fontSize: 12, fontFamily: 'Manrope_400Regular', marginTop: -6 },
+  hint: { fontSize: 12, fontFamily: 'Manrope_400Regular', marginTop: -6 },
   primaryBtn: {
     paddingVertical: 15, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center', marginTop: 4,

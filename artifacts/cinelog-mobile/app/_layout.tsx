@@ -56,7 +56,8 @@ SplashScreen.preventAutoHideAsync();
 // an Authorization: Bearer header. Lives here — not only in (tabs)/_layout —
 // so deep-link cold-starts (e.g. couchpotato://log-entry) are also covered.
 function AuthTokenSync() {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
+
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
     setRawFetchTokenGetter(() => getToken());
@@ -65,6 +66,31 @@ function AuthTokenSync() {
       setRawFetchTokenGetter(null);
     };
   }, [getToken]);
+
+  // After sign-up, save the name + username that were collected during
+  // registration but couldn't be persisted without a valid session.
+  useEffect(() => {
+    if (!isSignedIn) return;
+    (async () => {
+      try {
+        const pending = await SecureStore.getItemAsync('pendingProfile');
+        if (!pending) return;
+        const profile = JSON.parse(pending);
+        const token = await getToken();
+        if (!token) return;
+        const apiDomain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
+        await fetch(`https://${apiDomain}/api/profile`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(profile),
+        });
+        await SecureStore.deleteItemAsync('pendingProfile');
+      } catch {
+        // Non-fatal — profile can be updated from the Profile tab
+      }
+    })();
+  }, [isSignedIn, getToken]);
+
   return null;
 }
 

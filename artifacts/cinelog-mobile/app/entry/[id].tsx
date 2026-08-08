@@ -867,7 +867,15 @@ export default function EntryDetailScreen() {
       <Modal visible={!!epSheet} transparent animationType="slide" onRequestClose={() => setEpSheet(null)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setEpSheet(null)} />
         {epSheet && (
-          <View style={[styles.episodeSheet, { backgroundColor: colors.background }]}>
+          <View style={[styles.episodeSheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20 }]}>
+            {/* Close button top-right for accessibility */}
+            <TouchableOpacity
+              onPress={() => setEpSheet(null)}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={{ position: 'absolute', top: 14, right: 16, zIndex: 10 }}
+            >
+              <Feather name="x" size={20} color={colors.mutedForeground} />
+            </TouchableOpacity>
             <View style={styles.modalHandle} />
             <Text style={[styles.modalTitle, { color: colors.foreground, marginBottom: 10 }]}>Season Progress</Text>
 
@@ -961,7 +969,7 @@ export default function EntryDetailScreen() {
       <Modal visible={!!seasonRatingModal} transparent animationType="slide" onRequestClose={() => setSeasonRatingModal(null)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setSeasonRatingModal(null)} />
         {seasonRatingModal && (
-          <View style={[styles.modalSheet, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20 }]}>
             <View style={styles.modalHandle} />
             <Text style={[styles.modalTitle, { color: colors.foreground }]}>Season {seasonRatingModal.num} — Rate</Text>
             <View style={[styles.starsRow, { marginBottom: 20 }]}>

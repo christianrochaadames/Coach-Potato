@@ -114,6 +114,9 @@ export default function SignInScreen() {
           style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
           textAlign="center"
         />
+        {errors.fields.code && (
+          <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.code.message}</Text>
+        )}
         <TouchableOpacity
           style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
           onPress={handleVerifyMfa}
