@@ -45,9 +45,10 @@ interface TmdbItem {
 
 type Status = 'completed' | 'watching' | 'plan_to_watch';
 
+const PROD_DOMAIN = 'couch-potato.replit.app';
 function getBase() {
   const d = process.env.EXPO_PUBLIC_DOMAIN;
-  return d ? `https://${d}` : '';
+  return d ? `https://${d}` : `https://${PROD_DOMAIN}`;
 }
 
 // ── TMDB Search hook ──────────────────────────────────────────────────────────

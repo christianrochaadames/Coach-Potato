@@ -87,7 +87,8 @@ const STATUS_OPTIONS: { value: Status; label: string }[] = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function getApiBase() { return process.env.EXPO_PUBLIC_DOMAIN ? `https://${process.env.EXPO_PUBLIC_DOMAIN}` : ''; }
+const PROD_DOMAIN = 'couch-potato.replit.app';
+function getApiBase() { return `https://${process.env.EXPO_PUBLIC_DOMAIN ?? PROD_DOMAIN}`; }
 
 function formatMonthYear(s: string | null | undefined): string {
   if (!s) return '';

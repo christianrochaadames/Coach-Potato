@@ -25,6 +25,7 @@ export default function WatchlistScreen() {
   const deleteEntry = useDeleteEntry();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [watchedModal, setWatchedModal] = useState<WatchedModalState | null>(null);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<number | null>(null);
 
   const { data, isLoading, refetch, isRefetching } = useListEntries({ status: 'plan_to_watch' } as any);
   const watchlist: any[] = (data as any[]) ?? [];
@@ -41,6 +42,15 @@ export default function WatchlistScreen() {
   const openWatchedModal = (item: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setWatchedModal({ id: item.id, title: item.title, year: item.year ?? CUR_YEAR, rating: 0 });
+  };
+
+  const handleRemove = async (id: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await deleteEntry.mutateAsync({ id });
+      queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } finally { setConfirmRemoveId(null); }
   };
 
   const confirmWatched = async () => {
@@ -165,6 +175,24 @@ export default function WatchlistScreen() {
                       <Text style={styles.pillWatchedText}>✓  Watched</Text>
                     )}
                   </TouchableOpacity>
+                  {confirmRemoveId === item.id ? (
+                    <TouchableOpacity
+                      style={styles.pillConfirmRemove}
+                      onPress={() => handleRemove(item.id)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.pillConfirmRemoveText}>Confirm?</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.pillRemove}
+                      onPress={() => { Haptics.selectionAsync(); setConfirmRemoveId(item.id); }}
+                      activeOpacity={0.8}
+                      disabled={updatingId === item.id}
+                    >
+                      <Feather name="trash-2" size={13} color="#7E7A73" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
@@ -284,6 +312,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 5,
   },
   pillWatchedText: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', color: '#ffffff' },
+  pillRemove: {
+    backgroundColor: '#F5F0EA', borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', justifyContent: 'center',
+  },
+  pillConfirmRemove: {
+    backgroundColor: '#FFE4E4', borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 5,
+  },
+  pillConfirmRemoveText: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', color: '#C0392B' },
 
   // Modal
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },

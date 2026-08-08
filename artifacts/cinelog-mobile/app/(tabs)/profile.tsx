@@ -115,6 +115,14 @@ export default function ProfileScreen() {
       >
         {/* ── Header ── */}
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backBtn}
+            activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Feather name="arrow-left" size={22} color="#7EDC5A" />
+          </TouchableOpacity>
           <Text style={styles.headerTitle}>My Profile</Text>
         </View>
 
@@ -238,7 +246,14 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 8 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 20, paddingBottom: 8,
+  },
+  backBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: '#1A4A2A', alignItems: 'center', justifyContent: 'center',
+  },
   headerTitle: { fontSize: 26, fontFamily: 'Manrope_700Bold', color: '#ffffff' },
 
   avatarSection: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 20 },

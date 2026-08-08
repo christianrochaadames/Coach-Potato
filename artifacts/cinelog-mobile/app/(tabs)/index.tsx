@@ -403,6 +403,7 @@ export default function HomeScreen() {
     avatarUrl ? { uri: avatarUrl }
     : avatarId ? AVATAR_MAP[avatarId]
     : require('@/assets/images/spud.png');
+  const avatarResizeMode = avatarUrl ? 'cover' : 'contain';
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFF3E8' }}>
@@ -425,7 +426,7 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.avatarCircle}>
-              <Image source={avatarSource} style={styles.avatarImg} resizeMode="contain" />
+              <Image source={avatarSource} style={styles.avatarImg} resizeMode={avatarResizeMode as any} />
             </View>
             <View style={styles.profilePill}>
               <Text style={styles.profilePillText}>My Profile</Text>

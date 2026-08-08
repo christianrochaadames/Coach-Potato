@@ -19,6 +19,9 @@
       "ios": {
         "buildConfiguration": "Release",
         "image": "sdk-54"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "couch-potato.replit.app"
       }
     }
   },

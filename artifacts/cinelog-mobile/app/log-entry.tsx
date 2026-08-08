@@ -64,13 +64,7 @@ function useTmdbSearch(query: string) {
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const domain = process.env.EXPO_PUBLIC_DOMAIN;
-        if (!domain) {
-          console.error('[Spud] EXPO_PUBLIC_DOMAIN not set — TMDB search will not work on native.');
-          setResults([]);
-          setLoading(false);
-          return;
-        }
+        const domain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
         const res = await authFetch(
           `https://${domain}/api/tmdb/search?q=${encodeURIComponent(query)}`
         );

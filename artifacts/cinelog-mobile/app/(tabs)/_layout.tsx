@@ -115,7 +115,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="user" size={22} color={color} />,
+          // Profile is accessed via the avatar button on the Home tab, not the tab bar
+          tabBarButton: () => null,
         }}
       />
     </Tabs>
