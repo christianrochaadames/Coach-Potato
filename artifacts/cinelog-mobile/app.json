@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.couchpotato.ios",
-      "buildNumber": "12",
+      "buildNumber": "14",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
