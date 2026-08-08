@@ -21,12 +21,26 @@ export default function TabLayout() {
     setAuthTokenGetter(() => getToken());
   }, [getToken]);
 
-  // Hide splash once the tab bar is rendered (signed-in fast path).
+  // Safety valve: always hide the splash after 8 seconds no matter what,
+  // preventing an iOS watchdog kill if Clerk is slow or unreachable.
   useEffect(() => {
-    void SplashScreen.hideAsync();
+    const timer = setTimeout(() => void SplashScreen.hideAsync(), 8000);
+    return () => clearTimeout(timer);
   }, []);
 
-  if (isLoaded && !isSignedIn) {
+  // Hide splash for signed-in users once Clerk confirms the session.
+  // Signed-out users: sign-in screen calls hideAsync after it paints,
+  // so the splash stays up until sign-in is actually visible.
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      void SplashScreen.hideAsync();
+    }
+  }, [isLoaded, isSignedIn]);
+
+  // Hold blank (behind the splash) until Clerk has resolved auth state.
+  if (!isLoaded) return null;
+
+  if (!isSignedIn) {
     return <Redirect href="/(auth)/sign-in" />;
   }
 

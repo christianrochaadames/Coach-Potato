@@ -36,10 +36,9 @@ export default function SignInScreen() {
   const [ssoLoading, setSsoLoading] = useState<'google' | null>(null);
   const [verifyCode, setVerifyCode] = useState('');
 
-  // Hide the splash screen now that this screen is rendered.
-  // RoutingGuard (root layout) navigates here but intentionally does NOT call
-  // hideAsync — we do it here so the splash stays visible until this screen
-  // is actually painted, preventing the white-screen flash.
+  // Hide the splash now that sign-in is painted.
+  // tabs/_layout redirects here for signed-out users; it does NOT call hideAsync
+  // for the signed-out path so the splash stays up until this screen is visible.
   useEffect(() => {
     void SplashScreen.hideAsync();
   }, []);
