@@ -65,16 +65,6 @@ function RoutingGuard() {
     didNavigate.current = true;
 
     (async () => {
-      try {
-        const seen = await SecureStore.getItemAsync('hasSeenOnboarding');
-        if (!seen) {
-          router.replace('/onboarding' as any);
-          SplashScreen.hideAsync();
-          return;
-        }
-      } catch {
-        // SecureStore unavailable (web preview) — fall through
-      }
       if (!isSignedIn) {
         router.replace('/(auth)/sign-in');
       }
