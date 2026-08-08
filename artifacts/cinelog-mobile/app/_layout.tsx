@@ -64,12 +64,13 @@ function RoutingGuard() {
     if (!isLoaded || didNavigate.current) return;
     didNavigate.current = true;
 
-    (async () => {
-      if (!isSignedIn) {
-        router.replace('/(auth)/sign-in');
-      }
-      SplashScreen.hideAsync();
-    })();
+    // Navigate to the right screen. The destination screen is responsible
+    // for calling SplashScreen.hideAsync() once it has rendered, so the
+    // splash stays visible right up until the screen is actually painted.
+    if (!isSignedIn) {
+      router.replace('/(auth)/sign-in');
+    }
+    // Signed-in users: tabs/_layout.tsx calls hideAsync on mount.
   }, [isLoaded]);
 
   return null;

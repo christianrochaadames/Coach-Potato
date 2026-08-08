@@ -6,6 +6,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/expo';
 import { setAuthTokenGetter } from '@workspace/api-client-react';
+import * as SplashScreen from 'expo-splash-screen';
 
 const COUCH_BLUE = '#9BD6FF';
 
@@ -19,6 +20,11 @@ export default function TabLayout() {
   useEffect(() => {
     setAuthTokenGetter(() => getToken());
   }, [getToken]);
+
+  // Hide splash once the tab bar is rendered (signed-in fast path).
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   if (isLoaded && !isSignedIn) {
     return <Redirect href="/(auth)/sign-in" />;

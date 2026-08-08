@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import * as SplashScreen from 'expo-splash-screen';
 import { useSignIn, useSSO } from '@clerk/expo';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +35,14 @@ export default function SignInScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [ssoLoading, setSsoLoading] = useState<'google' | null>(null);
   const [verifyCode, setVerifyCode] = useState('');
+
+  // Hide the splash screen now that this screen is rendered.
+  // RoutingGuard (root layout) navigates here but intentionally does NOT call
+  // hideAsync — we do it here so the splash stays visible until this screen
+  // is actually painted, preventing the white-screen flash.
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   // Warm up browser on Android for faster OAuth
   useEffect(() => {
