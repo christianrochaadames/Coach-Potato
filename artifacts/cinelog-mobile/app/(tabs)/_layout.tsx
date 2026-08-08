@@ -41,7 +41,7 @@ export default function TabLayout() {
   if (!isLoaded) return null;
 
   if (!isSignedIn) {
-    return <Redirect href="/(auth)/sign-in" />;
+    return <Redirect href="/(auth)/landing" />;
   }
 
   const bottomOffset = isWeb ? 14 : insets.bottom > 0 ? insets.bottom + 4 : 12;

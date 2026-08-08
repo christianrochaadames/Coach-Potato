@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Modal,
   Platform,
   TouchableOpacity,
   Alert,
@@ -285,6 +286,7 @@ export default function StatsScreen() {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number | null>(currentYear);
   const [sharing, setSharing] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
 
   // ref for the off-screen share card
   const cardRef = useRef<View>(null);
@@ -427,58 +429,58 @@ export default function StatsScreen() {
       </View>
 
       {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: topPad + 12 }]}>
-        <Text style={[styles.title, { color: '#FFF3E8' }]}>Stats</Text>
-        {!isEmpty && (
-          <TouchableOpacity
-            onPress={handleShareStats}
-            disabled={sharing}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={styles.shareBtn}
-          >
-            {sharing ? (
-              <ActivityIndicator size="small" color="#FFD6E7" />
-            ) : (
-              <Feather name="share-2" size={20} color="#FFD6E7" />
-            )}
-          </TouchableOpacity>
-        )}
+      <View style={[styles.header, { paddingTop: topPad + 16 }]}>
+        <View style={{ flex: 1, marginRight: 12 }}>
+          <Text style={styles.title}>Your Stats</Text>
+          <Text style={styles.subtitle}>
+            A completely unnecessary but oddly satisfying breakdown of your viewing habits.
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.yearDropdownPill}
+          onPress={() => setShowYearPicker(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.yearDropdownText}>{selectedYear ?? 'All time'}</Text>
+          <Feather name="chevron-down" size={13} color="#FFF3E8" />
+        </TouchableOpacity>
       </View>
 
-      {/* Year filter pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.yearPillsContent}
-        style={styles.yearPillsRow}
+      {/* ── Year picker modal ── */}
+      <Modal
+        visible={showYearPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowYearPicker(false)}
       >
         <TouchableOpacity
-          onPress={() => setSelectedYear(null)}
-          style={[
-            styles.yearPill,
-            { backgroundColor: selectedYear === null ? '#116149' : '#EFE4D2' },
-          ]}
-        >
-          <Text style={[styles.yearPillText, { color: selectedYear === null ? '#ffffff' : '#7E7A73' }]}>
-            All time
-          </Text>
-        </TouchableOpacity>
-
-        {years.map(y => (
+          style={styles.yearModalBackdrop}
+          activeOpacity={1}
+          onPress={() => setShowYearPicker(false)}
+        />
+        <View style={styles.yearModalCard}>
+          <Text style={styles.yearModalTitle}>Select year</Text>
           <TouchableOpacity
-            key={y}
-            onPress={() => setSelectedYear(y)}
-            style={[
-              styles.yearPill,
-              { backgroundColor: selectedYear === y ? '#116149' : '#EFE4D2' },
-            ]}
+            style={[styles.yearModalOption, selectedYear === null && styles.yearModalOptionActive]}
+            onPress={() => { setSelectedYear(null); setShowYearPicker(false); }}
           >
-            <Text style={[styles.yearPillText, { color: selectedYear === y ? '#ffffff' : '#7E7A73' }]}>
-              {y}
+            <Text style={[styles.yearModalOptionText, selectedYear === null && { color: '#116149', fontFamily: 'Manrope_700Bold' }]}>
+              All time
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {years.map(y => (
+            <TouchableOpacity
+              key={y}
+              style={[styles.yearModalOption, selectedYear === y && styles.yearModalOptionActive]}
+              onPress={() => { setSelectedYear(y); setShowYearPicker(false); }}
+            >
+              <Text style={[styles.yearModalOptionText, selectedYear === y && { color: '#116149', fontFamily: 'Manrope_700Bold' }]}>
+                {y}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Modal>
 
       {/* Content */}
       <ScrollView
@@ -686,12 +688,15 @@ const styles = StyleSheet.create({
   // Header
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingBottom: 14,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  title: { fontSize: 26, fontFamily: 'Manrope_700Bold', letterSpacing: -0.5 },
+  title: { fontSize: 26, fontFamily: 'Manrope_700Bold', letterSpacing: -0.5, color: '#FFF3E8', marginBottom: 4 },
+  subtitle: {
+    fontSize: 13, fontFamily: 'Manrope_400Regular', color: 'rgba(255,243,232,0.7)', lineHeight: 18,
+  },
   shareBtn: {
     width: 36,
     height: 36,
@@ -699,22 +704,39 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Year pills
-  yearPillsRow: { flexGrow: 0 },
-  yearPillsContent: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+  // Year dropdown pill in header
+  yearDropdownPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7,
+    alignSelf: 'flex-start', marginTop: 4,
   },
-  yearPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
+  yearDropdownText: {
+    fontFamily: 'Manrope_600SemiBold', fontSize: 13, color: '#FFF3E8',
   },
-  yearPillText: {
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 13,
+
+  // Year picker modal
+  yearModalBackdrop: {
+    ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  yearModalCard: {
+    position: 'absolute', top: '30%', alignSelf: 'center',
+    width: 220, backgroundColor: '#ffffff',
+    borderRadius: 20, overflow: 'hidden',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15, shadowRadius: 20, elevation: 12,
+  },
+  yearModalTitle: {
+    fontSize: 13, fontFamily: 'Manrope_700Bold', color: '#7E7A73',
+    letterSpacing: 0.8, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8,
+  },
+  yearModalOption: {
+    paddingHorizontal: 20, paddingVertical: 14,
+    borderTopWidth: 1, borderTopColor: '#F5F0EA',
+  },
+  yearModalOptionActive: { backgroundColor: '#F0FFF4' },
+  yearModalOptionText: {
+    fontSize: 15, fontFamily: 'Manrope_500Medium', color: '#111111',
   },
 
   // Main scroll content

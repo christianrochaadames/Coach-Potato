@@ -128,36 +128,25 @@ function ResultCard({
         </View>
       )}
       <View style={styles.resultBody}>
-        <Text style={styles.resultTitle} numberOfLines={2}>{item.title}</Text>
-        <View style={styles.resultMetaRow}>
-          <View style={[
-            styles.typeBadge,
-            { backgroundColor: item.type === 'movie' ? '#DCFCE7' : '#EDE9FE' },
-          ]}>
-            <Text style={[
-              styles.typeBadgeText,
-              { color: item.type === 'movie' ? '#166534' : '#5B21B6' },
-            ]}>
-              {item.type === 'movie' ? 'Movie' : 'TV'}
-            </Text>
-          </View>
-          {item.year ? <Text style={styles.resultYear}>{item.year}</Text> : null}
-        </View>
-        {item.overview ? (
-          <Text style={styles.resultOverview} numberOfLines={2}>{item.overview}</Text>
-        ) : null}
+        <Text style={styles.resultTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={styles.resultMeta}>
+          {[item.year, item.type === 'movie' ? 'Movie' : 'TV Show'].filter(Boolean).join(' · ')}
+        </Text>
         {inCollection && (
-          <View style={styles.inCollectionBadge}>
-            <Feather name="check" size={10} color="#4A1020" />
-            <Text style={styles.inCollectionText}>In your collection</Text>
-          </View>
+          <Text style={styles.inCollectionText}>✓ In your collection</Text>
         )}
       </View>
-      {!inCollection && (
-        <View style={styles.addBtn}>
-          <Feather name="plus" size={14} color="#ffffff" />
-        </View>
-      )}
+      <View style={[
+        styles.typeBadge,
+        { backgroundColor: item.type === 'movie' ? '#E0E7FF' : '#EDE9FE' },
+      ]}>
+        <Text style={[
+          styles.typeBadgeText,
+          { color: item.type === 'movie' ? '#3730A3' : '#5B21B6' },
+        ]}>
+          {item.type === 'movie' ? 'Movie' : 'TV Show'}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -394,12 +383,6 @@ export default function SearchScreen() {
       <View style={[styles.headerArea, { paddingTop: topPad + 8 }]}>
         <View style={styles.headerRow}>
           <Text style={styles.headerTitle}>Search</Text>
-          {!isSearching && (
-            <TouchableOpacity style={styles.refreshBtn} onPress={refresh} activeOpacity={0.8}>
-              <Feather name="refresh-cw" size={14} color="#111111" />
-              <Text style={styles.refreshText}>Refresh</Text>
-            </TouchableOpacity>
-          )}
         </View>
         <View style={styles.searchBar}>
           <Feather name="search" size={16} color="#7E7A73" />
@@ -407,7 +390,7 @@ export default function SearchScreen() {
             style={styles.searchInput}
             value={query}
             onChangeText={setQuery}
-            placeholder="Movies, shows…"
+            placeholder="Search Movies & TV Shows…"
             placeholderTextColor="#A09898"
             returnKeyType="search"
             autoCapitalize="none"
@@ -462,9 +445,13 @@ export default function SearchScreen() {
           ) : (
             <>
               {/* Popular TV Shows */}
-              <Text style={[styles.sectionLabel, { paddingHorizontal: 16, marginTop: 16, marginBottom: 0 }]}>
-                POPULAR TV SHOWS
-              </Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionLabel, { paddingHorizontal: 0, paddingTop: 0 }]}>POPULAR TV SHOWS</Text>
+                <TouchableOpacity style={styles.refreshBtn} onPress={refresh} activeOpacity={0.8}>
+                  <Feather name="refresh-cw" size={13} color="#116149" />
+                  <Text style={styles.refreshText}>Refresh</Text>
+                </TouchableOpacity>
+              </View>
               {shows.map(item => (
                 <View key={item.tmdbId}>
                   <ResultCard item={item} onPress={handleSelect} inCollection={collectionTmdbIds.has(item.tmdbId)} />
@@ -478,9 +465,7 @@ export default function SearchScreen() {
               ))}
 
               {/* Popular Movies */}
-              <Text style={[styles.sectionLabel, { paddingHorizontal: 16, marginTop: 20, marginBottom: 0 }]}>
-                POPULAR MOVIES
-              </Text>
+              <Text style={[styles.sectionLabel, { marginTop: 8 }]}>POPULAR MOVIES</Text>
               {movies.map(item => (
                 <View key={item.tmdbId}>
                   <ResultCard item={item} onPress={handleSelect} inCollection={collectionTmdbIds.has(item.tmdbId)} />
@@ -525,10 +510,10 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 28, fontFamily: 'Manrope_700Bold', color: '#111111' },
   refreshBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: 'rgba(0,0,0,0.1)', borderRadius: 12,
-    paddingHorizontal: 10, paddingVertical: 6,
+    borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6,
+    borderWidth: 1, borderColor: '#116149',
   },
-  refreshText: { fontSize: 12, fontFamily: 'Manrope_600SemiBold', color: '#111111' },
+  refreshText: { fontSize: 12, fontFamily: 'Manrope_600SemiBold', color: '#116149' },
 
   searchBar: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -558,28 +543,21 @@ const styles = StyleSheet.create({
   },
   resultPoster: { width: 52, height: 78, borderRadius: 8 },
   posterPlaceholder: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#EFE4D2' },
-  resultBody: { flex: 1, gap: 4 },
+  resultBody: { flex: 1, gap: 3, justifyContent: 'center' },
   resultTitle: {
     fontSize: 15, fontFamily: 'Manrope_600SemiBold', color: '#111111', lineHeight: 20,
   },
-  resultMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  typeBadge: { borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
-  typeBadgeText: { fontSize: 10, fontFamily: 'Manrope_700Bold' },
-  resultYear: { fontSize: 12, fontFamily: 'Manrope_400Regular', color: '#7E7A73' },
-  resultOverview: {
-    fontSize: 12, fontFamily: 'Manrope_400Regular', color: '#7E7A73', lineHeight: 17, marginTop: 2,
-  },
-  inCollectionBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    marginTop: 4, alignSelf: 'flex-start',
-    backgroundColor: '#FFD6E7', borderRadius: 8,
-    paddingHorizontal: 8, paddingVertical: 3,
-  },
-  inCollectionText: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', color: '#4A1020' },
-  addBtn: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#116149', alignItems: 'center', justifyContent: 'center',
+  resultMeta: { fontSize: 12, fontFamily: 'Manrope_400Regular', color: '#7E7A73' },
+  typeBadge: {
+    borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4,
     alignSelf: 'center',
+  },
+  typeBadgeText: { fontSize: 10, fontFamily: 'Manrope_700Bold' },
+  inCollectionText: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', color: '#116149' },
+
+  sectionHeaderRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4,
   },
 
   savedBanner: {

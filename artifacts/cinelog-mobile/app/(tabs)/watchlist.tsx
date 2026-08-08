@@ -158,9 +158,9 @@ export default function WatchlistScreen() {
                     disabled={updatingId === item.id}
                   >
                     {updatingId === item.id ? (
-                      <ActivityIndicator size="small" color="#111111" />
+                      <ActivityIndicator size="small" color="#ffffff" />
                     ) : (
-                      <Text style={styles.pillStartText}>▶  Start</Text>
+                      <Text style={styles.pillStartText}>▶  Watch</Text>
                     )}
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -303,12 +303,12 @@ const styles = StyleSheet.create({
 
   actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
   pillStart: {
-    backgroundColor: '#EFE4D2', borderRadius: 10,
+    backgroundColor: '#4A78FF', borderRadius: 10,
     paddingHorizontal: 10, paddingVertical: 5,
   },
-  pillStartText: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', color: '#111111' },
+  pillStartText: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', color: '#ffffff' },
   pillWatched: {
-    backgroundColor: '#116149', borderRadius: 10,
+    backgroundColor: '#FF4BAE', borderRadius: 10,
     paddingHorizontal: 10, paddingVertical: 5,
   },
   pillWatchedText: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', color: '#ffffff' },
