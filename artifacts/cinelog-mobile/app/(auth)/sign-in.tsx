@@ -1,59 +1,37 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  Image, KeyboardAvoidingView, Platform, ScrollView,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  ScrollView,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import * as SplashScreen from 'expo-splash-screen';
+import { useState } from 'react';
 import { useSignIn, useSSO } from '@clerk/expo';
-import { Link, useRouter } from 'expo-router';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import { useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { useColors } from '@/hooks/useColors';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen() {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-
   const { signIn, errors, fetchStatus } = useSignIn();
   const { startSSOFlow } = useSSO();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [ssoLoading, setSsoLoading] = useState<'google' | null>(null);
-  const [verifyCode, setVerifyCode] = useState('');
+  const [ssoLoading, setSsoLoading] = useState<'google' | 'apple' | null>(null);
 
-  // Hide the splash now that sign-in is painted.
-  // tabs/_layout redirects here for signed-out users; it does NOT call hideAsync
-  // for the signed-out path so the splash stays up until this screen is visible.
-  useEffect(() => {
-    void SplashScreen.hideAsync();
-  }, []);
+  const isFetching = fetchStatus === 'fetching';
 
-  // Warm up browser on Android for faster OAuth
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    void WebBrowser.warmUpAsync();
-    return () => { void WebBrowser.coolDownAsync(); };
-  }, []);
+  // Hide splash when the sign-in screen mounts (signed-out path)
+  useEffect(() => { SplashScreen.hideAsync().catch(() => {}); }, []);
 
-  const handleEmailSignIn = async () => {
+  const handleSignIn = async () => {
     if (!email || !password) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const { error } = await signIn.password({ emailAddress: email, password });
+    const { error } = await signIn.password({ identifier: email, password });
     if (error) return;
     if (signIn.status === 'complete') {
       await signIn.finalize({
@@ -65,24 +43,12 @@ export default function SignInScreen() {
     }
   };
 
-  const handleVerifyMfa = async () => {
-    await signIn.mfa.verifyEmailCode({ code: verifyCode });
-    if (signIn.status === 'complete') {
-      await signIn.finalize({
-        navigate: ({ decorateUrl }) => {
-          const url = decorateUrl('/');
-          if (!url.startsWith('http')) router.replace(url as any);
-        },
-      });
-    }
-  };
-
-  const handleGoogleSignIn = useCallback(async () => {
-    setSsoLoading('google');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const handleSSO = useCallback(async (provider: 'oauth_google' | 'oauth_apple') => {
+    const key = provider === 'oauth_google' ? 'google' : 'apple';
+    setSsoLoading(key);
     try {
       const { createdSessionId, setActive } = await startSSOFlow({
-        strategy: 'oauth_google',
+        strategy: provider,
         redirectUrl: AuthSession.makeRedirectUri(),
       });
       if (createdSessionId) {
@@ -94,208 +60,212 @@ export default function SignInScreen() {
           },
         });
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      // ignore
     } finally {
       setSsoLoading(null);
     }
   }, [startSSOFlow, router]);
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
-  const isFetching = fetchStatus === 'fetching';
-
-  // MFA verification step — guard against signIn not yet ready
-  if (signIn?.status === 'needs_client_trust') {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad + 20 }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Verify your identity</Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Enter the code sent to your email
-        </Text>
-        <TextInput
-          value={verifyCode}
-          onChangeText={setVerifyCode}
-          placeholder="000000"
-          placeholderTextColor={colors.mutedForeground}
-          keyboardType="numeric"
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-          textAlign="center"
-        />
-        {errors?.fields?.code && (
-          <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.code.message}</Text>
-        )}
-        <TouchableOpacity
-          style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
-          onPress={handleVerifyMfa}
-          disabled={isFetching || !verifyCode}
-          activeOpacity={0.8}
-        >
-          {isFetching ? <ActivityIndicator color={colors.primaryForeground} /> : (
-            <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Verify</Text>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => signIn.mfa.sendEmailCode()} activeOpacity={0.7}>
-          <Text style={[styles.linkText, { color: colors.primary }]}>Resend code</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  const errorMsg =
+    errors?.fields?.identifier?.message ??
+    errors?.fields?.password?.message ??
+    null;
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={[styles.container, { paddingTop: topPad + 20, paddingBottom: bottomPad + 20 }]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View style={{ flex: 1, backgroundColor: '#C5B8FF' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Brand */}
-        <View style={styles.brand}>
-          <View style={[styles.logoBox, { backgroundColor: colors.primary }]}>
-            <Feather name="film" size={28} color={colors.primaryForeground} />
-          </View>
-          <Text style={[styles.title, { color: colors.foreground }]}>Welcome back</Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-            Sign in to your Spud account
-          </Text>
-        </View>
-
-        {/* Google SSO */}
-        <TouchableOpacity
-          style={[styles.googleBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={handleGoogleSignIn}
-          disabled={!!ssoLoading}
-          activeOpacity={0.8}
-        >
-          {ssoLoading === 'google' ? (
-            <ActivityIndicator color={colors.foreground} />
-          ) : (
-            <>
-              <Text style={styles.googleIcon}>G</Text>
-              <Text style={[styles.googleBtnText, { color: colors.foreground }]}>
-                Continue with Google
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-
-        {/* Divider */}
-        <View style={styles.divider}>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>or</Text>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-        </View>
-
-        {/* Email */}
-        <Text style={[styles.label, { color: colors.mutedForeground }]}>Email</Text>
-        <TextInput
-          value={email}
-          onChangeText={setEmail}
-          placeholder="you@example.com"
-          placeholderTextColor={colors.mutedForeground}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoCorrect={false}
-          style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
-        />
-        {errors?.fields?.identifier && (
-          <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.identifier.message}</Text>
-        )}
-
-        {/* Password */}
-        <Text style={[styles.label, { color: colors.mutedForeground }]}>Password</Text>
-        <View style={[styles.passwordRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TextInput
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Your password"
-            placeholderTextColor={colors.mutedForeground}
-            secureTextEntry={!showPassword}
-            style={[styles.passwordInput, { color: colors.foreground }]}
-          />
-          <TouchableOpacity onPress={() => setShowPassword((v) => !v)} activeOpacity={0.7}>
-            <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={colors.mutedForeground} />
-          </TouchableOpacity>
-        </View>
-        {errors?.fields?.password && (
-          <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.password.message}</Text>
-        )}
-
-        {/* Submit */}
-        <TouchableOpacity
-          style={[
-            styles.primaryBtn,
-            { backgroundColor: (!email || !password || isFetching) ? colors.muted : colors.primary },
+        <ScrollView
+          contentContainerStyle={[
+            styles.container,
+            { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 },
           ]}
-          onPress={handleEmailSignIn}
-          disabled={!email || !password || isFetching}
-          activeOpacity={0.8}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {isFetching ? (
-            <ActivityIndicator color={colors.primaryForeground} />
-          ) : (
-            <Text style={[styles.primaryBtnText, { color: (!email || !password) ? colors.mutedForeground : colors.primaryForeground }]}>
-              Sign in
-            </Text>
-          )}
-        </TouchableOpacity>
+          {/* Branding row */}
+          <View style={styles.brandRow}>
+            <Image
+              source={require('@/assets/images/spud-logo.png')}
+              style={styles.logoImg}
+              resizeMode="contain"
+            />
+            <Image
+              source={require('@/assets/images/spud-thumbsup.png')}
+              style={styles.mascotImg}
+              resizeMode="contain"
+            />
+          </View>
 
-        {/* Link to sign up */}
-        <View style={styles.footer}>
-          <Text style={[styles.footerText, { color: colors.mutedForeground }]}>
-            Don't have an account?{' '}
-          </Text>
-          <Link href="/(auth)/sign-up" asChild>
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text style={[styles.linkText, { color: colors.primary }]}>Sign up</Text>
+          {/* White card */}
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Sign in to Spud</Text>
+            <Text style={styles.cardSub}>Your couch sidekick is waiting.</Text>
+
+            {/* Email */}
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>Email address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#A09898"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                returnKeyType="next"
+              />
+            </View>
+
+            {/* Password */}
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#A09898"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete="current-password"
+                returnKeyType="done"
+                onSubmitEditing={handleSignIn}
+              />
+            </View>
+
+            {/* Error */}
+            {errorMsg ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{errorMsg}</Text>
+              </View>
+            ) : null}
+
+            {/* Clerk captcha anchor (required for bot protection) */}
+            <View nativeID="clerk-captcha" />
+
+            {/* Primary button */}
+            <TouchableOpacity
+              style={[styles.btnPrimary, (isFetching || !email || !password) && { opacity: 0.6 }]}
+              onPress={handleSignIn}
+              disabled={isFetching || !email || !password}
+              activeOpacity={0.85}
+            >
+              {isFetching && ssoLoading === null ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.btnPrimaryText}>Sign in</Text>
+              )}
             </TouchableOpacity>
-          </Link>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* OAuth buttons */}
+            <TouchableOpacity
+              style={styles.oauthBtn}
+              onPress={() => handleSSO('oauth_google')}
+              disabled={!!ssoLoading}
+              activeOpacity={0.8}
+            >
+              {ssoLoading === 'google' ? (
+                <ActivityIndicator color="#111111" />
+              ) : (
+                <Text style={styles.oauthBtnText}>Continue with Google</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.oauthBtn}
+              onPress={() => handleSSO('oauth_apple')}
+              disabled={!!ssoLoading}
+              activeOpacity={0.8}
+            >
+              {ssoLoading === 'apple' ? (
+                <ActivityIndicator color="#111111" />
+              ) : (
+                <Text style={styles.oauthBtnText}>Continue with Apple</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Switch to sign-up */}
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/sign-up')}
+              style={styles.switchRow}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.switchText}>
+                Don't have an account?{' '}
+                <Text style={styles.switchLink}>Sign up</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: 24, gap: 12 },
-  brand: { alignItems: 'center', gap: 8, marginBottom: 8 },
-  logoBox: {
-    width: 64, height: 64, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 4,
+  container: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 20 },
+  brandRow: {
+    flexDirection: 'row', alignItems: 'flex-end',
+    justifyContent: 'space-between', width: '100%',
+    maxWidth: 440, marginBottom: 20,
   },
-  title: { fontSize: 26, fontFamily: 'Manrope_700Bold', letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, fontFamily: 'Manrope_400Regular', textAlign: 'center' },
-  googleBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 14, borderRadius: 12, borderWidth: 1, gap: 10,
+  logoImg: { height: 90, width: 160 },
+  mascotImg: { height: 120, width: 100 },
+
+  card: {
+    width: '100%', maxWidth: 440,
+    backgroundColor: '#ffffff', borderRadius: 24, padding: 24,
   },
-  googleIcon: { fontSize: 18, fontWeight: '700', color: '#4285F4' },
-  googleBtnText: { fontSize: 15, fontFamily: 'Manrope_600SemiBold' },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 13, fontFamily: 'Manrope_400Regular' },
-  label: { fontSize: 12, fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.4, marginBottom: -4 },
+  cardTitle: {
+    fontSize: 22, fontFamily: 'Manrope_700Bold', color: '#111111', marginBottom: 4,
+  },
+  cardSub: {
+    fontSize: 14, fontFamily: 'Manrope_400Regular', color: '#7E7A73', marginBottom: 20,
+  },
+
+  fieldWrap: { marginBottom: 14 },
+  fieldLabel: {
+    fontSize: 13, fontFamily: 'Manrope_600SemiBold', color: '#111111', marginBottom: 6,
+  },
   input: {
-    borderRadius: 12, borderWidth: 1,
-    paddingHorizontal: 14, paddingVertical: 13,
-    fontSize: 15, fontFamily: 'Manrope_400Regular',
+    backgroundColor: '#FFF3E8', borderRadius: 12, borderWidth: 1.5, borderColor: '#E2D9CE',
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#111111',
   },
-  passwordRow: {
-    flexDirection: 'row', alignItems: 'center',
-    borderRadius: 12, borderWidth: 1,
-    paddingHorizontal: 14, paddingVertical: 13, gap: 8,
+
+  errorBox: {
+    backgroundColor: '#FEE2E2', borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10, marginBottom: 12,
   },
-  passwordInput: { flex: 1, fontSize: 15, fontFamily: 'Manrope_400Regular', padding: 0 },
-  error: { fontSize: 12, fontFamily: 'Manrope_400Regular', marginTop: -6 },
-  primaryBtn: {
-    paddingVertical: 15, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', marginTop: 4,
+  errorText: { fontSize: 13, fontFamily: 'Manrope_400Regular', color: '#DC2626' },
+
+  btnPrimary: {
+    backgroundColor: '#5B50D0', borderRadius: 24,
+    paddingVertical: 14, alignItems: 'center', marginBottom: 16, marginTop: 4,
   },
-  primaryBtnText: { fontSize: 16, fontFamily: 'Manrope_700Bold' },
-  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 8 },
-  footerText: { fontSize: 14, fontFamily: 'Manrope_400Regular' },
-  linkText: { fontSize: 14, fontFamily: 'Manrope_600SemiBold' },
+  btnPrimaryText: { fontSize: 16, fontFamily: 'Manrope_700Bold', color: '#ffffff' },
+
+  divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2D9CE' },
+  dividerText: { fontSize: 12, fontFamily: 'Manrope_400Regular', color: '#7E7A73' },
+
+  oauthBtn: {
+    borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 24,
+    paddingVertical: 12, alignItems: 'center', marginBottom: 10,
+  },
+  oauthBtnText: { fontSize: 14, fontFamily: 'Manrope_600SemiBold', color: '#111111' },
+
+  switchRow: { alignItems: 'center', marginTop: 8 },
+  switchText: { fontSize: 13, fontFamily: 'Manrope_400Regular', color: '#7E7A73' },
+  switchLink: { fontFamily: 'Manrope_700Bold', color: '#5B50D0' },
 });

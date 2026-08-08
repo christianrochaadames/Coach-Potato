@@ -34,6 +34,7 @@ import {
   getListEntriesQueryKey,
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
+import { authFetch } from '@/utils/authFetch';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ function useTmdbSearch(query: string) {
           setLoading(false);
           return;
         }
-        const res = await fetch(
+        const res = await authFetch(
           `https://${domain}/api/tmdb/search?q=${encodeURIComponent(query)}`
         );
         if (!res.ok) throw new Error('search failed');

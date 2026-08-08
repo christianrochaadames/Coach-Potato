@@ -428,7 +428,7 @@ export default function StatsScreen() {
 
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: topPad + 12 }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Stats</Text>
+        <Text style={[styles.title, { color: '#FFF3E8' }]}>Stats</Text>
         {!isEmpty && (
           <TouchableOpacity
             onPress={handleShareStats}
@@ -437,9 +437,9 @@ export default function StatsScreen() {
             style={styles.shareBtn}
           >
             {sharing ? (
-              <ActivityIndicator size="small" color={colors.primary} />
+              <ActivityIndicator size="small" color="#FFD6E7" />
             ) : (
-              <Feather name="share-2" size={20} color={colors.foreground} />
+              <Feather name="share-2" size={20} color="#FFD6E7" />
             )}
           </TouchableOpacity>
         )}

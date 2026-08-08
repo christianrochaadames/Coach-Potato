@@ -15,6 +15,7 @@ import {
   Animated,
   Modal,
   Linking,
+  TextInput,
 } from 'react-native';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
@@ -291,6 +292,7 @@ export default function EntryDetailScreen() {
   const [localRating, setLocalRating] = useState(0);
   const [localStatus, setLocalStatus] = useState<Status>('completed');
   const [localDate, setLocalDate] = useState(''); // stored YYYY-MM-01
+  const [localNotes, setLocalNotes] = useState('');
   const [instagramAvailable, setInstagramAvailable] = useState(false);
   const [sharing, setSharing] = useState(false);
   const shareCardRef = useRef<View>(null);
@@ -310,6 +312,7 @@ export default function EntryDetailScreen() {
       setLocalRating(entry.rating ?? 0);
       setLocalStatus((entry.status ?? 'completed') as Status);
       setLocalDate(entry.dateWatched ?? '');
+      setLocalNotes((entry as any).notes ?? '');
     }
   }, [entry]);
 
@@ -628,6 +631,28 @@ export default function EntryDetailScreen() {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* ── C2) Notes ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>NOTES</Text>
+          <TextInput
+            value={localNotes}
+            onChangeText={setLocalNotes}
+            placeholder="Your thoughts…"
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            style={[
+              styles.notesInput,
+              { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onBlur={() => {
+              const saved = (entry as any).notes ?? '';
+              if (localNotes !== saved) {
+                autosave({ notes: localNotes.trim() || null }, 'Notes saved');
+              }
+            }}
+          />
         </View>
 
         {/* ── D) Date watched — month + year ── */}
@@ -1037,6 +1062,12 @@ const styles = StyleSheet.create({
 
   section: { gap: 10 },
   sectionLabel: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.8 },
+  notesInput: {
+    borderRadius: 12, borderWidth: 1.5,
+    paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
+    fontSize: 14, fontFamily: 'Manrope_400Regular',
+    lineHeight: 20, textAlignVertical: 'top',
+  },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionBadge: { fontSize: 12, fontFamily: 'Manrope_500Medium' },
 
