@@ -526,6 +526,8 @@ export default function EntryDetailScreen() {
   }
 
   const topPad = insets.top + 12;
+  // Floating pill tab bar: height 62 + bottom offset (insets.bottom+4 or 12) + 8px breathing room
+  const tabBarClearance = 62 + (insets.bottom > 0 ? insets.bottom + 4 : 12) + 8;
   const savedSeasons = getSeasonsArray();
   const tmdbSeasonsList = tmdbSeasons.filter(s => s.number > 0);
   const watchedNums = new Set(savedSeasons.filter(s => s.status === 'watched').map(s => s.number));
@@ -867,17 +869,19 @@ export default function EntryDetailScreen() {
       <Modal visible={!!epSheet} transparent animationType="slide" onRequestClose={() => setEpSheet(null)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setEpSheet(null)} />
         {epSheet && (
-          <View style={[styles.episodeSheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20 }]}>
-            {/* Close button top-right for accessibility */}
-            <TouchableOpacity
-              onPress={() => setEpSheet(null)}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-              style={{ position: 'absolute', top: 14, right: 16, zIndex: 10 }}
-            >
-              <Feather name="x" size={20} color={colors.mutedForeground} />
-            </TouchableOpacity>
+          <View style={[styles.episodeSheet, { backgroundColor: colors.background, paddingBottom: tabBarClearance }]}>
             <View style={styles.modalHandle} />
-            <Text style={[styles.modalTitle, { color: colors.foreground, marginBottom: 10 }]}>Season Progress</Text>
+            {/* Header row: title + close button */}
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.modalTitle, { color: colors.foreground, marginBottom: 0 }]}>Season Progress</Text>
+              <TouchableOpacity
+                onPress={() => setEpSheet(null)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                style={[styles.sheetCloseBtn, { backgroundColor: colors.muted }]}
+              >
+                <Feather name="x" size={16} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
 
             {/* Season tabs */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 12 }}>
@@ -969,7 +973,7 @@ export default function EntryDetailScreen() {
       <Modal visible={!!seasonRatingModal} transparent animationType="slide" onRequestClose={() => setSeasonRatingModal(null)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setSeasonRatingModal(null)} />
         {seasonRatingModal && (
-          <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: insets.bottom + 20 }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: tabBarClearance }]}>
             <View style={styles.modalHandle} />
             <Text style={[styles.modalTitle, { color: colors.foreground }]}>Season {seasonRatingModal.num} — Rate</Text>
             <View style={[styles.starsRow, { marginBottom: 20 }]}>
@@ -1088,6 +1092,8 @@ const styles = StyleSheet.create({
   modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '60%' },
   episodeSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '88%', flex: 1 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D4C9BC', alignSelf: 'center', marginBottom: 16 },
+  sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  sheetCloseBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { fontSize: 16, fontFamily: 'Manrope_700Bold', marginBottom: 16 },
   modalActions: { flexDirection: 'row', gap: 12 },
   modalCancel: { flex: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
