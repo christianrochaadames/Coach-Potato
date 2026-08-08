@@ -123,7 +123,7 @@ export default function SignInScreen() {
           style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
           textAlign="center"
         />
-        {errors.fields.code && (
+        {errors?.fields?.code && (
           <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.code.message}</Text>
         )}
         <TouchableOpacity
@@ -202,7 +202,7 @@ export default function SignInScreen() {
           autoCorrect={false}
           style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
         />
-        {errors.fields.identifier && (
+        {errors?.fields?.identifier && (
           <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.identifier.message}</Text>
         )}
 
@@ -221,7 +221,7 @@ export default function SignInScreen() {
             <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
-        {errors.fields.password && (
+        {errors?.fields?.password && (
           <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.password.message}</Text>
         )}
 

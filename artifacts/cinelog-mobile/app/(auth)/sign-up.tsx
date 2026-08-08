@@ -164,7 +164,7 @@ export default function SignUpScreen() {
           }]}
           maxLength={6}
         />
-        {errors.fields.code && (
+        {errors?.fields?.code && (
           <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.code.message}</Text>
         )}
         <TouchableOpacity
@@ -313,7 +313,7 @@ export default function SignUpScreen() {
           autoCorrect={false}
           style={[styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
         />
-        {errors.fields.emailAddress && (
+        {errors?.fields?.emailAddress && (
           <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.emailAddress.message}</Text>
         )}
 
@@ -332,7 +332,7 @@ export default function SignUpScreen() {
             <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
-        {errors.fields.password && (
+        {errors?.fields?.password && (
           <Text style={[styles.error, { color: colors.destructive }]}>{errors.fields.password.message}</Text>
         )}
 

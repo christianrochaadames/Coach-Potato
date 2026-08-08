@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { reloadAppAsync } from 'expo';
+import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 
@@ -13,9 +14,17 @@ interface ErrorFallbackProps {
   error: Error | null;
 }
 
+// ErrorBoundary is now mounted INSIDE SafeAreaProvider so useSafeAreaInsets()
+// works correctly. Also hides the splash screen so it doesn't freeze on error.
 function ErrorFallback({ error }: ErrorFallbackProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+
+  // If the app crashes before the destination screen calls hideAsync,
+  // we must still hide the splash so the error screen is visible.
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   return (
     <View

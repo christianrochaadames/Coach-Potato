@@ -194,9 +194,9 @@ export default function RootLayout() {
       <ClerkLoaded>
         <RoutingGuard />
         <AuthTokenSync />
-        <ErrorBoundary>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <SafeAreaProvider>
+            <ErrorBoundary>
               <QueryClientProvider client={queryClient}>
                 <KeyboardProvider>
                   <StatusBar style="dark" />
@@ -212,9 +212,9 @@ export default function RootLayout() {
                   </Stack>
                 </KeyboardProvider>
               </QueryClientProvider>
-            </SafeAreaProvider>
-          </GestureHandlerRootView>
-        </ErrorBoundary>
+            </ErrorBoundary>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
       </ClerkLoaded>
     </ClerkProvider>
   );
