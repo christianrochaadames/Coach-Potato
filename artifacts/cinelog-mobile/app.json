@@ -11,10 +11,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.couchpotato.ios",
-      "buildNumber": "10",
+      "buildNumber": "12",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-      "LSApplicationQueriesSchemes": ["instagram", "instagram-stories"],
+        "LSApplicationQueriesSchemes": [
+          "instagram",
+          "instagram-stories"
+        ],
         "NSPrivacyAccessedAPITypes": [],
         "UIApplicationShortcutItems": [
           {

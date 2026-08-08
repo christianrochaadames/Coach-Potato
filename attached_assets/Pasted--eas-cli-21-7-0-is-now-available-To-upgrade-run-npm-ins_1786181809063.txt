@@ -1,0 +1,41 @@
+★ eas-cli@21.7.0 is now available.
+To upgrade, run:
+npm install -g eas-cli
+Proceeding with outdated version.
+⚠️ Detected that your app uses Expo Go for development, this is not recommended when building production apps.
+Learn more: https://expo.fyi/why-not-build-expo-go-for-production
+To suppress this warning, set EAS_BUILD_NO_EXPO_GO_WARNING=true.
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+Environment variables with visibility "Plain text" and "Sensitive" loaded from the "production" environment on EAS: EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY.
+- Incrementing buildNumber from 10 to 11.
+✔ Incremented buildNumber from 10 to 11.
+ios.buildNumber field in app config is ignored when version source is set to remote, but this value will still be in the manifest available via expo-constants. It's recommended to remove this value from app config.
+✔ Using remote iOS credentials (Expo server)
+Distribution Certificate is not validated for non-interactive builds.
+Skipping Provisioning Profile validation on Apple Servers because we aren't authenticated.
+Project Credentials Configuration
+Project                   @chrisrianrochaadames/coach-potato
+Bundle Identifier         com.couchpotato.ios
+                          
+App Store Configuration   
+                          
+Distribution Certificate  
+Serial Number             85F0C1E01BC8ECCEDF00DF3E611258E
+Expiration Date           Wed, 04 Aug 2027 04:56:49 PDT
+Apple Team                KCVL55K9B9 (Christian Rociha Adames (Individual))
+Updated                   3 days ago
+                          
+Provisioning Profile      
+Developer Portal ID       45A87G7H2S
+Status                    active
+Expiration                Wed, 04 Aug 2027 04:56:49 PDT
+Apple Team                KCVL55K9B9 (Christian Rociha Adames (Individual))
+Updated                   3 days ago
+                          
+All credentials are ready to build @chrisrianrochaadames/coach-potato (com.couchpotato.ios)
+- Computing project fingerprint
+✔ Computed project fingerprint
+Looking up credentials configuration for com.couchpotato.ios...
+App Store Connect API Keys cannot be set up in --non-interactive mode.
+Error: build:internal command failed.
+Failed to run eas build:internal
