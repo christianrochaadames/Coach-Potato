@@ -135,9 +135,9 @@ export default function SignUpScreen() {
   };
 
   const needsVerification =
-    signUp.status === 'missing_requirements' &&
-    signUp.unverifiedFields.includes('email_address') &&
-    signUp.missingFields.length === 0;
+    signUp?.status === 'missing_requirements' &&
+    (signUp?.unverifiedFields ?? []).includes('email_address') &&
+    (signUp?.missingFields ?? []).length === 0;
 
   // ── Email verification step ────────────────────────────────────────────────
   if (needsVerification) {

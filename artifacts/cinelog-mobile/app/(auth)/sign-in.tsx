@@ -97,8 +97,8 @@ export default function SignInScreen() {
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
   const isFetching = fetchStatus === 'fetching';
 
-  // MFA verification step
-  if (signIn.status === 'needs_client_trust') {
+  // MFA verification step — guard against signIn not yet ready
+  if (signIn?.status === 'needs_client_trust') {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topPad + 20 }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Verify your identity</Text>

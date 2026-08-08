@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
@@ -50,6 +50,40 @@ const queryClient = new QueryClient({
 
 // ── Keep splash screen visible while fonts load ─────────────────────────────
 SplashScreen.preventAutoHideAsync();
+
+// ── Routing guard ────────────────────────────────────────────────────────────
+// Handles ALL initial navigation once Clerk + fonts are ready.
+// Lives INSIDE ClerkLoaded so the Stack is guaranteed to be mounted before we
+// call router.replace(), and we keep the splash screen visible until we know
+// which screen to show — preventing the "pages flashing then blank" race.
+function RoutingGuard() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const didNavigate = useRef(false);
+
+  useEffect(() => {
+    if (!isLoaded || didNavigate.current) return;
+    didNavigate.current = true;
+
+    (async () => {
+      try {
+        const seen = await SecureStore.getItemAsync('hasSeenOnboarding');
+        if (!seen) {
+          router.replace('/onboarding' as any);
+          SplashScreen.hideAsync();
+          return;
+        }
+      } catch {
+        // SecureStore unavailable (web preview) — fall through
+      }
+      if (!isSignedIn) {
+        router.replace('/(auth)/sign-in');
+      }
+      SplashScreen.hideAsync();
+    })();
+  }, [isLoaded]);
+
+  return null;
+}
 
 // ── Auth token sync ──────────────────────────────────────────────────────────
 // Wires the Clerk session token into the API client so every request carries
@@ -153,22 +187,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!fontsLoaded && !fontError) return;
-
-    const init = async () => {
-      try {
-        const seen = await SecureStore.getItemAsync('hasSeenOnboarding');
-        if (!seen) {
-          // Navigate to onboarding before hiding splash so there's no flash
-          router.replace('/onboarding' as any);
-        }
-      } catch {
-        // SecureStore unavailable (e.g. web preview) — skip and proceed normally
-      }
-      SplashScreen.hideAsync();
-      registerQuickActions();
-    };
-
-    init();
+    // Quick actions don't depend on Clerk — register as soon as fonts are ready.
+    // Routing and SplashScreen.hideAsync() are handled by RoutingGuard inside
+    // ClerkLoaded so we're guaranteed the Stack is mounted before navigating.
+    registerQuickActions();
   }, [fontsLoaded, fontError]);
 
   useDeepLinkHandler();
@@ -179,6 +201,7 @@ export default function RootLayout() {
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
       <ClerkLoaded>
+        <RoutingGuard />
         <AuthTokenSync />
         <ErrorBoundary>
           <GestureHandlerRootView style={{ flex: 1 }}>
