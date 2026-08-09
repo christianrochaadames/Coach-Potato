@@ -7,3 +7,4 @@
 - [App structure](app-structure.md) — Bottom nav (4 tabs: Home/Search/Watchlist/Stats). Routes: /, /my-shows, /search, /watchlist, /stats, /profile, /entry/:id, /add. No top navbar.
 - [Seed script](seed-script.md) — scripts/seed-2026.ts seeds 63 titles via TMDB; run after TMDB_API_KEY is set.
 - [Avatar system](avatar-system.md) — avatarId ("2"–"15" Spud variants) + avatarUrl (base64 photo); both nullable on profiles table; avatarUrl wins; initials fallback.
+- [TestFlight build numbering](testflight-builds.md) — Keep the local iOS buildNumber at the latest uploaded number so EAS autoIncrement produces the next unique TestFlight build.
