@@ -360,6 +360,7 @@ export default function SearchScreen() {
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 84 : insets.bottom + 60;
+  const cardBottomGap = Platform.OS === 'web' ? 76 : insets.bottom + 74;
 
   const renderItem = ({ item }: { item: TmdbItem }) => {
     const wasSaved = savedId === item.tmdbId;
@@ -380,7 +381,7 @@ export default function SearchScreen() {
   return (
     <View style={styles.root}>
       {/* ── Inner card (amber border shows through on all sides) ── */}
-      <View style={[styles.innerCard, { marginTop: insets.top + 12 }]}>
+      <View style={[styles.innerCard, { marginTop: insets.top + 12, marginBottom: cardBottomGap }]}>
 
         {/* ── Header ── */}
         <View style={styles.headerArea}>

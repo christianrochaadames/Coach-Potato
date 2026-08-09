@@ -34,7 +34,7 @@ setBaseUrl(`https://${domain}`);
 // latest Clerk session.
 let _clerkGetToken: (() => Promise<string | null>) | null = null;
 setAuthTokenGetter(() => (_clerkGetToken ? _clerkGetToken() : null));
-setRawFetchTokenGetter(() => (_clerkGetToken ? _clerkGetToken() : null));
+setRawFetchTokenGetter(async () => (_clerkGetToken ? _clerkGetToken() : null));
 
 // ── Clerk publishable key ────────────────────────────────────────────────────
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;

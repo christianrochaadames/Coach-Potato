@@ -282,9 +282,12 @@ export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const cardBottomGap = Platform.OS === 'web' ? 76 : insets.bottom + 74;
 
   const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState<number | null>(currentYear);
+  // Start with all-time data so users with older viewing history see their
+  // stats immediately instead of an empty current-year view.
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
 
@@ -409,7 +412,7 @@ export default function StatsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#EFE4D2' }]}>
+    <View style={[styles.container, { backgroundColor: '#4A1020' }]}>
 
       {/* ── Off-screen share card (captured by react-native-view-shot) ── */}
       <View
@@ -429,7 +432,7 @@ export default function StatsScreen() {
       </View>
 
       {/* ── Inner dark-maroon card ── */}
-      <View style={[styles.innerCard, { marginTop: topPad + 12 }]}>
+      <View style={[styles.innerCard, { marginTop: topPad + 12, marginBottom: cardBottomGap }]}>
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -496,9 +499,9 @@ export default function StatsScreen() {
         {isEmpty ? (
           <View style={styles.empty}>
             <Feather name="bar-chart-2" size={48} color={colors.border} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No data yet</Text>
-            <Text style={[styles.emptyBody, { color: colors.mutedForeground }]}>
-              Log titles to see your stats here.
+            <Text style={[styles.emptyTitle, { color: '#4A1020' }]}>Nothing to see here yet</Text>
+            <Text style={[styles.emptyBody, { color: '#7E7A73' }]}>
+              Add a few TV shows and movies you’ve watched, and I’ll start crunching the numbers.
             </Text>
           </View>
         ) : (
@@ -683,7 +686,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   innerCard: {
     flex: 1,
-    backgroundColor: '#4A1020',
+    backgroundColor: '#FFF3E8',
     borderRadius: 24,
     marginHorizontal: 16,
     overflow: 'hidden',
@@ -705,9 +708,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  title: { fontSize: 26, fontFamily: 'Manrope_700Bold', letterSpacing: -0.5, color: '#FFF3E8', marginBottom: 4 },
+  title: { fontSize: 26, fontFamily: 'Manrope_700Bold', letterSpacing: -0.5, color: '#4A1020', marginBottom: 10 },
   subtitle: {
-    fontSize: 13, fontFamily: 'Manrope_400Regular', color: 'rgba(255,243,232,0.7)', lineHeight: 18,
+    fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#7E7A73', lineHeight: 21,
   },
   shareBtn: {
     width: 36,
@@ -719,12 +722,12 @@ const styles = StyleSheet.create({
   // Year dropdown pill in header
   yearDropdownPill: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1.5, borderColor: '#4A1020',
     borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7,
     alignSelf: 'flex-start', marginTop: 4,
   },
   yearDropdownText: {
-    fontFamily: 'Manrope_600SemiBold', fontSize: 13, color: '#FFF3E8',
+    fontFamily: 'Manrope_600SemiBold', fontSize: 13, color: '#4A1020',
   },
 
   // Year picker modal

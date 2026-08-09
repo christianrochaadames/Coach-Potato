@@ -20,6 +20,7 @@ interface WatchedModalState { id: number; title: string; year: number; rating: n
 
 export default function WatchlistScreen() {
   const insets = useSafeAreaInsets();
+  const cardBottomGap = Platform.OS === 'web' ? 76 : insets.bottom + 74;
   const queryClient = useQueryClient();
   const updateEntry = useUpdateEntry();
   const deleteEntry = useDeleteEntry();
@@ -76,7 +77,7 @@ export default function WatchlistScreen() {
   return (
     <View style={styles.container}>
       {/* ── Inner purple card ── */}
-      <View style={[styles.innerCard, { marginTop: insets.top + 12 }]}>
+      <View style={[styles.innerCard, { marginTop: insets.top + 12, marginBottom: cardBottomGap }]}>
 
       {/* ── Header ── */}
       <View style={styles.header}>
@@ -105,7 +106,7 @@ export default function WatchlistScreen() {
         <View style={styles.center}>
           <Image
             source={require('@/assets/images/spud-watchlist.png')}
-            style={{ width: 180, height: 180, marginBottom: 20 }}
+            style={{ width: 360, height: 360, marginBottom: 20 }}
             resizeMode="contain"
           />
           <Text style={styles.emptyTitle}>Nothing saved yet</Text>
