@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "CineLog"
+title = "Spud Web"
 version = "1.0.0"
 id = "artifacts/cinelog"
 router = "path"

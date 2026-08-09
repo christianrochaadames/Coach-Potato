@@ -183,7 +183,7 @@ export default function ProfileScreen() {
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
           <TouchableOpacity
             style={styles.backBtn}
-            onPress={() => router.back()}
+            onPress={() => router.push('/(tabs)/index' as any)}
             activeOpacity={0.7}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >

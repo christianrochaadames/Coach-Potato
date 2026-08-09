@@ -616,7 +616,7 @@ export default function HomeScreen() {
       {/* ── FAB ── */}
       <TouchableOpacity
         style={[styles.fab, { bottom: insets.bottom + 80 }]}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/log-entry'); }}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/(tabs)/search'); }}
         activeOpacity={0.85}
       >
         <Feather name="plus" size={28} color="#116149" />
@@ -637,12 +637,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
-  logo: { height: 95, width: 185 },
+  logo: { height: 120, width: 240 },
   avatarBtn: { alignItems: 'center', gap: 4 },
   avatarCircle: {
     width: 76, height: 76, borderRadius: 38,

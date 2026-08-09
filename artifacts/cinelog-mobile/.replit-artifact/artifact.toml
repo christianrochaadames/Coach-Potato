@@ -1,6 +1,6 @@
 kind = "mobile"
 previewPath = "/cinelog-mobile"
-title = "CouchPotato Mobile"
+title = "Spud Mobile"
 version = "1.0.0"
 id = "artifacts/cinelog-mobile"
 router = "path"
