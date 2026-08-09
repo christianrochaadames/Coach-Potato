@@ -1,26 +1,14 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  ScrollView,
-  Image,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  Platform, ActivityIndicator, KeyboardAvoidingView, ScrollView, Image,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
 import * as SecureStore from 'expo-secure-store';
-import { useSignUp, useSSO } from '@clerk/expo';
+import { useSignUp } from '@clerk/expo';
 import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-
-WebBrowser.maybeCompleteAuthSession();
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app'}`;
 
@@ -35,34 +23,23 @@ async function checkUsernameAvailability(username: string): Promise<boolean> {
 }
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken';
-type SSOProvider = 'google' | 'apple';
 
 export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-
   const { signUp, errors, fetchStatus } = useSignUp();
-  const { startSSOFlow } = useSSO();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [username, setUsername] = useState('');
+  const [firstName, setFirstName]       = useState('');
+  const [lastName, setLastName]         = useState('');
+  const [username, setUsername]         = useState('');
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [code, setCode] = useState('');
-  const [ssoLoading, setSsoLoading] = useState<SSOProvider | null>(null);
+  const [code, setCode]                 = useState('');
 
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const isFetching = fetchStatus === 'fetching';
-
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    void WebBrowser.warmUpAsync();
-    return () => { void WebBrowser.coolDownAsync(); };
-  }, []);
 
   const handleUsernameChange = (val: string) => {
     const cleaned = val.replace(/[^a-zA-Z0-9_]/g, '');
@@ -77,31 +54,6 @@ export default function SignUpScreen() {
       }, 500);
     }
   };
-
-  const handleSSO = useCallback(async (provider: 'oauth_google' | 'oauth_apple') => {
-    const key: SSOProvider = provider === 'oauth_google' ? 'google' : 'apple';
-    setSsoLoading(key);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const { createdSessionId, setActive } = await startSSOFlow({
-        strategy: provider,
-        redirectUrl: AuthSession.makeRedirectUri(),
-      });
-      if (createdSessionId) {
-        await setActive!({
-          session: createdSessionId,
-          navigate: async ({ decorateUrl }) => {
-            const url = decorateUrl('/');
-            if (!url.startsWith('http')) router.replace(url as any);
-          },
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSsoLoading(null);
-    }
-  }, [startSSOFlow, router]);
 
   const handleSignUp = async () => {
     if (!email || !password) return;
@@ -120,7 +72,6 @@ export default function SignUpScreen() {
     if (Object.keys(profileData).length > 0) {
       await SecureStore.setItemAsync('pendingProfile', JSON.stringify(profileData));
     }
-
     await signUp.verifications.verifyEmailCode({ code });
     if (signUp.status === 'complete') {
       await signUp.finalize({
@@ -142,11 +93,7 @@ export default function SignUpScreen() {
     return (
       <View style={[styles.verifyRoot, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.brand}>
-          <Image
-            source={require('@/assets/images/spud-logo.png')}
-            style={styles.logoImg}
-            resizeMode="contain"
-          />
+          <Image source={require('@/assets/images/spud-logo.png')} style={styles.logoImg} resizeMode="contain" />
         </View>
         <Text style={styles.verifyTitle}>Check your email</Text>
         <Text style={styles.verifySubtitle}>We sent a 6-digit code to {email}</Text>
@@ -200,16 +147,8 @@ export default function SignUpScreen() {
       >
         {/* Branding */}
         <View style={styles.brandRow}>
-          <Image
-            source={require('@/assets/images/spud-logo.png')}
-            style={styles.logoImg}
-            resizeMode="contain"
-          />
-          <Image
-            source={require('@/assets/images/spud-thumbsup.png')}
-            style={styles.mascotImg}
-            resizeMode="contain"
-          />
+          <Image source={require('@/assets/images/spud-logo.png')} style={styles.logoImg} resizeMode="contain" />
+          <Image source={require('@/assets/images/spud-thumbsup.png')} style={styles.mascotImg} resizeMode="contain" />
         </View>
 
         {/* White card */}
@@ -217,69 +156,22 @@ export default function SignUpScreen() {
           <Text style={styles.cardTitle}>Create your account</Text>
           <Text style={styles.cardSub}>Start tracking what you watch.</Text>
 
-          {/* SSO row */}
-          <View style={styles.ssoRow}>
-            <TouchableOpacity
-              style={styles.ssoBtn}
-              onPress={() => handleSSO('oauth_google')}
-              disabled={!!ssoLoading}
-              activeOpacity={0.8}
-            >
-              {ssoLoading === 'google' ? (
-                <ActivityIndicator color="#111111" />
-              ) : (
-                <>
-                  <Text style={styles.googleG}>G</Text>
-                  <Text style={styles.ssoBtnText}>Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.ssoBtn}
-              onPress={() => handleSSO('oauth_apple')}
-              disabled={!!ssoLoading}
-              activeOpacity={0.8}
-            >
-              {ssoLoading === 'apple' ? (
-                <ActivityIndicator color="#111111" />
-              ) : (
-                <>
-                  <Feather name="smartphone" size={16} color="#111111" />
-                  <Text style={styles.ssoBtnText}>Apple</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Divider */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or sign up with email</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
           {/* First + Last name */}
           <View style={styles.nameRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.fieldLabel}>First name</Text>
               <TextInput
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="First"
-                placeholderTextColor="#A09898"
-                autoCorrect={false}
-                style={styles.input}
+                value={firstName} onChangeText={setFirstName}
+                placeholder="First" placeholderTextColor="#A09898"
+                autoCorrect={false} style={styles.input}
               />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.fieldLabel}>Last name</Text>
               <TextInput
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Last"
-                placeholderTextColor="#A09898"
-                autoCorrect={false}
-                style={styles.input}
+                value={lastName} onChangeText={setLastName}
+                placeholder="Last" placeholderTextColor="#A09898"
+                autoCorrect={false} style={styles.input}
               />
             </View>
           </View>
@@ -317,13 +209,9 @@ export default function SignUpScreen() {
           {/* Email */}
           <Text style={styles.fieldLabel}>Email</Text>
           <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor="#A09898"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoCorrect={false}
+            value={email} onChangeText={setEmail}
+            placeholder="you@example.com" placeholderTextColor="#A09898"
+            autoCapitalize="none" keyboardType="email-address" autoCorrect={false}
             style={styles.input}
           />
           {errors?.fields?.emailAddress && (
@@ -334,10 +222,8 @@ export default function SignUpScreen() {
           <Text style={styles.fieldLabel}>Password</Text>
           <View style={styles.passwordRow}>
             <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Create a password"
-              placeholderTextColor="#A09898"
+              value={password} onChangeText={setPassword}
+              placeholder="Create a password" placeholderTextColor="#A09898"
               secureTextEntry={!showPassword}
               style={styles.passwordInput}
             />
@@ -401,11 +287,11 @@ const styles = StyleSheet.create({
   // Sign-up form
   container: { alignItems: 'center', paddingHorizontal: 20 },
   brandRow: {
-    flexDirection: 'row', alignItems: 'flex-end',
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', width: '100%', maxWidth: 440, marginBottom: 16,
   },
   logoImg: { height: 90, width: 160 },
-  mascotImg: { height: 110, width: 90 },
+  mascotImg: { height: 90, width: 75 },
   brand: { alignItems: 'center', marginBottom: 16 },
 
   card: {
@@ -414,19 +300,6 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 22, fontFamily: 'Manrope_700Bold', color: '#111111' },
   cardSub: { fontSize: 14, fontFamily: 'Manrope_400Regular', color: '#7E7A73', marginBottom: 4 },
-
-  ssoRow: { flexDirection: 'row', gap: 10 },
-  ssoBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: '#D1D5DB',
-    borderRadius: 12, paddingVertical: 12, gap: 6,
-  },
-  googleG: { fontSize: 16, fontWeight: '700', color: '#4285F4' },
-  ssoBtnText: { fontSize: 14, fontFamily: 'Manrope_600SemiBold', color: '#111111' },
-
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2D9CE' },
-  dividerText: { fontSize: 12, fontFamily: 'Manrope_400Regular', color: '#7E7A73' },
 
   nameRow: { flexDirection: 'row', gap: 10 },
   fieldLabel: { fontSize: 13, fontFamily: 'Manrope_600SemiBold', color: '#111111', marginBottom: 6 },

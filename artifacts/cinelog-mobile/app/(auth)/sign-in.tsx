@@ -1,32 +1,24 @@
-import { useCallback, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Image, KeyboardAvoidingView, Platform, ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { useState } from 'react';
-import { useSignIn, useSSO } from '@clerk/expo';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import { useSignIn } from '@clerk/expo';
 import { useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-WebBrowser.maybeCompleteAuthSession();
-
 export default function SignInScreen() {
   const { signIn, errors, fetchStatus } = useSignIn();
-  const { startSSOFlow } = useSSO();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
-  const [ssoLoading, setSsoLoading] = useState<'google' | 'apple' | null>(null);
 
   const isFetching = fetchStatus === 'fetching';
 
-  // Hide splash when the sign-in screen mounts (signed-out path)
   useEffect(() => { SplashScreen.hideAsync().catch(() => {}); }, []);
 
   const handleSignIn = async () => {
@@ -42,30 +34,6 @@ export default function SignInScreen() {
       });
     }
   };
-
-  const handleSSO = useCallback(async (provider: 'oauth_google' | 'oauth_apple') => {
-    const key = provider === 'oauth_google' ? 'google' : 'apple';
-    setSsoLoading(key);
-    try {
-      const { createdSessionId, setActive } = await startSSOFlow({
-        strategy: provider,
-        redirectUrl: AuthSession.makeRedirectUri(),
-      });
-      if (createdSessionId) {
-        await setActive!({
-          session: createdSessionId,
-          navigate: async ({ decorateUrl }) => {
-            const url = decorateUrl('/');
-            if (!url.startsWith('http')) router.replace(url as any);
-          },
-        });
-      }
-    } catch {
-      // ignore
-    } finally {
-      setSsoLoading(null);
-    }
-  }, [startSSOFlow, router]);
 
   const errorMsg =
     errors?.fields?.identifier?.message ??
@@ -144,7 +112,7 @@ export default function SignInScreen() {
               </View>
             ) : null}
 
-            {/* Clerk captcha anchor (required for bot protection) */}
+            {/* Clerk captcha anchor */}
             <View nativeID="clerk-captcha" />
 
             {/* Primary button */}
@@ -154,43 +122,10 @@ export default function SignInScreen() {
               disabled={isFetching || !email || !password}
               activeOpacity={0.85}
             >
-              {isFetching && ssoLoading === null ? (
+              {isFetching ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.btnPrimaryText}>Sign in</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* OAuth buttons */}
-            <TouchableOpacity
-              style={styles.oauthBtn}
-              onPress={() => handleSSO('oauth_google')}
-              disabled={!!ssoLoading}
-              activeOpacity={0.8}
-            >
-              {ssoLoading === 'google' ? (
-                <ActivityIndicator color="#111111" />
-              ) : (
-                <Text style={styles.oauthBtnText}>Continue with Google</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.oauthBtn}
-              onPress={() => handleSSO('oauth_apple')}
-              disabled={!!ssoLoading}
-              activeOpacity={0.8}
-            >
-              {ssoLoading === 'apple' ? (
-                <ActivityIndicator color="#111111" />
-              ) : (
-                <Text style={styles.oauthBtnText}>Continue with Apple</Text>
               )}
             </TouchableOpacity>
 
@@ -215,12 +150,12 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: { flexGrow: 1, alignItems: 'center', paddingHorizontal: 20 },
   brandRow: {
-    flexDirection: 'row', alignItems: 'flex-end',
+    flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between', width: '100%',
     maxWidth: 440, marginBottom: 20,
   },
   logoImg: { height: 90, width: 160 },
-  mascotImg: { height: 120, width: 100 },
+  mascotImg: { height: 90, width: 75 },
 
   card: {
     width: '100%', maxWidth: 440,
@@ -254,16 +189,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14, alignItems: 'center', marginBottom: 16, marginTop: 4,
   },
   btnPrimaryText: { fontSize: 16, fontFamily: 'Manrope_700Bold', color: '#ffffff' },
-
-  divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
-  dividerLine: { flex: 1, height: 1, backgroundColor: '#E2D9CE' },
-  dividerText: { fontSize: 12, fontFamily: 'Manrope_400Regular', color: '#7E7A73' },
-
-  oauthBtn: {
-    borderWidth: 1.5, borderColor: '#D1D5DB', borderRadius: 24,
-    paddingVertical: 12, alignItems: 'center', marginBottom: 10,
-  },
-  oauthBtnText: { fontSize: 14, fontFamily: 'Manrope_600SemiBold', color: '#111111' },
 
   switchRow: { alignItems: 'center', marginTop: 8 },
   switchText: { fontSize: 13, fontFamily: 'Manrope_400Regular', color: '#7E7A73' },
