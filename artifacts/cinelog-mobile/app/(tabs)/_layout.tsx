@@ -9,6 +9,30 @@ import * as SplashScreen from 'expo-splash-screen';
 
 const COUCH_BLUE = '#9BD6FF';
 
+// ── Circular icon bubble, matching the web nav pill ──────────────────────────
+// When focused: fills a 46 px circle with COUCH_BLUE and darkens the icon.
+// When unfocused: transparent background, muted icon colour.
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
+  return (
+    <View
+      style={{
+        width: 46,
+        height: 46,
+        borderRadius: 23,
+        backgroundColor: focused ? COUCH_BLUE : 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Feather
+        name={name as any}
+        size={22}
+        color={focused ? '#111111' : '#9E9890'}
+      />
+    </View>
+  );
+}
+
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const isIOS = Platform.OS === 'ios';
@@ -16,23 +40,19 @@ export default function TabLayout() {
 
   const { isSignedIn, isLoaded } = useAuth();
 
-  // Safety valve: always hide the splash after 8 seconds no matter what,
-  // preventing an iOS watchdog kill if Clerk is slow or unreachable.
+  // Safety valve: always hide the splash after 8 seconds no matter what.
   useEffect(() => {
     const timer = setTimeout(() => void SplashScreen.hideAsync(), 8000);
     return () => clearTimeout(timer);
   }, []);
 
   // Hide splash for signed-in users once Clerk confirms the session.
-  // Signed-out users: sign-in screen calls hideAsync after it paints,
-  // so the splash stays up until sign-in is actually visible.
   useEffect(() => {
     if (isLoaded && isSignedIn) {
       void SplashScreen.hideAsync();
     }
   }, [isLoaded, isSignedIn]);
 
-  // Hold blank (behind the splash) until Clerk has resolved auth state.
   if (!isLoaded) return null;
 
   if (!isSignedIn) {
@@ -45,31 +65,38 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        // Labels hidden — icons only
         tabBarShowLabel: false,
-        tabBarActiveTintColor: '#111111',
-        tabBarInactiveTintColor: '#9E9890',
-        tabBarActiveBackgroundColor: COUCH_BLUE,
+        // No system-managed active colouring — TabIcon handles it entirely
+        tabBarActiveTintColor: 'transparent',
+        tabBarInactiveTintColor: 'transparent',
+        // !! Remove tabBarActiveBackgroundColor — that's what was making the
+        //    active slot render as a wide blue rectangle instead of a circle.
         tabBarStyle: {
           position: 'absolute',
           bottom: bottomOffset,
-          left: 20,
-          right: 20,
+          // Centered pill: fixed width so it doesn't stretch edge-to-edge
+          alignSelf: 'center',
+          left: 40,
+          right: 40,
           height: 62,
           borderRadius: 40,
           borderTopWidth: 0,
+          // iOS uses BlurView for the pill fill; Android uses an opaque bg
           backgroundColor: isIOS ? 'transparent' : 'rgba(255, 243, 232, 0.96)',
           borderWidth: 1.5,
           borderColor: 'rgba(255,255,255,0.6)',
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.10,
-          shadowRadius: 12,
+          shadowOpacity: 0.12,
+          shadowRadius: 14,
           elevation: 8,
         },
+        // Each item is just a centred slot — no extra margin/radius that fights
+        // the circular bubble rendered inside TabIcon
         tabBarItemStyle: {
-          borderRadius: 30,
-          marginVertical: 8,
-          marginHorizontal: 4,
+          alignItems: 'center',
+          justifyContent: 'center',
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -86,31 +113,31 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="home" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="search" size={22} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="search" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="watchlist"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="bookmark" size={22} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="bookmark" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="stats"
         options={{
-          tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="bar-chart-2" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          // Profile is accessed via the avatar button on the Home tab, not the tab bar
+          // Profile is accessed via the avatar button on Home, not the tab bar
           tabBarButton: () => null,
         }}
       />
