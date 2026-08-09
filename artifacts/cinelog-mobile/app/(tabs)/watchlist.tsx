@@ -75,8 +75,11 @@ export default function WatchlistScreen() {
 
   return (
     <View style={styles.container}>
+      {/* ── Inner purple card ── */}
+      <View style={[styles.innerCard, { marginTop: insets.top + 12 }]}>
+
       {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={styles.header}>
         <View>
           <Text style={styles.title}>Watchlist</Text>
           <Text style={styles.subtitle}>
@@ -202,6 +205,8 @@ export default function WatchlistScreen() {
         />
       )}
 
+      </View>{/* end innerCard */}
+
       {/* ── Mark as Watched modal ── */}
       {watchedModal && (
         <Modal transparent visible animationType="slide" onRequestClose={() => setWatchedModal(null)}>
@@ -265,11 +270,18 @@ export default function WatchlistScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#E4DFEF' },
+  innerCard: {
+    flex: 1,
+    backgroundColor: '#C5B8FF',
+    borderRadius: 24,
+    marginHorizontal: 16,
+    overflow: 'hidden',
+  },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 20, paddingBottom: 16,
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 16,
   },
-  title: { fontSize: 26, fontFamily: 'Manrope_700Bold', color: '#111111' },
+  title: { fontSize: 26, fontFamily: 'Manrope_700Bold', color: '#3B3275' },
   subtitle: { fontSize: 13, fontFamily: 'Manrope_400Regular', color: '#6B46C1', marginTop: 2 },
   addBtn: {
     width: 40, height: 40, borderRadius: 20,

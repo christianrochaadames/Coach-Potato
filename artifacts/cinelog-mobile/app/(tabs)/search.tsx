@@ -379,110 +379,115 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.root}>
-      {/* ── Header ── */}
-      <View style={[styles.headerArea, { paddingTop: topPad + 8 }]}>
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Search</Text>
+      {/* ── Inner card (amber border shows through on all sides) ── */}
+      <View style={[styles.innerCard, { marginTop: insets.top + 12 }]}>
+
+        {/* ── Header ── */}
+        <View style={styles.headerArea}>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle}>Search</Text>
+          </View>
+          <View style={styles.searchBar}>
+            <Feather name="search" size={16} color="#7E7A73" />
+            <TextInput
+              style={styles.searchInput}
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Search Movies & TV Shows…"
+              placeholderTextColor="#A09898"
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+              testID="search-input"
+            />
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#7E7A73" />
+            ) : query.length > 0 ? (
+              <TouchableOpacity onPress={() => setQuery('')}>
+                <Feather name="x-circle" size={16} color="#7E7A73" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
-        <View style={styles.searchBar}>
-          <Feather name="search" size={16} color="#7E7A73" />
-          <TextInput
-            style={styles.searchInput}
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search Movies & TV Shows…"
-            placeholderTextColor="#A09898"
-            returnKeyType="search"
-            autoCapitalize="none"
-            autoCorrect={false}
-            testID="search-input"
+
+        {/* ── Content ── */}
+        {isSearching ? (
+          /* Search results */
+          <FlatList
+            data={results}
+            keyExtractor={item => `${item.tmdbId}`}
+            renderItem={renderItem}
+            contentContainerStyle={[styles.listContent, { paddingBottom: bottomPad }]}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={
+              <Text style={styles.sectionLabel}>RESULTS</Text>
+            }
+            ListEmptyComponent={
+              !searchLoading ? (
+                <View style={styles.emptyState}>
+                  <Feather name="search" size={40} color="#D4C9BC" />
+                  <Text style={styles.emptyTitle}>No results</Text>
+                  <Text style={styles.emptySubtitle}>Try a different title</Text>
+                </View>
+              ) : null
+            }
           />
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#7E7A73" />
-          ) : query.length > 0 ? (
-            <TouchableOpacity onPress={() => setQuery('')}>
-              <Feather name="x-circle" size={16} color="#7E7A73" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-
-      {/* ── Content ── */}
-      {isSearching ? (
-        /* Search results */
-        <FlatList
-          data={results}
-          keyExtractor={item => `${item.tmdbId}`}
-          renderItem={renderItem}
-          contentContainerStyle={[styles.listContent, { paddingBottom: bottomPad }]}
-          showsVerticalScrollIndicator={false}
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={
-            <Text style={styles.sectionLabel}>RESULTS</Text>
-          }
-          ListEmptyComponent={
-            !searchLoading ? (
+        ) : (
+          /* Popular sections */
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={{ paddingBottom: bottomPad }}
+          >
+            {popularLoading && movies.length === 0 ? (
               <View style={styles.emptyState}>
-                <Feather name="search" size={40} color="#D4C9BC" />
-                <Text style={styles.emptyTitle}>No results</Text>
-                <Text style={styles.emptySubtitle}>Try a different title</Text>
+                <ActivityIndicator size="large" color="#116149" />
               </View>
-            ) : null
-          }
-        />
-      ) : (
-        /* Popular sections */
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: bottomPad }}
-        >
-          {popularLoading && movies.length === 0 ? (
-            <View style={styles.emptyState}>
-              <ActivityIndicator size="large" color="#116149" />
-            </View>
-          ) : (
-            <>
-              {/* Popular TV Shows */}
-              <View style={styles.sectionHeaderRow}>
-                <Text style={[styles.sectionLabel, { paddingHorizontal: 0, paddingTop: 0 }]}>POPULAR TV SHOWS</Text>
-                <TouchableOpacity style={styles.refreshBtn} onPress={refresh} activeOpacity={0.8}>
-                  <Feather name="refresh-cw" size={13} color="#116149" />
-                  <Text style={styles.refreshText}>Refresh</Text>
-                </TouchableOpacity>
-              </View>
-              {shows.map(item => (
-                <View key={item.tmdbId}>
-                  <ResultCard item={item} onPress={handleSelect} inCollection={collectionTmdbIds.has(item.tmdbId)} />
-                  {savedId === item.tmdbId && (
-                    <View style={styles.savedBanner}>
-                      <Feather name="check" size={12} color="#ffffff" />
-                      <Text style={styles.savedText}>Added to collection</Text>
-                    </View>
-                  )}
+            ) : (
+              <>
+                {/* Popular TV Shows */}
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={[styles.sectionLabel, { paddingHorizontal: 0, paddingTop: 0 }]}>POPULAR TV SHOWS</Text>
+                  <TouchableOpacity style={styles.refreshBtn} onPress={refresh} activeOpacity={0.8}>
+                    <Feather name="refresh-cw" size={13} color="#116149" />
+                    <Text style={styles.refreshText}>Refresh</Text>
+                  </TouchableOpacity>
                 </View>
-              ))}
+                {shows.map(item => (
+                  <View key={item.tmdbId}>
+                    <ResultCard item={item} onPress={handleSelect} inCollection={collectionTmdbIds.has(item.tmdbId)} />
+                    {savedId === item.tmdbId && (
+                      <View style={styles.savedBanner}>
+                        <Feather name="check" size={12} color="#ffffff" />
+                        <Text style={styles.savedText}>Added to collection</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
 
-              {/* Popular Movies */}
-              <Text style={[styles.sectionLabel, { marginTop: 8 }]}>POPULAR MOVIES</Text>
-              {movies.map(item => (
-                <View key={item.tmdbId}>
-                  <ResultCard item={item} onPress={handleSelect} inCollection={collectionTmdbIds.has(item.tmdbId)} />
-                  {savedId === item.tmdbId && (
-                    <View style={styles.savedBanner}>
-                      <Feather name="check" size={12} color="#ffffff" />
-                      <Text style={styles.savedText}>Added to collection</Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-            </>
-          )}
-        </ScrollView>
-      )}
+                {/* Popular Movies */}
+                <Text style={[styles.sectionLabel, { marginTop: 8 }]}>POPULAR MOVIES</Text>
+                {movies.map(item => (
+                  <View key={item.tmdbId}>
+                    <ResultCard item={item} onPress={handleSelect} inCollection={collectionTmdbIds.has(item.tmdbId)} />
+                    {savedId === item.tmdbId && (
+                      <View style={styles.savedBanner}>
+                        <Feather name="check" size={12} color="#ffffff" />
+                        <Text style={styles.savedText}>Added to collection</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </>
+            )}
+          </ScrollView>
+        )}
 
-      {/* Quick-log sheet */}
+      </View>{/* end innerCard */}
+
+      {/* Quick-log sheet — outside card so it can overlay fully */}
       <QuickLogSheet
         item={selectedItem}
         visible={sheetVisible}
@@ -497,11 +502,18 @@ export default function SearchScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFF3E8' },
+  root: { flex: 1, backgroundColor: '#FFBC4D' },
+
+  innerCard: {
+    flex: 1,
+    backgroundColor: '#FFF3E8',
+    borderRadius: 24,
+    marginHorizontal: 16,
+    overflow: 'hidden',
+  },
 
   headerArea: {
-    paddingHorizontal: 20, paddingBottom: 12,
-    backgroundColor: '#FFBC4D',
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12,
   },
   headerRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

@@ -409,7 +409,7 @@ export default function StatsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#4A1020' }]}>
+    <View style={[styles.container, { backgroundColor: '#EFE4D2' }]}>
 
       {/* ── Off-screen share card (captured by react-native-view-shot) ── */}
       <View
@@ -428,8 +428,11 @@ export default function StatsScreen() {
         />
       </View>
 
+      {/* ── Inner dark-maroon card ── */}
+      <View style={[styles.innerCard, { marginTop: topPad + 12 }]}>
+
       {/* ── Header ── */}
-      <View style={[styles.header, { paddingTop: topPad + 16 }]}>
+      <View style={styles.header}>
         <View style={{ flex: 1, marginRight: 12 }}>
           <Text style={styles.title}>Your Stats</Text>
           <Text style={styles.subtitle}>
@@ -671,12 +674,20 @@ export default function StatsScreen() {
           </>
         )}
       </ScrollView>
+      </View>{/* end innerCard */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  innerCard: {
+    flex: 1,
+    backgroundColor: '#4A1020',
+    borderRadius: 24,
+    marginHorizontal: 16,
+    overflow: 'hidden',
+  },
 
   // Off-screen card container (captured by react-native-view-shot)
   offScreen: {
@@ -688,6 +699,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'flex-start',

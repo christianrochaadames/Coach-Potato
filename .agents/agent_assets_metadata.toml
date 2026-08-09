@@ -1,37 +1,3 @@
 uploads = []
 generated = []
-
-[[outputs]]
-id = "6Y6tU1o-lzEhpLz6C50cC"
-uri = "file://screenshots/screen-home.jpg"
-type = "image"
-title = "Screenshot 1 — Landing"
-description = "Spud onboarding screen"
-
-[[outputs]]
-id = "LsC2lJh0APK-bv77yJtZj"
-uri = "file://screenshots/app-home.jpg"
-type = "image"
-title = "Screenshot 2 — My Log"
-description = "Home screen with recently watched"
-
-[[outputs]]
-id = "C3R7XyyEzmJV4OnMGneIp"
-uri = "file://screenshots/app-search.jpg"
-type = "image"
-title = "Screenshot 3 — Search"
-description = "Search with results and RT scores"
-
-[[outputs]]
-id = "0dggNacxp1CZsrs-UR-EU"
-uri = "file://screenshots/app-stats.jpg"
-type = "image"
-title = "Screenshot 4 — Stats"
-description = "Stats screen with genres and platforms"
-
-[[outputs]]
-id = "m34OsMtJlr1vql1CZi_4M"
-uri = "file://screenshots/app-watchlist.jpg"
-type = "image"
-title = "Screenshot 5 — Watchlist"
-description = "Watchlist with titles to watch"
+outputs = []
