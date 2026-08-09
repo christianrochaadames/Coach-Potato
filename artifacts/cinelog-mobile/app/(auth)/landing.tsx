@@ -26,10 +26,6 @@ export default function LandingScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        {/* Badge */}
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>Your couch sidekick.</Text>
-        </View>
       </View>
 
       {/* ── Hero area: copy left, mascot bottom-right ── */}
@@ -65,14 +61,14 @@ export default function LandingScreen() {
           onPress={() => router.push('/(auth)/sign-up')}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnPrimaryText}>Get started free</Text>
+          <Text style={styles.btnPrimaryText}>New to Spud? Sign Up</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.btnSecondary}
           onPress={() => router.push('/(auth)/sign-in')}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnSecondaryText}>Sign in</Text>
+          <Text style={styles.btnSecondaryText}>Existing User? Sign In</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -89,22 +85,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
 
-  // Logo + badge
+  // Logo
   logoWrap: { marginTop: 16, alignItems: 'flex-start' },
-  logo: { height: 100, width: 200 },
-  badge: {
-    marginTop: 8,
-    backgroundColor: '#FF4BAE',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    alignSelf: 'flex-start',
-  },
-  badgeText: {
-    fontSize: 13,
-    fontFamily: 'Manrope_700Bold',
-    color: '#ffffff',
-  },
+  logo: { height: 130, width: 260 },
 
   // Hero
   hero: {
@@ -114,18 +97,18 @@ const styles = StyleSheet.create({
   },
   copyStack: { gap: 18, maxWidth: '65%', marginTop: 12 },
   copy: {
-    fontSize: 20,
+    fontSize: 26,
     fontFamily: 'Manrope_400Regular',
     color: TEXT,
-    lineHeight: 28,
+    lineHeight: 36,
   },
   bold: { fontFamily: 'Manrope_700Bold', color: TEXT },
   mascot: {
     position: 'absolute',
     right: -8,
     bottom: 0,
-    width: 160,
-    height: 200,
+    width: 192,
+    height: 240,
   },
 
   // Buttons
