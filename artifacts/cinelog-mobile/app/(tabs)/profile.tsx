@@ -153,12 +153,8 @@ export default function ProfileScreen() {
     const asset = result.assets[0];
     const dataUrl = `data:image/jpeg;base64,${asset.base64}`;
     await saveField({ avatarUrl: dataUrl, avatarId: null });
-    // Also sync to Clerk profile photo
-    try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
-      await user?.setProfileImage({ file });
-    } catch {}
+    // Note: Clerk setProfileImage / File API not available in React Native —
+    // the profile photo is stored in our own DB via saveField above.
   };
 
   // ── Sign out ──────────────────────────────────────────────────────────────

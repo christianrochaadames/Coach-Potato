@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
@@ -27,6 +27,15 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 const domain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
 setBaseUrl(`https://${domain}`);
 
+// ── Stable module-level token slot ──────────────────────────────────────────
+// Set up the getter ONCE at module load time so it is available before any
+// component renders or TanStack Query fires its first fetch.  AuthTokenSync
+// updates _clerkGetToken at each render so the getter always delegates to the
+// latest Clerk session.
+let _clerkGetToken: (() => Promise<string | null>) | null = null;
+setAuthTokenGetter(() => (_clerkGetToken ? _clerkGetToken() : null));
+setRawFetchTokenGetter(() => (_clerkGetToken ? _clerkGetToken() : null));
+
 // ── Clerk publishable key ────────────────────────────────────────────────────
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
@@ -46,12 +55,16 @@ SplashScreen.preventAutoHideAsync();
 function AuthTokenSync() {
   const { getToken, isSignedIn } = useAuth();
 
+  // Update the module-level slot at RENDER TIME (not just in an effect) so
+  // the token is available before TanStack Query fires its first fetch.
+  _clerkGetToken = () => getToken();
+
   useEffect(() => {
-    setAuthTokenGetter(() => getToken());
-    setRawFetchTokenGetter(() => getToken());
+    // Keep the slot current whenever getToken changes (e.g. token refresh).
+    _clerkGetToken = () => getToken();
     return () => {
-      setAuthTokenGetter(null);
-      setRawFetchTokenGetter(null);
+      // On unmount clear the slot so stale calls don't succeed after logout.
+      _clerkGetToken = null;
     };
   }, [getToken]);
 

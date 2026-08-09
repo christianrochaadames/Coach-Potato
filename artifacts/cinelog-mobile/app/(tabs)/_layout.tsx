@@ -5,7 +5,6 @@ import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@clerk/expo';
-import { setAuthTokenGetter } from '@workspace/api-client-react';
 import * as SplashScreen from 'expo-splash-screen';
 
 const COUCH_BLUE = '#9BD6FF';
@@ -15,11 +14,7 @@ export default function TabLayout() {
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
 
-  const { isSignedIn, isLoaded, getToken } = useAuth();
-
-  useEffect(() => {
-    setAuthTokenGetter(() => getToken());
-  }, [getToken]);
+  const { isSignedIn, isLoaded } = useAuth();
 
   // Safety valve: always hide the splash after 8 seconds no matter what,
   // preventing an iOS watchdog kill if Clerk is slow or unreachable.
