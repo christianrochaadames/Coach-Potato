@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet,
   Platform, ActivityIndicator, KeyboardAvoidingView, ScrollView, Image,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -9,6 +9,7 @@ import { Link, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { ControlledPlaceholderInput as TextInput } from '@/components/ControlledPlaceholderInput';
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app'}`;
 
@@ -37,6 +38,9 @@ export default function SignUpScreen() {
   const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [code, setCode]                 = useState('');
+  const [formErrors, setFormErrors]     = useState<{
+    firstName?: string; lastName?: string; username?: string;
+  }>({});
 
   const usernameTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFetching = fetchStatus === 'fetching';
@@ -56,8 +60,14 @@ export default function SignUpScreen() {
   };
 
   const handleSignUp = async () => {
-    if (!email || !password) return;
-    if (usernameStatus === 'taken') return;
+    const nextErrors: typeof formErrors = {};
+    if (!firstName.trim()) nextErrors.firstName = 'First name is required.';
+    if (!lastName.trim()) nextErrors.lastName = 'Last name is required.';
+    if (!username.trim()) nextErrors.username = 'Username is required.';
+    else if (username.trim().length < 2) nextErrors.username = 'Username must be at least 2 characters.';
+    if (usernameStatus === 'taken') nextErrors.username = 'Choose an available username.';
+    setFormErrors(nextErrors);
+    if (!email || !password || Object.keys(nextErrors).length > 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { error } = await signUp.password({ emailAddress: email, password });
     if (error) return;
@@ -76,7 +86,7 @@ export default function SignUpScreen() {
     if (signUp.status === 'complete') {
       await signUp.finalize({
         navigate: ({ decorateUrl }) => {
-          const url = decorateUrl('/');
+          const url = decorateUrl('/onboarding');
           if (!url.startsWith('http')) router.replace(url as any);
         },
       });
@@ -93,7 +103,7 @@ export default function SignUpScreen() {
     return (
       <View style={[styles.verifyRoot, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.brand}>
-          <Image source={require('@/assets/images/spud-logo.png')} style={styles.logoImg} resizeMode="contain" />
+          <Image source={require('@/assets/images/spud-logo-verification.png')} style={styles.verifyLogo} resizeMode="contain" />
         </View>
         <Text style={styles.verifyTitle}>Check your email</Text>
         <Text style={styles.verifySubtitle}>We sent a 6-digit code to {email}</Text>
@@ -102,6 +112,12 @@ export default function SignUpScreen() {
           onChangeText={setCode}
           placeholder="000000"
           placeholderTextColor="#A09898"
+          placeholderStyle={{
+            fontSize: 28,
+            fontFamily: 'Manrope_700Bold',
+            textAlign: 'center',
+            letterSpacing: 8,
+          }}
           keyboardType="numeric"
           style={styles.codeInput}
           maxLength={6}
@@ -111,7 +127,7 @@ export default function SignUpScreen() {
           <Text style={styles.error}>{errors.fields.code.message}</Text>
         )}
         <TouchableOpacity
-          style={[styles.primaryBtn, { opacity: code.length === 6 ? 1 : 0.5 }]}
+          style={styles.primaryBtn}
           onPress={handleVerify}
           disabled={isFetching || code.length !== 6}
           activeOpacity={0.8}
@@ -148,7 +164,7 @@ export default function SignUpScreen() {
         {/* Branding */}
         <View style={styles.brandRow}>
           <Image source={require('@/assets/images/spud-logo.png')} style={styles.logoImg} resizeMode="contain" />
-          <Image source={require('@/assets/images/spud-thumbsup.png')} style={styles.mascotImg} resizeMode="contain" />
+          <Image source={require('@/assets/images/spud-signup-new.png')} style={styles.mascotImg} resizeMode="contain" />
         </View>
 
         {/* White card */}
@@ -162,19 +178,22 @@ export default function SignUpScreen() {
               <Text style={styles.fieldLabel}>First name</Text>
               <TextInput
                 value={firstName} onChangeText={setFirstName}
-                placeholder="First" placeholderTextColor="#A09898"
+                placeholder="Couch" placeholderTextColor="#A09898"
                 autoCorrect={false} style={styles.input}
               />
+              {formErrors.firstName ? <Text style={styles.error}>{formErrors.firstName}</Text> : null}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.fieldLabel}>Last name</Text>
               <TextInput
                 value={lastName} onChangeText={setLastName}
-                placeholder="Last" placeholderTextColor="#A09898"
+                placeholder="Potato" placeholderTextColor="#A09898"
                 autoCorrect={false} style={styles.input}
               />
+              {formErrors.lastName ? <Text style={styles.error}>{formErrors.lastName}</Text> : null}
             </View>
           </View>
+          {formErrors.username ? <Text style={styles.error}>{formErrors.username}</Text> : null}
 
           {/* Username */}
           <Text style={styles.fieldLabel}>Username</Text>
@@ -182,7 +201,7 @@ export default function SignUpScreen() {
             <TextInput
               value={username}
               onChangeText={handleUsernameChange}
-              placeholder="spud_fan"
+              placeholder="spud_couchpotato"
               placeholderTextColor="#A09898"
               autoCapitalize="none"
               autoCorrect={false}
@@ -210,7 +229,7 @@ export default function SignUpScreen() {
           <Text style={styles.fieldLabel}>Email</Text>
           <TextInput
             value={email} onChangeText={setEmail}
-            placeholder="you@example.com" placeholderTextColor="#A09898"
+            placeholder="spud@couchpotato.com" placeholderTextColor="#A09898"
             autoCapitalize="none" keyboardType="email-address" autoCorrect={false}
             style={styles.input}
           />
@@ -223,8 +242,10 @@ export default function SignUpScreen() {
           <View style={styles.passwordRow}>
             <TextInput
               value={password} onChangeText={setPassword}
-              placeholder="Create a password" placeholderTextColor="#A09898"
+              placeholder="OneMoreEpisode!" placeholderTextColor="#A09898"
               secureTextEntry={!showPassword}
+              containerStyle={{ flex: 1 }}
+              placeholderStyle={{ paddingHorizontal: 0 }}
               style={styles.passwordInput}
             />
             <TouchableOpacity onPress={() => setShowPassword(v => !v)} activeOpacity={0.7}>
@@ -239,10 +260,7 @@ export default function SignUpScreen() {
           <View nativeID="clerk-captcha" />
 
           <TouchableOpacity
-            style={[
-              styles.primaryBtn,
-              { opacity: (!email || !password || isFetching || usernameStatus === 'taken') ? 0.5 : 1 },
-            ]}
+            style={styles.primaryBtn}
             onPress={handleSignUp}
             disabled={!email || !password || isFetching || usernameStatus === 'taken'}
             activeOpacity={0.8}
@@ -274,6 +292,7 @@ const styles = StyleSheet.create({
     flex: 1, backgroundColor: '#C5B8FF',
     paddingHorizontal: 24, gap: 12,
   },
+  verifyLogo: { width: 200, height: 110, alignSelf: 'center' },
   verifyTitle: { fontSize: 24, fontFamily: 'Manrope_700Bold', color: '#111111', textAlign: 'center' },
   verifySubtitle: { fontSize: 14, fontFamily: 'Manrope_400Regular', color: '#111111', textAlign: 'center', opacity: 0.7 },
   codeInput: {
@@ -291,7 +310,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', width: '100%', maxWidth: 440, marginBottom: 16,
   },
   logoImg: { height: 90, width: 160 },
-  mascotImg: { height: 90, width: 75 },
+  // The new illustration has 10 px of transparent space on the right when
+  // fitted into this slot, so its visible edge stays flush with the card.
+  mascotImg: { height: 110, width: 100, transform: [{ translateX: 10 }] },
   brand: { alignItems: 'center', marginBottom: 16 },
 
   card: {
@@ -306,17 +327,17 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#FFF3E8', borderRadius: 12, borderWidth: 1.5, borderColor: '#E2D9CE',
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#111111', marginBottom: 10,
+    fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#111111', letterSpacing: 0, marginBottom: 10,
   },
   passwordRow: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: '#FFF3E8', borderRadius: 12, borderWidth: 1.5, borderColor: '#E2D9CE',
     paddingHorizontal: 14, paddingVertical: 12, gap: 8, marginBottom: 10,
   },
-  passwordInput: { flex: 1, fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#111111', padding: 0 },
+  passwordInput: { flex: 1, fontSize: 15, fontFamily: 'Manrope_400Regular', color: '#111111', padding: 0, letterSpacing: 0 },
 
   primaryBtn: {
-    backgroundColor: '#5B50D0', borderRadius: 24,
+    backgroundColor: '#5950C7', borderRadius: 24,
     paddingVertical: 14, alignItems: 'center', marginTop: 4,
   },
   primaryBtnText: { fontSize: 16, fontFamily: 'Manrope_700Bold', color: '#ffffff' },

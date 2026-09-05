@@ -8,13 +8,16 @@ router = "path"
 [[services]]
 name = "Expo"
 paths = [ "/cinelog-mobile" ]
-localPort = 8082
+localPort = 8099
 
 [services.development]
 run = "pnpm --filter @workspace/cinelog-mobile run dev"
 
+[services.development.health.startup]
+path = "/status"
+
 [services.env]
-PORT = "8082"
+PORT = "8099"
 BASE_PATH = "/cinelog-mobile"
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY = "$CLERK_PUBLISHABLE_KEY"
 EXPO_PUBLIC_DOMAIN = "$REPLIT_DEV_DOMAIN"

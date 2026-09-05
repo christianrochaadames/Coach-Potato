@@ -45,7 +45,70 @@ function mapRec(item: Record<string, unknown>, mediaType: "movie" | "tv") {
 }
 
 type MappedRec = ReturnType<typeof mapRec>;
-type TaggedRec = MappedRec & { recencyRank: number; seedRating: number | null };
+type TaggedRec = MappedRec & {
+  recencyRank: number;
+  seedRating: number | null;
+  seedStatus: string;
+};
+
+const MAINSTREAM_POOL_TTL = 30 * 60 * 1000;
+const MAINSTREAM_POOL_PAGES = 15;
+const mainstreamPoolCache = new Map<string, { expiresAt: number; items: MappedRec[] }>();
+
+async function getMainstreamDiscoveryPool(apiKey: string, currentYear: number): Promise<MappedRec[]> {
+  const cacheKey = `english-mainstream-${currentYear}`;
+  const cached = mainstreamPoolCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.items;
+
+  const startYear = currentYear - 10;
+  const mediaTypes: Array<"movie" | "tv"> = ["movie", "tv"];
+  const requests = mediaTypes.flatMap(mediaType =>
+    Array.from({ length: MAINSTREAM_POOL_PAGES }, (_, index) => index + 1).map(async page => {
+      const params = new URLSearchParams({
+        api_key: apiKey,
+        language: "en-US",
+        sort_by: "popularity.desc",
+        include_adult: "false",
+        with_original_language: "en",
+        without_genres: "16",
+        "vote_count.gte": "200",
+        "vote_average.gte": "5",
+        page: String(page),
+      });
+      params.set(
+        mediaType === "movie" ? "primary_release_date.gte" : "first_air_date.gte",
+        `${startYear}-01-01`,
+      );
+      try {
+        const response = await fetch(`${TMDB_BASE}/discover/${mediaType}?${params.toString()}`);
+        if (!response.ok) return [] as MappedRec[];
+        const payload = await response.json() as { results?: Record<string, unknown>[] };
+        return (payload.results ?? [])
+          .map(item => mapRec(item, mediaType))
+          .filter(item =>
+            Boolean(item.posterUrl)
+            && item.originalLanguage === "en"
+            && !item.genres.includes("Animation")
+            && item.voteCount >= 200
+            && item.popularity >= 10,
+          );
+      } catch {
+        return [] as MappedRec[];
+      }
+    }),
+  );
+
+  const seen = new Set<number>();
+  const items = (await Promise.all(requests))
+    .flat()
+    .filter(item => {
+      if (seen.has(item.tmdbId)) return false;
+      seen.add(item.tmdbId);
+      return true;
+    });
+  mainstreamPoolCache.set(cacheKey, { expiresAt: Date.now() + MAINSTREAM_POOL_TTL, items });
+  return items;
+}
 
 // DELETE /api/recommendations/history — clear the current user's seen history so they get fresh picks
 router.delete("/recommendations/history", requireAuth, async (req, res) => {
@@ -102,25 +165,29 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       tmdb_id: number;
       type: string;
       rating: number | null;
+      status: string;
     }>(
       `WITH deduped AS (
          SELECT
-           tmdb_id, type, rating,
+            tmdb_id, type, rating, status,
            ROW_NUMBER() OVER (
              PARTITION BY tmdb_id
              ORDER BY COALESCE(date_watched, created_at) DESC
            ) AS rn,
            COALESCE(date_watched, created_at) AS watch_ts
          FROM entries
-         WHERE status = 'completed'
-           AND tmdb_id IS NOT NULL
+          WHERE tmdb_id IS NOT NULL
            AND user_id = $1
        )
-       SELECT tmdb_id, type, rating
+        SELECT tmdb_id, type, rating, status
        FROM deduped
        WHERE rn = 1
        ORDER BY
-         CASE WHEN rating >= 4 THEN 0 ELSE 1 END,  -- loved titles first
+          CASE status
+            WHEN 'watching' THEN 0
+            WHEN 'plan_to_watch' THEN 1
+            ELSE CASE WHEN rating >= 4 THEN 2 ELSE 3 END
+          END,
          watch_ts DESC                               -- then by recency
        LIMIT 12`,
       [req.userId]
@@ -172,7 +239,8 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       tmdbId: number,
       endpoint: "recommendations" | "similar",
       idx: number,
-      rating: number | null
+      rating: number | null,
+      status: string,
     ) => {
       try {
         const url = `${TMDB_BASE}/${mediaType}/${tmdbId}/${endpoint}?api_key=${apiKey}&language=en-US&page=1`;
@@ -182,7 +250,12 @@ router.get("/recommendations", requireAuth, async (req, res) => {
         for (const item of data.results ?? []) {
           if (!item.poster_path) continue;
           if (inCollection.has(item.id as number)) continue;
-          allRecs.push({ ...mapRec(item, mediaType), recencyRank: idx, seedRating: rating });
+           allRecs.push({
+             ...mapRec(item, mediaType),
+             recencyRank: idx,
+             seedRating: rating,
+             seedStatus: status,
+           });
         }
       } catch { /* ignore per-seed failures */ }
     };
@@ -191,23 +264,18 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       recentRows.flatMap((row, idx) => {
         const mediaType = row.type === "movie" ? "movie" : "tv";
         return [
-          fetchEndpoint(mediaType, row.tmdb_id, "recommendations", idx, row.rating),
-          fetchEndpoint(mediaType, row.tmdb_id, "similar",         idx, row.rating),
+           fetchEndpoint(mediaType, row.tmdb_id, "recommendations", idx, row.rating, row.status),
+           fetchEndpoint(mediaType, row.tmdb_id, "similar",         idx, row.rating, row.status),
         ];
       })
     );
 
-    // ── 4. Build genre & language profile from seed results ──
-    // This tells us what genres AND what languages the user's taste clusters around.
+    // ── 4. Build a taste profile, then add a large mainstream fallback pool ──
     const genreFreq = new Map<string, number>();
-    const langFreq  = new Map<string, number>();
 
     for (const rec of allRecs) {
       for (const g of rec.genres) {
         genreFreq.set(g, (genreFreq.get(g) ?? 0) + 1);
-      }
-      if (rec.originalLanguage) {
-        langFreq.set(rec.originalLanguage, (langFreq.get(rec.originalLanguage) ?? 0) + 1);
       }
     }
 
@@ -217,58 +285,19 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       .slice(0, 5)
       .map(([g]) => g);
 
-    // Preferred language: dominant language from seed results, defaulting to "en"
-    const preferredLang = [...langFreq.entries()]
-      .sort((a, b) => b[1] - a[1])[0]?.[0] ?? "en";
-
-    // Allowed languages: user's preferred language + English (as a universal bridge)
-    const allowedLangs = new Set([preferredLang, "en"]);
-
-    // ── 5. Discover-based fallback when seed results are thin ──
-    // Uses TMDB Discover filtered by the user's detected language + top genres.
-    // Far better than raw trending which is dominated by random regional content.
-    if (allRecs.length < 10) {
-      const topGenreIds = topGenres
-        .map((g) => GENRE_NAME_TO_ID[g])
-        .filter(Boolean)
-        .slice(0, 3)
-        .join(",");
-
-      // Year-range params: skip for vintage fans so they still get older content
-      const movieYearParam = isVintageFan ? "" : `&primary_release_date.gte=${RECENCY_CUTOFF}-01-01`;
-      const tvYearParam    = isVintageFan ? "" : `&first_air_date.gte=${RECENCY_CUTOFF}-01-01`;
-
-      const baseDiscover = `api_key=${apiKey}&language=en-US`
-        + `&with_original_language=${preferredLang}`
-        + `&sort_by=popularity.desc`   // popularity > vote_average for "mainstream" feel
-        + `&vote_count.gte=500`        // minimum mainstream threshold
-        + `&popularity.gte=20`         // weed out niche/indie with tiny audiences
-        + (topGenreIds ? `&with_genres=${topGenreIds}` : "");
-
-      await Promise.all([
-        (async () => {
-          try {
-            const r = await fetch(`${TMDB_BASE}/discover/movie?${baseDiscover}${movieYearParam}`);
-            if (!r.ok) return;
-            const d = (await r.json()) as { results?: Record<string, unknown>[] };
-            for (const item of d.results ?? []) {
-              if (!item.poster_path || inCollection.has(item.id as number)) continue;
-              allRecs.push({ ...mapRec(item, "movie"), recencyRank: 50, seedRating: null });
-            }
-          } catch { /* ignore */ }
-        })(),
-        (async () => {
-          try {
-            const r = await fetch(`${TMDB_BASE}/discover/tv?${baseDiscover}${tvYearParam}`);
-            if (!r.ok) return;
-            const d = (await r.json()) as { results?: Record<string, unknown>[] };
-            for (const item of d.results ?? []) {
-              if (!item.poster_path || inCollection.has(item.id as number)) continue;
-              allRecs.push({ ...mapRec(item, "tv"), recencyRank: 50, seedRating: null });
-            }
-          } catch { /* ignore */ }
-        })(),
-      ]);
+    // Home recommendations remain personalised through the genre and seed
+    // scoring below, while the shared pool gives every user hundreds of recent
+    // blockbuster options before a title can repeat.
+    const allowedLangs = new Set(["en"]);
+    const mainstreamPool = await getMainstreamDiscoveryPool(apiKey, CURRENT_YEAR);
+    for (const item of mainstreamPool) {
+      if (inCollection.has(item.tmdbId)) continue;
+      allRecs.push({
+        ...item,
+        recencyRank: 75,
+        seedRating: null,
+        seedStatus: "mainstream",
+      });
     }
 
     // ── 6. Deduplicate, filter by language, then score ──
@@ -285,8 +314,11 @@ router.get("/recommendations", requireAuth, async (req, res) => {
     }
 
     // Rating multiplier: 5★ seed → 0.6 (strong signal), 1★ → 1.4 (weak), null → 1.0
-    const ratingMult = (r: number | null) =>
-      r === null ? 1.0 : Math.max(0.4, 1.6 - r * 0.2);
+     const seedMultiplier = (r: number | null, status: string) => {
+       if (status === "watching") return 0.55;
+       if (status === "plan_to_watch") return 0.65;
+       return r === null ? 1.0 : Math.max(0.4, 1.6 - r * 0.2);
+     };
 
     // Genre overlap bonus: how many of this title's genres are in the user's top genres
     const genreBonus = (genres: string[]) =>
@@ -328,19 +360,19 @@ router.get("/recommendations", requireAuth, async (req, res) => {
       if (rec.voteCount < 150 || rec.popularity < 5) continue;
 
       const score =
-        rec.recencyRank * ratingMult(rec.seedRating)
+        rec.recencyRank * seedMultiplier(rec.seedRating, rec.seedStatus)
         - genreBonus(rec.genres)
         - likedGenreBonus(rec.genres)   // extra pull toward genres the user liked
         - popularityBonus(rec.popularity);
       const existing = dedupMap.get(rec.tmdbId);
       if (!existing) {
-        const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
+        const { recencyRank: _r, seedRating: _s, seedStatus: _ss, ...clean } = rec;
         dedupMap.set(rec.tmdbId, { item: clean, bestScore: score, count: 1 });
       } else {
         existing.count++;
         if (score < existing.bestScore) {
           existing.bestScore = score;
-          const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
+          const { recencyRank: _r, seedRating: _s, seedStatus: _ss, ...clean } = rec;
           existing.item = clean;
         }
       }
@@ -374,19 +406,19 @@ router.get("/recommendations", requireAuth, async (req, res) => {
         if (!isVintageFan && rec.year !== null && rec.year < RECENCY_CUTOFF) continue;
         if (rec.voteCount < 150 || rec.popularity < 5) continue;
         const score =
-          rec.recencyRank * ratingMult(rec.seedRating)
+         rec.recencyRank * seedMultiplier(rec.seedRating, rec.seedStatus)
           - genreBonus(rec.genres)
           - likedGenreBonus(rec.genres)
           - popularityBonus(rec.popularity);
         const existing = dedupMap.get(rec.tmdbId);
         if (!existing) {
-          const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
+           const { recencyRank: _r, seedRating: _s, seedStatus: _ss, ...clean } = rec;
           dedupMap.set(rec.tmdbId, { item: clean, bestScore: score, count: 1 });
         } else {
           existing.count++;
           if (score < existing.bestScore) {
             existing.bestScore = score;
-            const { recencyRank: _r, seedRating: _s, originalLanguage: _l, ...clean } = rec;
+             const { recencyRank: _r, seedRating: _s, seedStatus: _ss, ...clean } = rec;
             existing.item = clean;
           }
         }

@@ -9,20 +9,14 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Share,
   FlatList,
-  ActionSheetIOS,
-  Animated,
   Modal,
   Linking,
-  TextInput,
 } from 'react-native';
-import * as Sharing from 'expo-sharing';
-import { captureRef } from 'react-native-view-shot';
 import { useLocalSearchParams, router, Redirect } from 'expo-router';
 import { useAuth } from '@clerk/expo';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -34,11 +28,12 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { authFetch } from '@/utils/authFetch';
+import { QuickLogSheet, type TmdbItem } from '@/app/(tabs)/search';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface CastMember { name: string; character: string; profileUrl: string | null; order: number }
-interface TmdbDirector { name: string; job: string; profileUrl: string | null }
+interface CastMember { name: string; character: string; profileUrl: string | null; personId?: number | null; order: number }
+interface TmdbDirector { name: string; job: string; profileUrl: string | null; personId?: number | null }
 interface TmdbDetail {
   title: string; overview: string | null; cast: CastMember[];
   directors: TmdbDirector[]; runtime: number | null;
@@ -95,6 +90,53 @@ function formatMonthYear(s: string | null | undefined): string {
   const d = new Date(s + 'T00:00:00');
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function providerGroup(name: string): string {
+  const value = name.toLowerCase();
+  const groups: Array<[string, RegExp]> = [
+    ['paramount', /paramount/],
+    ['netflix', /netflix/],
+    ['disney', /disney/],
+    ['hulu', /hulu/],
+    ['prime', /amazon|prime video/],
+    ['apple', /apple tv/],
+    ['max', /\bmax\b|hbo max/],
+    ['peacock', /peacock/],
+    ['youtube', /youtube/],
+    ['starz', /starz/],
+    ['showtime', /showtime/],
+    ['crunchyroll', /crunchyroll/],
+  ];
+  const knownGroup = groups.find(([, pattern]) => pattern.test(value))?.[0];
+  if (knownGroup) return knownGroup;
+  const genericBase = value
+    .replace(/\b(with ads|standard|essential|premium|on tv|amazon channel|roku channel|apple tv channel|channel)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return genericBase.split(' ').slice(0, 2).join(' ') || value;
+}
+
+function providerPriority(provider: WatchProvider, group: string): number {
+  const name = provider.providerName.toLowerCase();
+  if (group === 'paramount') {
+    if (name.includes('premium') || name === 'paramount plus' || name === 'paramount+') return 0;
+    if (name.includes('essential') || name.includes('on tv')) return 10;
+    if (name.includes('channel') || name.includes('with ads')) return 20;
+  }
+  if (name.includes('with ads') || name.includes('standard')) return 10;
+  return name.length;
+}
+
+function dedupeProviders(providers: WatchProvider[]): WatchProvider[] {
+  const grouped = new Map<string, WatchProvider[]>();
+  for (const provider of providers) {
+    const group = providerGroup(provider.providerName);
+    grouped.set(group, [...(grouped.get(group) ?? []), provider]);
+  }
+  return Array.from(grouped.entries()).map(([group, candidates]) =>
+    [...candidates].sort((a, b) => providerPriority(a, group) - providerPriority(b, group))[0]
+  );
 }
 
 // ── Hooks ─────────────────────────────────────────────────────────────────────
@@ -163,97 +205,6 @@ function useRecommendations(tmdbId: number | null | undefined, type: string | un
   return recs;
 }
 
-// ── Poster Share Card ─────────────────────────────────────────────────────────
-// Rendered off-screen, captured by react-native-view-shot, then shared.
-
-const SHARE_CARD_W = 320;
-const SHARE_CARD_H = 480;
-
-function PosterShareCard({ posterUrl, title, rating }: {
-  posterUrl: string | null | undefined;
-  title: string;
-  rating: number;
-}) {
-  const stars = rating > 0 ? '⭐'.repeat(rating) : null;
-  return (
-    <View style={pcStyles.root}>
-      {/* Poster — centered with soft shadow */}
-      <View style={pcStyles.posterShadow}>
-        {posterUrl
-          ? <Image source={{ uri: posterUrl }} style={pcStyles.poster} resizeMode="cover" />
-          : <View style={[pcStyles.poster, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />}
-      </View>
-
-      {/* Branding + rating */}
-      <View style={pcStyles.textSection}>
-        <Text style={pcStyles.appName}>Tracked on Spud</Text>
-        {stars ? (
-          <View style={pcStyles.ratingPill}>
-            <Text style={pcStyles.ratingText}>My rating: {stars}</Text>
-          </View>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-const pcStyles = StyleSheet.create({
-  root: {
-    width: SHARE_CARD_W,
-    height: SHARE_CARD_H,
-    borderRadius: 24,
-    overflow: 'hidden',
-    backgroundColor: '#5B50D0',
-    alignItems: 'center',
-    paddingTop: 36,
-    paddingBottom: 32,
-    paddingHorizontal: 24,
-  },
-  posterShadow: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
-    elevation: 14,
-    borderRadius: 14,
-  },
-  poster: {
-    width: 188,
-    height: 282,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-  },
-  textSection: {
-    alignItems: 'center',
-    marginTop: 22,
-    gap: 4,
-  },
-  appName: {
-    color: '#ffffff',
-    fontSize: 22,
-    fontFamily: 'Manrope_700Bold',
-    textAlign: 'center',
-  },
-  tagline: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 14,
-    fontFamily: 'Manrope_400Regular',
-    textAlign: 'center',
-  },
-  ratingPill: {
-    marginTop: 14,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
-  ratingText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontFamily: 'Manrope_600SemiBold',
-  },
-});
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function EntryDetailScreen() {
@@ -275,17 +226,7 @@ export default function EntryDetailScreen() {
   const updateEntry = useUpdateEntry();
   const deleteEntry = useDeleteEntry();
 
-  // ── Success banner ────────────────────────────────────────────────────────────
-  const bannerY = useRef(new Animated.Value(-60)).current;
-  const [bannerMsg, setBannerMsg] = useState('');
-
-  function showSuccess(msg: string) {
-    setBannerMsg(msg);
-    Animated.sequence([
-      Animated.timing(bannerY, { toValue: 0, duration: 280, useNativeDriver: true }),
-      Animated.delay(2000),
-      Animated.timing(bannerY, { toValue: -60, duration: 280, useNativeDriver: true }),
-    ]).start();
+  function showSuccess(_msg: string) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
 
@@ -293,10 +234,6 @@ export default function EntryDetailScreen() {
   const [localRating, setLocalRating] = useState(0);
   const [localStatus, setLocalStatus] = useState<Status>('completed');
   const [localDate, setLocalDate] = useState(''); // stored YYYY-MM-01
-  const [localNotes, setLocalNotes] = useState('');
-  const [instagramAvailable, setInstagramAvailable] = useState(false);
-  const [sharing, setSharing] = useState(false);
-  const shareCardRef = useRef<View>(null);
 
   // Date picker modal
   const [dateModalOpen, setDateModalOpen] = useState(false);
@@ -305,6 +242,7 @@ export default function EntryDetailScreen() {
 
   // Episode sheet
   const [epSheet, setEpSheet] = useState<EpSheetState | null>(null);
+  const [recommendationItem, setRecommendationItem] = useState<TmdbItem | null>(null);
   // Season rating modal
   const [seasonRatingModal, setSeasonRatingModal] = useState<{ num: number; rating: number } | null>(null);
 
@@ -313,18 +251,8 @@ export default function EntryDetailScreen() {
       setLocalRating(entry.rating ?? 0);
       setLocalStatus((entry.status ?? 'completed') as Status);
       setLocalDate(entry.dateWatched ?? '');
-      setLocalNotes((entry as any).notes ?? '');
     }
   }, [entry]);
-
-  useEffect(() => {
-    // Scope to iOS only — Android Stories sharing uses a different intent flow
-    if (Platform.OS !== 'ios') { setInstagramAvailable(false); return; }
-    // Check if Instagram is installed; instagram:// is the stable scheme to query
-    Linking.canOpenURL('instagram://app')
-      .then(setInstagramAvailable)
-      .catch(() => setInstagramAvailable(false));
-  }, []);
 
   // ── Autosave ──────────────────────────────────────────────────────────────────
   function autosave(patch: object, successText: string) {
@@ -458,53 +386,6 @@ export default function EntryDetailScreen() {
     setSeasonRatingModal(null);
   }
 
-  // ── Share ─────────────────────────────────────────────────────────────────────
-  async function handleShareText() {
-    if (!entry) return;
-    const yearText = entry.year ? ` (${entry.year})` : '';
-    const ratingText = entry.rating ? ` ${'⭐'.repeat(entry.rating)}` : '';
-    const actionText = entry.status === 'watching' ? 'watching' : entry.status === 'plan_to_watch' ? 'planning to watch' : 'watched';
-    try { await Share.share({ message: `I just ${actionText} "${entry.title}"${yearText}${ratingText}\n\nTracked on Spud 🥔`, title: entry.title }); } catch {}
-  }
-
-  async function handleShareInstagram() {
-    if (!shareCardRef.current) return;
-    setSharing(true);
-    try {
-      // Capture the off-screen PosterShareCard (poster + rating + Spud branding)
-      const uri = await captureRef(shareCardRef, { format: 'jpg', quality: 0.92, result: 'tmpfile' });
-      const canShare = await Sharing.isAvailableAsync();
-      if (!canShare) { Alert.alert('Not supported', 'Sharing is not available on this device.'); return; }
-      // The iOS share sheet surfaces Instagram's "Add to Your Story" action when installed
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/jpeg',
-        UTI: 'public.jpeg',
-        dialogTitle: 'Share to Instagram Stories',
-      });
-    } catch { Alert.alert('Error', 'Could not create the share card.'); }
-    finally { setSharing(false); }
-  }
-
-  function handleShare() {
-    if (!entry) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const hasPoster = !!entry.posterUrl;
-    const showIG = hasPoster && instagramAvailable;
-    if (Platform.OS === 'ios') {
-      const opts = ['Cancel', 'Share text'];
-      if (showIG) opts.push('Share to Instagram Stories');
-      ActionSheetIOS.showActionSheetWithOptions({ options: opts, cancelButtonIndex: 0 }, idx => {
-        if (idx === 1) handleShareText();
-        else if (idx === 2 && showIG) handleShareInstagram();
-      });
-    } else {
-      const buttons: any[] = [{ text: 'Share text', onPress: handleShareText }];
-      if (showIG) buttons.push({ text: 'Share to Instagram', onPress: handleShareInstagram });
-      buttons.push({ text: 'Cancel', style: 'cancel' });
-      Alert.alert('Share', undefined, buttons);
-    }
-  }
-
   async function doDelete() {
     try {
       await deleteEntry.mutateAsync({ id: Number(id) });
@@ -524,13 +405,13 @@ export default function EntryDetailScreen() {
   if (isLoading || !entry) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.darkPurple} />
       </View>
     );
   }
 
   const topPad = insets.top + 12;
-  // Floating pill tab bar: height 62 + bottom offset (insets.bottom+4 or 12) + 8px breathing room
+  // Floating pill tab bar: height 48 + bottom offset (insets.bottom+4 or 12) + 8px breathing room
   const tabBarClearance = 62 + (insets.bottom > 0 ? insets.bottom + 4 : 12) + 8;
   const savedSeasons = getSeasonsArray();
   const tmdbSeasonsList = tmdbSeasons.filter(s => s.number > 0);
@@ -544,21 +425,6 @@ export default function EntryDetailScreen() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
 
-      {/* ── Off-screen share card (poster + rating + branding) ── */}
-      <View ref={shareCardRef} collapsable={false} style={styles.offScreen}>
-        <PosterShareCard
-          posterUrl={entry.posterUrl}
-          title={entry.title}
-          rating={localRating}
-        />
-      </View>
-
-      {/* ── Success Banner ── */}
-      <Animated.View style={[styles.successBanner, { transform: [{ translateY: bannerY }], top: insets.top }]} pointerEvents="none">
-        <Feather name="check-circle" size={18} color="#ffffff" />
-        <Text style={styles.successText}>Success — {bannerMsg}</Text>
-      </Animated.View>
-
       {/* ── Header ── */}
       <View style={[styles.header, { paddingTop: topPad, borderBottomColor: colors.border, backgroundColor: colors.background }]}>
         <TouchableOpacity style={styles.headerSide} onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -566,11 +432,13 @@ export default function EntryDetailScreen() {
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>Details</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={handleShare} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Feather name="share-2" size={20} color={colors.foreground} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={confirmDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Feather name="trash-2" size={20} color="#e53e3e" />
+          <TouchableOpacity
+            style={[styles.trashButton, { backgroundColor: colors.muted }]}
+            onPress={confirmDelete}
+            activeOpacity={0.8}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="trash-2" size={18} color={colors.foreground} />
           </TouchableOpacity>
         </View>
       </View>
@@ -584,17 +452,24 @@ export default function EntryDetailScreen() {
               ? <Image source={{ uri: entry.posterUrl }} style={styles.poster} resizeMode="cover" />
               : <View style={[styles.poster, styles.posterPlaceholder, { backgroundColor: colors.muted }]}><Feather name="film" size={32} color={colors.mutedForeground} /></View>}
             {omdbRatings?.rtScore && (
-              <View style={styles.rtBadge}><Text style={styles.rtText}>🍅 {omdbRatings.rtScore}</Text></View>
+              <View style={styles.rtBadge}><Text style={styles.rtText}>RT {omdbRatings.rtScore}</Text></View>
             )}
           </View>
           <View style={styles.heroInfo}>
             <Text style={[styles.entryTitle, { color: colors.foreground }]} numberOfLines={3}>{entry.title}</Text>
             {entry.year != null && <Text style={[styles.yearText, { color: colors.mutedForeground }]}>{entry.year}</Text>}
-            {omdbRatings?.imdbRating && (
-              <View style={styles.imdbBadge}><Text style={styles.imdbText}>⭐ IMDB {omdbRatings.imdbRating}</Text></View>
-            )}
-            <View style={[styles.statusBadge, { backgroundColor: localStatus === 'completed' ? colors.primary : localStatus === 'watching' ? '#9BD6FF' : colors.muted }]}>
-              <Text style={[styles.statusBadgeText, { color: localStatus === 'completed' ? colors.primaryForeground : localStatus === 'watching' ? '#116149' : colors.mutedForeground }]}>
+            <View style={[styles.statusBadge, {
+              backgroundColor: localStatus === 'completed'
+                ? colors.darkPurple
+                : localStatus === 'watching'
+                  ? colors.brightBlue
+                  : colors.muted,
+            }]}>
+              <Text style={[styles.statusBadgeText, {
+                color: localStatus === 'completed' || localStatus === 'watching'
+                  ? colors.primaryForeground
+                  : colors.mutedForeground,
+              }]}>
                 {localStatus === 'completed' ? 'Watched' : localStatus === 'watching' ? 'Watching' : 'Watchlist'}
               </Text>
             </View>
@@ -610,10 +485,17 @@ export default function EntryDetailScreen() {
               return (
                 <TouchableOpacity
                   key={opt.value}
-                  style={[styles.statusChip, { backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}
+                   style={[styles.statusChip, {
+                     backgroundColor: active
+                       ? opt.value === 'watching' ? colors.brightBlue : colors.darkPurple
+                       : colors.muted,
+                     borderColor: active
+                       ? opt.value === 'watching' ? colors.brightBlue : colors.darkPurple
+                       : colors.border,
+                   }]}
                   onPress={() => { Haptics.selectionAsync(); setLocalStatus(opt.value); autosave({ status: opt.value }, 'Status updated'); }}
                 >
-                  <Text style={[styles.statusChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{opt.label}</Text>
+                   <Text style={[styles.statusChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{opt.label}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -628,32 +510,14 @@ export default function EntryDetailScreen() {
               <TouchableOpacity key={star}
                 onPress={() => { Haptics.selectionAsync(); const r = localRating === star ? 0 : star; setLocalRating(r); autosave({ rating: r || null }, 'Rating saved'); }}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                <Feather name="star" size={28} color={star <= localRating ? colors.primary : colors.border} style={styles.starIcon} />
+                <FontAwesome
+                  name="star"
+                  size={23}
+                  color={star <= localRating ? '#FFD34D' : colors.mutedForeground}
+                />
               </TouchableOpacity>
             ))}
           </View>
-        </View>
-
-        {/* ── C2) Notes ── */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>NOTES</Text>
-          <TextInput
-            value={localNotes}
-            onChangeText={setLocalNotes}
-            placeholder="Your thoughts…"
-            placeholderTextColor={colors.mutedForeground}
-            multiline
-            style={[
-              styles.notesInput,
-              { color: colors.foreground, backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-            onBlur={() => {
-              const saved = (entry as any).notes ?? '';
-              if (localNotes !== saved) {
-                autosave({ notes: localNotes.trim() || null }, 'Notes saved');
-              }
-            }}
-          />
         </View>
 
         {/* ── D) Date watched — month + year ── */}
@@ -679,6 +543,19 @@ export default function EntryDetailScreen() {
         </View>
 
         {/* ── E) Plot ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PUBLIC RATING</Text>
+          {tmdbLoading ? (
+            <ActivityIndicator size="small" color={colors.darkPurple} style={{ alignSelf: 'flex-start' }} />
+          ) : (
+            <Text style={[styles.publicRatingText, { color: colors.foreground }]}>
+              {tmdbDetail?.voteAverage != null ? `${tmdbDetail.voteAverage.toFixed(1)} / 10` : 'Not rated yet'}
+            </Text>
+          )}
+          <Text style={[styles.ratingSource, { color: colors.mutedForeground }]}>The Movie Database (TMDB)</Text>
+        </View>
+
+        {/* ── F) Plot ── */}
         {(() => {
           const plot = tmdbDetail?.overview || entry.synopsis;
           if (!plot && !tmdbLoading) return null;
@@ -686,18 +563,18 @@ export default function EntryDetailScreen() {
             <View style={styles.section}>
               <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>PLOT SUMMARY</Text>
               {tmdbLoading && !plot
-                ? <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+                ? <ActivityIndicator size="small" color={colors.darkPurple} style={{ alignSelf: 'flex-start' }} />
                 : <Text style={[styles.synopsisText, { color: colors.mutedForeground }]}>{plot}</Text>}
             </View>
           );
         })()}
 
-        {/* ── F) Cast ── */}
+        {/* ── G) Cast ── */}
         {(tmdbLoading || (tmdbDetail && tmdbDetail.cast.length > 0)) && (
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CAST</Text>
             {tmdbLoading && !tmdbDetail
-              ? <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+              ? <ActivityIndicator size="small" color={colors.darkPurple} style={{ alignSelf: 'flex-start' }} />
               : (
                 <FlatList
                   data={tmdbDetail?.cast ?? []}
@@ -705,23 +582,31 @@ export default function EntryDetailScreen() {
                   horizontal showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.castList}
                   renderItem={({ item }) => (
-                    <View style={styles.castCard}>
+                    <TouchableOpacity
+                      style={styles.castCard}
+                      disabled={!item.personId}
+                      onPress={() => item.personId
+                        ? Linking.openURL(`https://www.themoviedb.org/person/${item.personId}`).catch(() => {})
+                        : undefined}
+                      accessibilityRole={item.personId ? 'link' : undefined}
+                      accessibilityLabel={item.personId ? `Open ${item.name}'s profile` : item.name}
+                    >
                       {item.profileUrl
                         ? <Image source={{ uri: item.profileUrl }} style={[styles.castPhoto, { backgroundColor: colors.muted }]} resizeMode="cover" />
                         : <View style={[styles.castPhoto, styles.castPhotoPlaceholder, { backgroundColor: colors.muted }]}><Feather name="user" size={22} color={colors.mutedForeground} /></View>}
                       <Text style={[styles.castName, { color: colors.foreground }]} numberOfLines={2}>{item.name}</Text>
                       {item.character ? <Text style={[styles.castCharacter, { color: colors.mutedForeground }]} numberOfLines={2}>{item.character}</Text> : null}
-                    </View>
+                    </TouchableOpacity>
                   )}
                 />
               )}
           </View>
         )}
 
-        {/* ── G) Director / Creator ── */}
+        {/* ── H) Director ── */}
         {tmdbDetail && tmdbDetail.directors.length > 0 && (
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{entry.type === 'movie' ? 'DIRECTOR' : 'CREATOR'}</Text>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>DIRECTOR</Text>
             <View style={styles.directorRow}>
               {tmdbDetail.directors.map((d, i) => (
                 <Text key={i} style={[styles.directorName, { color: colors.foreground }]}>{d.name}</Text>
@@ -730,14 +615,11 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* ── H) Seasons — poster cards ── */}
+        {/* ── I) Seasons — poster cards ── */}
         {entry.type === 'show' && tmdbSeasonsList.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SEASONS</Text>
-              <Text style={[styles.sectionBadge, { color: colors.primary }]}>
-                {watchedNums.size}/{tmdbSeasonsList.length} watched
-              </Text>
             </View>
             <View style={[styles.seasonsContainer, { borderColor: colors.border, backgroundColor: colors.card }]}>
               {tmdbSeasonsList.map((season, idx) => {
@@ -756,26 +638,28 @@ export default function EntryDetailScreen() {
                     {/* Season poster */}
                     <View style={[styles.seasonPoster, { backgroundColor: colors.muted }]}>
                       {season.posterUrl
-                        ? <Image source={{ uri: season.posterUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                        ? <Image source={{ uri: season.posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                         : <Text style={{ color: colors.mutedForeground, fontSize: 12, fontFamily: 'Manrope_600SemiBold' }}>S{season.number}</Text>}
                     </View>
                     {/* Season info */}
                     <View style={{ flex: 1, gap: 4 }}>
-                      <Text style={[styles.seasonName, { color: colors.foreground }]}>{season.name}</Text>
+                      <Text style={[styles.seasonName, { color: colors.foreground }]}>
+                        {season.number === 0 ? 'Specials' : `Season ${season.number}`}
+                      </Text>
                       <Text style={[styles.seasonMeta, { color: colors.mutedForeground }]}>
                         {season.episodeCount} episode{season.episodeCount !== 1 ? 's' : ''}
                         {season.airYear ? ` · ${season.airYear}` : ''}
                       </Text>
                       {epTotal > 0 && (
                         <View style={styles.miniProgressRow}>
-                          <View style={[styles.miniProgressTrack, { backgroundColor: colors.muted }]}>
-                            <View style={[styles.miniProgressFill, { backgroundColor: colors.primary, width: `${Math.round(epWatched / epTotal * 100)}%` as any }]} />
+                           <View style={[styles.miniProgressTrack, { backgroundColor: colors.muted }]}>
+                             <View style={[styles.miniProgressFill, { backgroundColor: colors.darkPurple, width: `${Math.round(epWatched / epTotal * 100)}%` as any }]} />
                           </View>
-                          <Text style={[styles.miniProgressText, { color: colors.primary }]}>{epWatched}/{epTotal}</Text>
+                           <Text style={[styles.miniProgressText, { color: colors.darkPurple }]}>{epWatched}/{epTotal}</Text>
                         </View>
                       )}
-                      <Text style={[styles.viewEpisodes, { color: isWatched ? colors.primary : '#4A78FF' }]}>
-                        {isWatched ? 'Watched ✓' : 'View episodes →'}
+                       <Text style={[styles.viewEpisodes, { color: colors.darkPurple }]}>
+                         {isWatched ? 'Watched' : 'View episodes'}
                       </Text>
                     </View>
                     {/* Season star rating */}
@@ -783,7 +667,12 @@ export default function EntryDetailScreen() {
                       {isWatched && (
                         <TouchableOpacity onPress={e => { openEpisodeSheet(season.number); }} style={styles.miniStars}>
                           {[1,2,3,4,5].map(star => (
-                            <Text key={star} style={{ fontSize: 10, color: star <= (sd?.rating ?? 0) ? '#FFD34D' : colors.border }}>★</Text>
+                             <FontAwesome
+                               key={star}
+                               name="star"
+                               size={11}
+                               color={star <= (sd?.rating ?? 0) ? '#FFD34D' : colors.mutedForeground}
+                             />
                           ))}
                         </TouchableOpacity>
                       )}
@@ -796,23 +685,25 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* ── I) Where to Watch ── */}
+        {/* ── J) Where to Watch ── */}
         {entry.tmdbId && (
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>WHERE TO WATCH</Text>
             {providersLoading
-              ? <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+              ? <ActivityIndicator size="small" color={colors.darkPurple} style={{ alignSelf: 'flex-start' }} />
               : watchProviders && watchProviders.streaming.length > 0 ? (
                 <View style={styles.providersRow}>
-                  {watchProviders.streaming.map(p => <Image key={p.providerId} source={{ uri: p.logoUrl }} style={styles.providerLogo} />)}
+                  {dedupeProviders(watchProviders.streaming).map(p => (
+                    <Image key={p.providerId} source={{ uri: p.logoUrl }} style={styles.providerLogo} />
+                  ))}
                 </View>
               ) : watchProviders && (watchProviders.rent.length > 0 || watchProviders.buy.length > 0) ? (
                 <>
                   <Text style={[styles.synopsisText, { color: colors.mutedForeground }]}>Available to rent/buy</Text>
                   <View style={styles.providersRow}>
-                    {[...watchProviders.rent, ...watchProviders.buy]
-                      .filter((p, i, arr) => arr.findIndex(x => x.providerId === p.providerId) === i)
-                      .map(p => <Image key={p.providerId} source={{ uri: p.logoUrl }} style={[styles.providerLogo, { opacity: 0.7 }]} />)}
+                    {dedupeProviders([...watchProviders.rent, ...watchProviders.buy]).map(p => (
+                      <Image key={p.providerId} source={{ uri: p.logoUrl }} style={[styles.providerLogo, { opacity: 0.7 }]} />
+                    ))}
                   </View>
                 </>
               ) : (
@@ -821,7 +712,7 @@ export default function EntryDetailScreen() {
           </View>
         )}
 
-        {/* ── J) Recommendations ── */}
+        {/* ── K) Recommendations ── */}
         {recommendations.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -833,24 +724,38 @@ export default function EntryDetailScreen() {
               horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={{ gap: 12, paddingVertical: 4 }}
               renderItem={({ item }) => (
-                <View style={styles.recCard}>
+                <TouchableOpacity
+                  style={styles.recCard}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setRecommendationItem(item as TmdbItem);
+                  }}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Open details for ${item.title}`}
+                >
                   {item.posterUrl
                     ? <Image source={{ uri: item.posterUrl }} style={styles.recPoster} resizeMode="cover" />
                     : <View style={[styles.recPoster, { backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }]}><Text style={{ color: colors.mutedForeground, fontSize: 20 }}>{item.title[0]}</Text></View>}
                   <Text style={[styles.recTitle, { color: colors.foreground }]} numberOfLines={2}>{item.title}</Text>
                   {item.year && <Text style={[styles.recYear, { color: colors.mutedForeground }]}>{item.year}</Text>}
-                </View>
+                </TouchableOpacity>
               )}
             />
           </View>
         )}
 
-        {/* ── K) Delete ── */}
-        <TouchableOpacity style={[styles.deleteButton, { borderColor: '#e53e3e' }]} onPress={confirmDelete} disabled={deleteEntry.isPending}>
-          {deleteEntry.isPending ? <ActivityIndicator size="small" color="#e53e3e" /> : <Text style={styles.deleteText}>Delete entry</Text>}
-        </TouchableOpacity>
-
       </ScrollView>
+
+      {recommendationItem && (
+        <QuickLogSheet
+          item={recommendationItem}
+          visible
+          onClose={() => setRecommendationItem(null)}
+          onSaved={() => setRecommendationItem(null)}
+          insets={{ bottom: insets.bottom }}
+        />
+      )}
 
       {/* ── Date picker modal ── */}
       <Modal visible={dateModalOpen} transparent animationType="slide" onRequestClose={() => setDateModalOpen(false)}>
@@ -862,7 +767,7 @@ export default function EntryDetailScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 16 }}>
             {MONTHS.map((m, i) => (
               <TouchableOpacity key={m}
-                style={[styles.monthChip, { backgroundColor: pickedMonth === i ? colors.primary : colors.muted }]}
+                  style={[styles.monthChip, { backgroundColor: pickedMonth === i ? colors.darkPurple : colors.muted }]}
                 onPress={() => setPickedMonth(i)}>
                 <Text style={{ color: pickedMonth === i ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Manrope_600SemiBold', fontSize: 13 }}>{m.slice(0, 3)}</Text>
               </TouchableOpacity>
@@ -872,7 +777,7 @@ export default function EntryDetailScreen() {
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 20 }}>
             {YEARS.map(y => (
               <TouchableOpacity key={y}
-                style={[styles.monthChip, { backgroundColor: pickedYear === y ? colors.primary : colors.muted }]}
+                style={[styles.monthChip, { backgroundColor: pickedYear === y ? colors.darkPurple : colors.muted }]}
                 onPress={() => setPickedYear(y)}>
                 <Text style={{ color: pickedYear === y ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Manrope_600SemiBold', fontSize: 13 }}>{y}</Text>
               </TouchableOpacity>
@@ -882,7 +787,7 @@ export default function EntryDetailScreen() {
             <TouchableOpacity style={[styles.modalCancel, { borderColor: colors.border }]} onPress={() => setDateModalOpen(false)}>
               <Text style={{ color: colors.mutedForeground, fontFamily: 'Manrope_600SemiBold', fontSize: 14 }}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.modalSave, { backgroundColor: colors.primary }]} onPress={confirmDate}>
+            <TouchableOpacity style={[styles.modalSave, { backgroundColor: colors.darkPurple }]} onPress={confirmDate}>
               <Text style={{ color: colors.primaryForeground, fontFamily: 'Manrope_700Bold', fontSize: 14 }}>
                 {MONTHS[pickedMonth]} {pickedYear}
               </Text>
@@ -917,7 +822,7 @@ export default function EntryDetailScreen() {
               <TouchableOpacity
                 onPress={saveEpisodes}
                 disabled={updateEntry.isPending}
-                style={[styles.sheetSaveBtn, { backgroundColor: colors.primary, opacity: updateEntry.isPending ? 0.6 : 1 }]}
+                style={[styles.sheetSaveBtn, { backgroundColor: colors.darkPurple, opacity: updateEntry.isPending ? 0.6 : 1 }]}
               >
                 <Text style={{ color: colors.primaryForeground, fontFamily: 'Manrope_700Bold', fontSize: 14 }}>
                   {updateEntry.isPending ? 'Saving…' : 'Save'}
@@ -925,32 +830,29 @@ export default function EntryDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Season tabs */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 12 }}>
+              {/* Season tabs with poster thumbnails */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginBottom: 12 }}>
               {epSheet.seasonNums.map(num => (
                 <TouchableOpacity key={num}
-                  style={[styles.seasonTab, { backgroundColor: epSheet.activeSeason === num ? colors.primary : colors.muted }]}
+                  style={[styles.seasonTab, { backgroundColor: epSheet.activeSeason === num ? colors.darkPurple : colors.muted }]}
                   onPress={() => switchEpSeason(num)}>
-                  <Text style={{ color: epSheet.activeSeason === num ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Manrope_600SemiBold', fontSize: 12 }}>Season {num}</Text>
+                    {tmdbSeasonsList.find(s => s.number === num)?.posterUrl ? (
+                      <Image
+                        source={{ uri: tmdbSeasonsList.find(s => s.number === num)?.posterUrl ?? undefined }}
+                        style={styles.seasonTabPoster}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[styles.seasonTabPoster, { backgroundColor: colors.border }]} />
+                    )}
+                    <Text style={{ color: epSheet.activeSeason === num ? colors.primaryForeground : colors.mutedForeground, fontFamily: 'Manrope_600SemiBold', fontSize: 12 }}>Season {num}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
-            {/* Progress bar */}
-            {activeEps.length > 0 && (() => {
-              const w = activeEps.filter(e => e.watched).length;
-              const t = activeEps.length;
-              return (
-                <View style={styles.progressContainer}>
-                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>{w} / {t} episodes watched</Text>
-                  <Text style={[styles.progressText, { color: colors.mutedForeground }]}>{Math.round(w / t * 100)}%</Text>
-                </View>
-              );
-            })()}
-
             {/* Episode list */}
             {epSheet.loading[epSheet.activeSeason]
-              ? <ActivityIndicator size="large" color={colors.primary} style={{ margin: 24 }} />
+              ? <ActivityIndicator size="large" color={colors.darkPurple} style={{ margin: 24 }} />
               : activeEps.length === 0
                 ? <Text style={[styles.synopsisText, { color: colors.mutedForeground, textAlign: 'center', margin: 24 }]}>No episode data available</Text>
                 : (
@@ -959,8 +861,8 @@ export default function EntryDetailScreen() {
                       <TouchableOpacity
                         key={ep.number}
                         style={[styles.epRow, {
-                          backgroundColor: ep.watched ? `${colors.primary}14` : colors.card,
-                          borderColor: ep.watched ? `${colors.primary}44` : colors.border,
+                          backgroundColor: ep.watched ? `${colors.darkPurple}14` : colors.card,
+                          borderColor: ep.watched ? `${colors.darkPurple}44` : colors.border,
                         }]}
                         onPress={() => { Haptics.selectionAsync(); toggleEpisode(ep.number); }}
                         activeOpacity={0.7}
@@ -968,12 +870,12 @@ export default function EntryDetailScreen() {
                         {/* Episode still */}
                         <View style={[styles.epStill, { backgroundColor: colors.muted }]}>
                           {ep.stillUrl
-                            ? <Image source={{ uri: ep.stillUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                            ? <Image source={{ uri: ep.stillUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                             : <Text style={{ color: colors.mutedForeground, fontSize: 10, fontFamily: 'Manrope_600SemiBold' }}>E{ep.number}</Text>}
                         </View>
                         {/* Info */}
                         <View style={{ flex: 1, minWidth: 0 }}>
-                          <Text style={[styles.epTitle, { color: ep.watched ? colors.primary : colors.foreground }]} numberOfLines={2}>
+                          <Text style={[styles.epTitle, { color: ep.watched ? colors.darkPurple : colors.foreground }]} numberOfLines={2}>
                             S{String(epSheet.activeSeason).padStart(2,'0')}E{String(ep.number).padStart(2,'0')}{ep.title ? ` · ${ep.title}` : ''}
                           </Text>
                           {(ep.airDate || ep.runtime) && (
@@ -986,7 +888,7 @@ export default function EntryDetailScreen() {
                           ) : null}
                         </View>
                         {/* Checkbox */}
-                        <View style={[styles.epCheck, { backgroundColor: ep.watched ? colors.primary : colors.muted }]}>
+                        <View style={[styles.epCheck, { backgroundColor: ep.watched ? colors.darkPurple : colors.muted }]}>
                           {ep.watched && <Feather name="check" size={12} color={colors.primaryForeground} />}
                         </View>
                       </TouchableOpacity>
@@ -1003,12 +905,16 @@ export default function EntryDetailScreen() {
         {seasonRatingModal && (
           <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: tabBarClearance }]}>
             <View style={styles.modalHandle} />
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Season {seasonRatingModal.num} — Rate</Text>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Your rating · Season {seasonRatingModal.num}</Text>
             <View style={[styles.starsRow, { marginBottom: 20 }]}>
               {[1,2,3,4,5].map(star => (
                 <TouchableOpacity key={star}
                   onPress={() => setSeasonRatingModal(s => s ? { ...s, rating: s.rating === star ? 0 : star } : s)}>
-                  <Text style={{ fontSize: 36, color: star <= seasonRatingModal.rating ? '#FFD34D' : colors.border }}>★</Text>
+                  <FontAwesome
+                    name="star"
+                    size={25}
+                    color={star <= seasonRatingModal.rating ? '#FFD34D' : colors.mutedForeground}
+                  />
                 </TouchableOpacity>
               ))}
             </View>
@@ -1016,7 +922,7 @@ export default function EntryDetailScreen() {
               <TouchableOpacity style={[styles.modalCancel, { borderColor: colors.border }]} onPress={() => setSeasonRatingModal(null)}>
                 <Text style={{ color: colors.mutedForeground, fontFamily: 'Manrope_600SemiBold', fontSize: 14 }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalSave, { backgroundColor: colors.primary }]} onPress={saveSeasonRating}>
+              <TouchableOpacity style={[styles.modalSave, { backgroundColor: colors.darkPurple }]} onPress={saveSeasonRating}>
                 <Text style={{ color: colors.primaryForeground, fontFamily: 'Manrope_700Bold', fontSize: 14 }}>Save</Text>
               </TouchableOpacity>
             </View>
@@ -1037,13 +943,11 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  successBanner: { position: 'absolute', left: 0, right: 0, zIndex: 100, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#116149' },
-  successText: { color: '#ffffff', fontFamily: 'Manrope_600SemiBold', fontSize: 14, flex: 1 },
-
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   headerSide: { width: 48, alignItems: 'flex-start', justifyContent: 'center' },
-  headerActions: { width: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 16 },
+  headerActions: { width: 128, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: 16, fontFamily: 'Manrope_600SemiBold' },
+  trashButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
 
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 20, gap: 24 },
@@ -1054,32 +958,22 @@ const styles = StyleSheet.create({
   heroInfo: { flex: 1, gap: 8, paddingTop: 4 },
   entryTitle: { fontSize: 18, fontFamily: 'Manrope_700Bold', lineHeight: 24 },
   yearText: { fontSize: 13, fontFamily: 'Manrope_400Regular' },
-  statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
   statusBadgeText: { fontSize: 12, fontFamily: 'Manrope_600SemiBold' },
-  rtBadge: { position: 'absolute', bottom: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
+  rtBadge: { position: 'absolute', bottom: 6, left: 6, backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 4 },
   rtText: { color: '#ffffff', fontSize: 10, fontFamily: 'Manrope_600SemiBold' },
-  imdbBadge: { backgroundColor: '#F5C518', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' },
-  imdbText: { color: '#000000', fontSize: 11, fontFamily: 'Manrope_600SemiBold' },
 
   section: { gap: 10 },
   sectionLabel: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', letterSpacing: 0.8 },
-  notesInput: {
-    borderRadius: 12, borderWidth: 1.5,
-    paddingHorizontal: 14, paddingVertical: 12, minHeight: 90,
-    fontSize: 14, fontFamily: 'Manrope_400Regular',
-    lineHeight: 20, textAlignVertical: 'top',
-  },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionBadge: { fontSize: 12, fontFamily: 'Manrope_500Medium' },
 
   starsRow: { flexDirection: 'row', gap: 4 },
-  starIcon: { marginRight: 2 },
 
   chipsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  statusChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+  statusChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, borderWidth: 1 },
   statusChipText: { fontSize: 13, fontFamily: 'Manrope_500Medium' },
 
-  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12 },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 999, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12 },
   dateText: { fontSize: 14, fontFamily: 'Manrope_400Regular' },
 
   synopsisText: { fontSize: 14, fontFamily: 'Manrope_400Regular', lineHeight: 21 },
@@ -1090,6 +984,8 @@ const styles = StyleSheet.create({
   castPhotoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
   castName: { fontSize: 12, fontFamily: 'Manrope_600SemiBold', textAlign: 'center', lineHeight: 16 },
   castCharacter: { fontSize: 11, fontFamily: 'Manrope_400Regular', textAlign: 'center', lineHeight: 15 },
+  publicRatingText: { fontSize: 21, lineHeight: 27, fontFamily: 'Manrope_700Bold' },
+  ratingSource: { fontSize: 11, fontFamily: 'Manrope_400Regular' },
 
   directorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   directorName: { fontSize: 14, fontFamily: 'Manrope_500Medium' },
@@ -1117,10 +1013,6 @@ const styles = StyleSheet.create({
   recTitle: { fontSize: 11, fontFamily: 'Manrope_600SemiBold', lineHeight: 15 },
   recYear: { fontSize: 10, fontFamily: 'Manrope_400Regular' },
 
-  // Delete
-  deleteButton: { borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
-  deleteText: { fontSize: 14, fontFamily: 'Manrope_600SemiBold', color: '#e53e3e' },
-
   // Modals
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '60%' },
@@ -1128,23 +1020,20 @@ const styles = StyleSheet.create({
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D4C9BC', alignSelf: 'center', marginBottom: 16 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
   sheetCloseBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  sheetSaveBtn: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  sheetSaveBtn: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { fontSize: 16, fontFamily: 'Manrope_700Bold', marginBottom: 16 },
   modalActions: { flexDirection: 'row', gap: 12 },
-  modalCancel: { flex: 1, borderWidth: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  modalSave: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
+  modalCancel: { flex: 1, borderWidth: 1, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
+  modalSave: { flex: 1, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
 
   // Month/year picker
   monthChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
 
   // Season tabs in episode sheet
-  seasonTab: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 },
+  seasonTab: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999 },
+  seasonTabPoster: { width: 34, height: 50, borderRadius: 7, overflow: 'hidden' },
 
   // Episode list
-  progressContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  progressTrack: { flex: 1, height: 6, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3 },
-  progressText: { fontSize: 12, fontFamily: 'Manrope_500Medium', minWidth: 50, textAlign: 'right' },
   epList: { flex: 1, marginBottom: 8 },
   epRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 6 },
   epStill: { width: 96, height: 54, borderRadius: 7, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
@@ -1153,6 +1042,4 @@ const styles = StyleSheet.create({
   epOverview: { fontSize: 10, fontFamily: 'Manrope_400Regular', marginTop: 2, lineHeight: 14 },
   epCheck: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
-  // Off-screen share card
-  offScreen: { position: 'absolute', top: -9999, left: -9999 },
 });

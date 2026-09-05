@@ -22,6 +22,11 @@ export const Colors = {
     cream: '#FFF3E8',
     green: '#116149',
     blue: '#9BD6FF',
+    darkPurple: '#4B3F78',
+    brightBlue: '#4A78FF',
+    lightPink: '#FFE0EB',
+    burgundy: '#963B62',
+    lavender: '#C5B8FF',
     // Radius
     radius: 12,
     radiusSm: 8,

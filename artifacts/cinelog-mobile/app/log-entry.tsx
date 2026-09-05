@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { router, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
+import { Feather, FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/expo';
@@ -409,10 +409,10 @@ export default function LogEntryScreen() {
                 }}
                 activeOpacity={0.7}
               >
-                <Feather
+                <FontAwesome
                   name="star"
-                  size={32}
-                  color={star <= rating ? colors.primary : colors.border}
+                  size={25}
+                  color={star <= rating ? '#FFD34D' : colors.mutedForeground}
                 />
               </TouchableOpacity>
             ))}

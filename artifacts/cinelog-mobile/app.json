@@ -7,11 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "couchpotato",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.couchpotato.ios",
-      "buildNumber": "23",
+      "buildNumber": "25",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
@@ -53,13 +52,15 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFF3E8",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200
+          "backgroundColor": "#D3C5F8"
         }
       ],
       "expo-quick-actions",
-      "./plugins/with-spm-fix"
+      "./plugins/with-spm-fix",
+      "expo-font",
+      "expo-secure-store",
+      "expo-video",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -69,11 +70,6 @@
       "eas": {
         "projectId": "bc31d5b4-2663-48ac-8ba0-1dc22c618d1f"
       }
-    },
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFF3E8"
     },
     "owner": "chrisrianrochaadames"
   }

@@ -18,10 +18,11 @@
       "autoIncrement": true,
       "ios": {
         "buildConfiguration": "Release",
-        "image": "sdk-54"
+        "image": "sdk-57"
       },
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "couch-potato.replit.app"
+        "EXPO_PUBLIC_DOMAIN": "couch-potato.replit.app",
+        "EXPO_PUBLIC_CLERK_PROXY_URL": "https://couch-potato.replit.app/api/__clerk"
       }
     }
   },

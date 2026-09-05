@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, entriesTable } from "@workspace/db";
-import { eq, and, like, gte, desc } from "drizzle-orm";
+import { eq, and, like, gte, desc, ne } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -163,6 +163,122 @@ router.post("/entries", requireAuth, async (req, res) => {
     res.status(201).json(serializeEntry(row));
   } catch (err) {
     req.log.error({ err }, "createEntry error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+const entryStatusInputSchema = z.object({
+  title: z.string().min(1),
+  type: z.enum(["movie", "show"]),
+  tmdbId: z.number().int(),
+  status: z.enum(["watching", "plan_to_watch", "completed"]),
+  posterUrl: z.string().optional(),
+  year: z.number().int().optional(),
+  synopsis: z.string().optional(),
+});
+
+// POST /entries/status — create or update exactly one status record for a title.
+// This deliberately reuses the main entries table so onboarding selections stay
+// in sync with the rest of the app and can be edited later.
+router.post("/entries/status", requireAuth, async (req, res) => {
+  const parsed = entryStatusInputSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { title, type, tmdbId, status, posterUrl, year, synopsis } = parsed.data;
+  try {
+    const row = await db.transaction(async (tx) => {
+      const existing = await tx
+        .select()
+        .from(entriesTable)
+        .where(and(eq(entriesTable.userId, req.userId), eq(entriesTable.tmdbId, tmdbId)))
+        .orderBy(desc(entriesTable.createdAt));
+
+      const dateWatched = status === "completed"
+        ? `${year ?? new Date().getFullYear()}-01-01`
+        : null;
+
+      let saved;
+      if (existing[0]) {
+        [saved] = await tx
+          .update(entriesTable)
+          .set({
+            title,
+            type,
+            status,
+            posterUrl: posterUrl ?? existing[0].posterUrl ?? null,
+            dateWatched,
+            year: status === "completed" ? (year ?? existing[0].year ?? null) : null,
+            synopsis: synopsis ?? existing[0].synopsis ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(entriesTable.id, existing[0].id))
+          .returning();
+
+        // Clean up any legacy duplicates for this title so one title can never
+        // appear in multiple status buckets after an onboarding change.
+        if (existing.length > 1) {
+          await tx
+            .delete(entriesTable)
+            .where(
+              and(
+                eq(entriesTable.userId, req.userId),
+                eq(entriesTable.tmdbId, tmdbId),
+                ne(entriesTable.id, existing[0].id),
+              ),
+            );
+        }
+      } else {
+        [saved] = await tx
+          .insert(entriesTable)
+          .values({
+            userId: req.userId,
+            title,
+            type,
+            tmdbId,
+            status,
+            posterUrl: posterUrl ?? null,
+            dateWatched,
+            year: status === "completed" ? (year ?? null) : null,
+            synopsis: synopsis ?? null,
+            tags: [],
+            seasons: [],
+          } as any)
+          .returning();
+      }
+
+      return saved;
+    });
+
+    res.json(serializeEntry(row));
+  } catch (err) {
+    req.log.error({ err }, "upsertEntryStatus error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// DELETE /entries/by-tmdb/:tmdbId — remove the onboarding/status selection.
+router.delete("/entries/by-tmdb/:tmdbId", requireAuth, async (req, res) => {
+  const tmdbId = Number(req.params.tmdbId);
+  if (!Number.isInteger(tmdbId)) {
+    res.status(400).json({ error: "Invalid tmdbId" });
+    return;
+  }
+
+  try {
+    const deleted = await db
+      .delete(entriesTable)
+      .where(and(eq(entriesTable.userId, req.userId), eq(entriesTable.tmdbId, tmdbId)))
+      .returning({ id: entriesTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Entry not found" });
+      return;
+    }
+    res.status(204).send();
+  } catch (err) {
+    req.log.error({ err }, "deleteEntryByTmdbId error");
     res.status(500).json({ error: "Internal server error" });
   }
 });

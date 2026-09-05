@@ -36,10 +36,14 @@ const profileUpdateSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores — no spaces")
     .optional(),
   bio: z.string().max(200).optional().nullable(),
+  topTvShows: z.array(z.string().trim().min(1).max(100)).max(3).optional(),
+  topMovies: z.array(z.string().trim().min(1).max(100)).max(3).optional(),
+  topTvShowPosters: z.array(z.string().max(500).nullable()).max(3).optional(),
+  topMoviePosters: z.array(z.string().max(500).nullable()).max(3).optional(),
   /** Spud variant id ("2"–"15"). null clears the selection. */
   avatarId: z.string().max(10).optional().nullable(),
-  /** base64 data-URL for a custom uploaded photo. Can be large (up to ~200 KB). */
-  avatarUrl: z.string().max(300000).optional().nullable(),
+  /** base64 data-URL for a custom uploaded photo. */
+  avatarUrl: z.string().max(4000000).optional().nullable(),
   onboardingCompleted: z.boolean().optional(),
 });
 
@@ -84,12 +88,21 @@ router.patch("/profile", requireAuth, async (req, res) => {
   }
 
   try {
+    const normalizedData = {
+      ...parsed.data,
+      ...(parsed.data.topTvShows
+        ? { topTvShows: [...new Set(parsed.data.topTvShows)].slice(0, 3) }
+        : {}),
+      ...(parsed.data.topMovies
+        ? { topMovies: [...new Set(parsed.data.topMovies)].slice(0, 3) }
+        : {}),
+    };
     const [profile] = await db
       .insert(profilesTable)
-      .values({ userId: req.userId, ...parsed.data, updatedAt: new Date() })
+      .values({ userId: req.userId, ...normalizedData, updatedAt: new Date() })
       .onConflictDoUpdate({
         target: profilesTable.userId,
-        set: { ...parsed.data, updatedAt: new Date() },
+        set: { ...normalizedData, updatedAt: new Date() },
       })
       .returning();
 

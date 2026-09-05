@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { pool as dbPool } from "@workspace/db";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
@@ -15,7 +16,10 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-const TTL_HOUR = 60 * 60 * 1000;        // 1 hour  — cast/detail/show
+const parsedDetailTtl = Number.parseInt(process.env.TMDB_CACHE_TTL_MS ?? "", 10);
+const TTL_HOUR = Number.isFinite(parsedDetailTtl) && parsedDetailTtl > 0
+  ? parsedDetailTtl
+  : 60 * 60 * 1000;                     // configurable; default 1 hour — cast/detail/show
 const TTL_HALF_HOUR = 30 * 60 * 1000;   // 30 min  — trending/popular
 const TTL_DAY = 24 * 60 * 60 * 1000;    // 24 hours — watch providers, top-rated
 
@@ -36,7 +40,6 @@ function cacheSet<T>(key: string, data: T, ttlMs: number): void {
   tmdbCache.set(key, { data, expiresAt: Date.now() + ttlMs });
 }
 // ---------------------------------------------------------------------------
-
 function getApiKey(): string | undefined {
   return process.env.TMDB_API_KEY;
 }
@@ -59,6 +62,7 @@ interface TmdbResult {
   posterUrl: string | null;
   overview: string | null;
   genres: string[];
+  popularity: number;
 }
 
 function mapItem(item: Record<string, unknown>, mediaType: "movie" | "tv"): TmdbResult {
@@ -79,14 +83,15 @@ function mapItem(item: Record<string, unknown>, mediaType: "movie" | "tv"): Tmdb
     posterUrl: posterPath ? `${POSTER_BASE}${posterPath}` : null,
     overview: (item.overview as string) || null,
     genres,
+    popularity: typeof item.popularity === "number" ? item.popularity : 0,
   };
 }
 
 // GET /tmdb/search?q=...
-// Strategy: fire /search/multi + /search/movie + /search/tv in parallel for
-// maximum recall, deduplicate by TMDB id, sort by popularity, then slice.
-// If the combined result is empty and the query has multiple words, fall back
-// to the single longest word so partial/misspelled queries still find something.
+// Strategy: search the full phrase plus its meaningful words across movie/TV
+// endpoints, then search TMDB people and merge their movie/TV credits. This
+// lets "big adventure" find titles even when TMDB does not match the phrase
+// literally, and lets a name such as "James Cameron" find their credits.
 router.get("/tmdb/search", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -102,6 +107,11 @@ router.get("/tmdb/search", requireAuth, async (req, res) => {
   const query = q.trim();
 
   type SearchResp = { results?: Record<string, unknown>[] };
+  type SearchCandidate = {
+    item: Record<string, unknown>;
+    source: "title" | "person";
+  };
+
   async function fetchSearchResults(url: string): Promise<SearchResp> {
     try {
       const r = await fetch(url);
@@ -110,48 +120,122 @@ router.get("/tmdb/search", requireAuth, async (req, res) => {
     } catch { return { results: [] }; }
   }
 
-  async function runSearch(term: string): Promise<TmdbResult[]> {
+  async function runTitleSearch(term: string, pages = 1): Promise<SearchCandidate[]> {
     const enc = encodeURIComponent(term);
-    const base = `&language=en-US&page=1&include_adult=false`;
-    const [multiRaw, movieRaw, tvRaw] = await Promise.all([
-      fetchSearchResults(`${TMDB_BASE}/search/multi?api_key=${apiKey}&query=${enc}${base}`),
-      fetchSearchResults(`${TMDB_BASE}/search/movie?api_key=${apiKey}&query=${enc}${base}`),
-      fetchSearchResults(`${TMDB_BASE}/search/tv?api_key=${apiKey}&query=${enc}${base}`),
-    ]);
+    const pageResults = await Promise.all(
+      Array.from({ length: pages }, (_, index) => index + 1).map(page => {
+        const base = `&language=en-US&page=${page}&include_adult=false`;
+        return Promise.all([
+          fetchSearchResults(`${TMDB_BASE}/search/multi?api_key=${apiKey}&query=${enc}${base}`),
+          fetchSearchResults(`${TMDB_BASE}/search/movie?api_key=${apiKey}&query=${enc}${base}`),
+          fetchSearchResults(`${TMDB_BASE}/search/tv?api_key=${apiKey}&query=${enc}${base}`),
+        ]);
+      }),
+    );
 
-    // Collect raw items (popularity field preserved) and deduplicate by id+type
+    // Keep raw items so relevance can be scored after all search terms merge.
     const seen = new Set<string>();
-    const raw: Record<string, unknown>[] = [];
+    const raw: SearchCandidate[] = [];
 
-    for (const item of (multiRaw.results ?? [])) {
-      const mt = item.media_type as string;
-      if (mt !== "movie" && mt !== "tv") continue;
-      const key = `${mt}:${item.id}`;
-      if (!seen.has(key)) { seen.add(key); raw.push(item); }
-    }
-    for (const item of (movieRaw.results ?? [])) {
-      const key = `movie:${item.id}`;
-      if (!seen.has(key)) { seen.add(key); raw.push({ ...item, media_type: "movie" }); }
-    }
-    for (const item of (tvRaw.results ?? [])) {
-      const key = `tv:${item.id}`;
-      if (!seen.has(key)) { seen.add(key); raw.push({ ...item, media_type: "tv" }); }
+    for (const [multiRaw, movieRaw, tvRaw] of pageResults) {
+      for (const item of (multiRaw.results ?? [])) {
+        const mt = item.media_type as string;
+        if (mt !== "movie" && mt !== "tv") continue;
+        const key = `${mt}:${item.id}`;
+        if (!seen.has(key)) { seen.add(key); raw.push({ item, source: "title" }); }
+      }
+      for (const item of (movieRaw.results ?? [])) {
+        const key = `movie:${item.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          raw.push({ item: { ...item, media_type: "movie" }, source: "title" });
+        }
+      }
+      for (const item of (tvRaw.results ?? [])) {
+        const key = `tv:${item.id}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          raw.push({ item: { ...item, media_type: "tv" }, source: "title" });
+        }
+      }
     }
 
-    return raw
-      .sort((a, b) => ((b.popularity as number) ?? 0) - ((a.popularity as number) ?? 0))
-      .slice(0, 15)
-      .map(item => mapItem(item, (item.media_type as string) === "movie" ? "movie" : "tv"));
+    return raw;
+  }
+
+  async function runPersonCredits(person: Record<string, unknown>): Promise<SearchCandidate[]> {
+    const personId = person.id as number | undefined;
+    if (!personId) return [];
+
+    const credits = await fetchSearchResults(
+      `${TMDB_BASE}/person/${personId}/combined_credits?api_key=${apiKey}&language=en-US`,
+    );
+    return (credits.results ?? [])
+      .filter(item => item.media_type === "movie" || item.media_type === "tv")
+      .map(item => ({ item, source: "person" as const }));
   }
 
   try {
-    let results = await runSearch(query);
+    const ignoredWords = new Set(["the", "and", "for", "with", "from", "into", "that", "this"]);
+    const words = query
+      .split(/\s+/)
+      .map(word => word.trim())
+      .filter(word => word.length >= 3 && !ignoredWords.has(word.toLowerCase()));
+    const searchTerms = Array.from(new Set([query, ...words])).slice(0, 4);
 
-    // Nothing found and multi-word query → retry with the longest single word
-    if (results.length === 0 && /\s/.test(query)) {
-      const fallback = query.split(/\s+/).sort((a, b) => b.length - a.length)[0];
-      results = await runSearch(fallback);
+    const titleCandidates = (await Promise.all(
+      searchTerms.map((term, index) => runTitleSearch(term, index === 0 ? 3 : 1)),
+    )).flat();
+
+    // TMDB's person search can find actors, directors, writers, and creators.
+    // Pull only the most likely people so a common surname does not overwhelm
+    // ordinary title matches.
+    const people = await fetchSearchResults(
+      `${TMDB_BASE}/search/person?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`,
+    );
+    const personCandidates = (await Promise.all(
+      (people.results ?? []).slice(0, 3).map(runPersonCredits),
+    )).flat();
+
+    const candidates = [...titleCandidates, ...personCandidates];
+    const unique = new Map<string, SearchCandidate>();
+    for (const candidate of candidates) {
+      const mediaType = candidate.item.media_type as string;
+      const id = candidate.item.id as number | undefined;
+      if ((mediaType !== "movie" && mediaType !== "tv") || !id) continue;
+      const key = `${mediaType}:${id}`;
+      const existing = unique.get(key);
+      // Prefer a person credit for the same title so a person search keeps its
+      // filmography ranking even when that title also matched by name.
+      if (!existing || (existing.source === "title" && candidate.source === "person")) {
+        unique.set(key, candidate);
+      }
     }
+
+    const normalizedQuery = query.toLowerCase().replace(/[^\w]+/g, " ").trim();
+    const queryWords = normalizedQuery.split(/\s+/).filter(Boolean);
+    const titleRelevance = (item: Record<string, unknown>): number => {
+      const title = String(item.title ?? item.name ?? "")
+        .toLowerCase()
+        .replace(/[^\w]+/g, " ")
+        .trim();
+      if (!title) return 0;
+      if (title === normalizedQuery) return 1000;
+      if (title.startsWith(normalizedQuery)) return 850;
+      if (queryWords.length > 1 && queryWords.every(word => title.includes(word))) return 750;
+      if (queryWords.some(word => title.includes(word))) return 450;
+      return 0;
+    };
+
+    const results = [...unique.values()]
+      .sort((a, b) => {
+        const aScore = titleRelevance(a.item) + (a.source === "person" ? 800 : 0);
+        const bScore = titleRelevance(b.item) + (b.source === "person" ? 800 : 0);
+        if (bScore !== aScore) return bScore - aScore;
+        return ((b.item.popularity as number) ?? 0) - ((a.item.popularity as number) ?? 0);
+      })
+      .slice(0, 50)
+      .map(({ item }) => mapItem(item, item.media_type === "movie" ? "movie" : "tv"));
 
     res.json({ results });
   } catch (err) {
@@ -198,70 +282,73 @@ router.get("/tmdb/trending", requireAuth, async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // Curated pools — Hollywood blockbusters + big-streamer TV only.
-// The full pool is searched & cached once per day. Pages rotate a window of
-// 10 from each pool so every refresh tab shows a different set.
+// Each pool holds at least 400 eligible titles per media type. A fresh request
+// receives a non-overlapping 40-title buffer so saved titles can be replaced
+// immediately without making people scroll through the same small set.
 // ---------------------------------------------------------------------------
 
-const MOVIE_QUERIES = [
-  "A Minecraft Movie",
-  "Deadpool Wolverine",
-  "Inside Out 2",
-  "Dune Part Two",
-  "Gladiator II",
-  "Moana 2",
-  "Sonic the Hedgehog 3",
-  "Godzilla x Kong The New Empire",
-  "Beetlejuice Beetlejuice",
-  "Oppenheimer",
-  "Barbie",
-  "The Super Mario Bros Movie",
-  "Avatar The Way of Water",
-  "Top Gun Maverick",
-  "Alien Romulus",
-  "Twisters",
-  "Mission Impossible Dead Reckoning Part One",
-  "Bad Boys Ride or Die",
-  "Despicable Me 4",
-  "Captain America Brave New World",
-  "Thunderbolts Marvel 2025",
-  "Wonka",
-  "Puss in Boots The Last Wish",
-  "Fast X",
-];
-
-const SHOW_QUERIES = [
-  "Severance",           // Apple TV+
-  "The Last of Us",      // HBO
-  "The White Lotus",     // HBO
-  "Squid Game",          // Netflix
-  "Wednesday",           // Netflix
-  "Stranger Things",     // Netflix
-  "Nobody Wants This",   // Netflix
-  "Silo",                // Apple TV+
-  "Succession",          // HBO
-  "House of the Dragon", // HBO
-  "Yellowstone",         // Paramount+
-  "Tulsa King",          // Paramount+
-  "The Morning Show",    // Apple TV+
-  "Ted Lasso",           // Apple TV+
-  "Shrinking",           // Apple TV+
-  "Hacks",               // Max (HBO)
-  "Ozark",               // Netflix
-  "The Diplomat",        // Netflix
-  "The Penguin",         // HBO
-  "Landman",             // Paramount+
-  "Adolescence",         // Netflix
-  "Emily in Paris",      // Netflix
-];
+const POPULAR_POOL_SIZE = 400;
+const POPULAR_BATCH_SIZE = 40;
+const POPULAR_DISCOVERY_PAGES = 25;
+const POPULAR_RECENCY_YEARS = 10;
 
 function rotateSlice<T>(arr: T[], page: number, count: number): T[] {
   if (arr.length === 0) return [];
-  const offset = ((page - 1) * Math.floor(count / 2)) % arr.length;
+  const offset = ((page - 1) * count) % arr.length;
   const result: T[] = [];
   for (let i = 0; i < Math.min(count, arr.length); i++) {
     result.push(arr[(offset + i) % arr.length]);
   }
   return result;
+}
+
+async function buildPopularPool(
+  apiKey: string,
+  mediaType: "movie" | "tv",
+): Promise<TmdbResult[]> {
+  const currentYear = new Date().getFullYear();
+  const recencyParam = mediaType === "movie"
+    ? `primary_release_date.gte=${currentYear - POPULAR_RECENCY_YEARS}-01-01`
+    : `first_air_date.gte=${currentYear - POPULAR_RECENCY_YEARS}-01-01`;
+  const endpoint = mediaType === "movie" ? "movie" : "tv";
+  const commonParams = new URLSearchParams({
+    api_key: apiKey,
+    language: "en-US",
+    sort_by: "popularity.desc",
+    include_adult: "false",
+    with_original_language: "en",
+    without_genres: "16",
+    "vote_count.gte": "200",
+    "vote_average.gte": "5",
+    [recencyParam.split("=")[0]]: recencyParam.split("=")[1],
+  });
+
+  const pages = await Promise.all(
+    Array.from({ length: POPULAR_DISCOVERY_PAGES }, (_, index) => index + 1).map(async page => {
+      try {
+        const params = new URLSearchParams(commonParams);
+        params.set("page", String(page));
+        const response = await fetch(`${TMDB_BASE}/discover/${endpoint}?${params.toString()}`);
+        if (!response.ok) return [];
+        const payload = await response.json() as { results?: Record<string, unknown>[] };
+        return payload.results ?? [];
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+  const seen = new Set<number>();
+  return pages
+    .flat()
+    .map(item => mapItem(item, mediaType))
+    .filter(item => {
+      if (!item.posterUrl || item.genres.includes("Animation") || item.popularity < 10) return false;
+      if (seen.has(item.tmdbId)) return false;
+      seen.add(item.tmdbId);
+      return true;
+    })
+    .slice(0, POPULAR_POOL_SIZE);
 }
 
 // GET /tmdb/popular?page=1
@@ -272,36 +359,23 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
     return;
   }
 
-  const page = Math.min(5, Math.max(1, parseInt((req.query.page as string) || "1", 10) || 1));
+  const requestedPage = parseInt((req.query.page as string) || "1", 10);
+  const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const today = new Date().toISOString().slice(0, 10);
-  const poolKey = `popular-pool-v2:${today}`;
+  const poolKey = `popular-pool-v3:${today}`;
 
   let pool = cacheGet<{ movies: TmdbResult[]; shows: TmdbResult[] }>(poolKey);
 
   if (!pool) {
     try {
       const [movieResults, showResults] = await Promise.all([
-        Promise.all(
-          MOVIE_QUERIES.map((q) =>
-            fetch(`${TMDB_BASE}/search/movie?api_key=${apiKey}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((d: { results?: Record<string, unknown>[] } | null) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "movie") : null; })
-              .catch(() => null)
-          )
-        ),
-        Promise.all(
-          SHOW_QUERIES.map((q) =>
-            fetch(`${TMDB_BASE}/search/tv?api_key=${apiKey}&query=${encodeURIComponent(q)}&language=en-US&page=1&include_adult=false`)
-              .then((r) => (r.ok ? r.json() : null))
-              .then((d: { results?: Record<string, unknown>[] } | null) => { const first = (d?.results ?? [])[0]; return first ? mapItem(first as Record<string, unknown>, "tv") : null; })
-              .catch(() => null)
-          )
-        ),
+        buildPopularPool(apiKey, "movie"),
+        buildPopularPool(apiKey, "tv"),
       ]);
 
       pool = {
-        movies: movieResults.filter(Boolean) as TmdbResult[],
-        shows:  showResults.filter(Boolean) as TmdbResult[],
+        movies: movieResults,
+        shows: showResults,
       };
       cacheSet(poolKey, pool, TTL_DAY);
     } catch (err) {
@@ -311,13 +385,146 @@ router.get("/tmdb/popular", requireAuth, async (req, res) => {
     }
   }
 
-  res.json({
-    movies: rotateSlice(pool.movies, page, 10),
-    shows:  rotateSlice(pool.shows,  page, 10),
-  });
+  try {
+    const { rows } = await dbPool.query<{ tmdb_id: number }>(
+      `SELECT tmdb_id FROM entries WHERE user_id = $1 AND tmdb_id IS NOT NULL`,
+      [req.userId],
+    );
+    const collectionIds = new Set(rows.map(row => row.tmdb_id));
+    const movies = pool.movies.filter(item => !collectionIds.has(item.tmdbId));
+    const shows = pool.shows.filter(item => !collectionIds.has(item.tmdbId));
+
+    res.json({
+      movies: rotateSlice(movies, page, POPULAR_BATCH_SIZE),
+      shows: rotateSlice(shows, page, POPULAR_BATCH_SIZE),
+    });
+  } catch (err) {
+    req.log.error({ err }, "tmdb popular collection filtering error");
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
-// GET /tmdb/top-rated — curated recent picks for onboarding (fixed, never changes)
+const ONBOARDING_POOL_SIZE = 320;
+const ONBOARDING_POOL_PAGES = 10;
+const ONBOARDING_COUNTRIES = "US|GB|FR|DE|ES|IT|IE|NL|BE|SE|DK|NO|FI|PL|AT|CH|PT|GR|CZ";
+const INITIAL_ONBOARDING_PICKS: { query: string; type: "movie" | "tv" }[] = [
+  { query: "Stranger Things", type: "tv" },
+  { query: "Wednesday", type: "tv" },
+  { query: "The White Lotus", type: "tv" },
+  { query: "Silo", type: "tv" },
+  { query: "The Last of Us", type: "tv" },
+  { query: "Severance", type: "tv" },
+  { query: "Nobody Wants This", type: "tv" },
+  { query: "A Minecraft Movie", type: "movie" },
+  { query: "Jack Ryan", type: "tv" },
+  { query: "In the Land of Saints and Sinners", type: "movie" },
+  { query: "Apex", type: "movie" },
+  { query: "Toy Story 5", type: "movie" },
+  { query: "MobLand", type: "tv" },
+  { query: "The Devil Wears Prada 2", type: "movie" },
+  { query: "House of the Dragon", type: "tv" },
+  { query: "Succession", type: "tv" },
+];
+
+async function getOnboardingPool(apiKey: string): Promise<TmdbResult[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const cacheKey = `onboarding-popular-v2:${today}`;
+  const cached = cacheGet<TmdbResult[]>(cacheKey);
+  if (cached) return cached;
+
+  const threeYearsAgo = new Date();
+  threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+  const startDate = threeYearsAgo.toISOString().slice(0, 10);
+
+  const fetchDiscoverPages = async (mediaType: "movie" | "tv"): Promise<TmdbResult[]> => {
+    const dateFilter = mediaType === "movie"
+      ? `primary_release_date.gte=${startDate}&primary_release_date.lte=${today}`
+      : `first_air_date.gte=${startDate}&first_air_date.lte=${today}`;
+    const pages = await Promise.all(
+      Array.from({ length: ONBOARDING_POOL_PAGES }, (_, index) => index + 1).map(async page => {
+        const url = `${TMDB_BASE}/discover/${mediaType}?api_key=${apiKey}&language=en-US&sort_by=popularity.desc&include_adult=false&include_video=false&vote_count.gte=100&vote_average.gte=6&with_origin_country=${ONBOARDING_COUNTRIES}&without_genres=16&${dateFilter}&page=${page}`;
+        const response = await fetch(url).catch(() => null);
+        if (!response || !response.ok) return [];
+        const data = (await response.json()) as { results?: Record<string, unknown>[] };
+        return (data.results ?? []).map(item => mapItem(item, mediaType));
+      }),
+    );
+    return pages.flat();
+  };
+
+  const [movies, shows] = await Promise.all([
+    fetchDiscoverPages("movie"),
+    fetchDiscoverPages("tv"),
+  ]);
+  const dedupe = (items: TmdbResult[]) => {
+    const seen = new Set<string>();
+    return items
+      .filter(item => item.posterUrl)
+      .filter(item => {
+        const key = `${item.type}-${item.tmdbId}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => b.popularity - a.popularity);
+  };
+  const rankedMovies = dedupe(movies);
+  const rankedShows = dedupe(shows);
+  const pool: TmdbResult[] = [];
+  let movieIndex = 0;
+  let showIndex = 0;
+  while (
+    pool.length < ONBOARDING_POOL_SIZE &&
+    (movieIndex < rankedMovies.length || showIndex < rankedShows.length)
+  ) {
+    if (movieIndex < rankedMovies.length) pool.push(rankedMovies[movieIndex++]);
+    if (showIndex < rankedShows.length && pool.length < ONBOARDING_POOL_SIZE) {
+      pool.push(rankedShows[showIndex++]);
+    }
+  }
+
+  cacheSet(cacheKey, pool, TTL_DAY);
+  return pool;
+}
+
+async function getInitialOnboardingPicks(apiKey: string): Promise<TmdbResult[]> {
+  const cacheKey = "onboarding-initial-v1";
+  const cached = cacheGet<TmdbResult[]>(cacheKey);
+  if (cached) return cached;
+
+  const results = await Promise.all(
+    INITIAL_ONBOARDING_PICKS.map(async ({ query, type }) => {
+      const mediaType = type === "tv" ? "tv" : "movie";
+      const url = `${TMDB_BASE}/search/${mediaType}?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`;
+      const response = await fetch(url).catch(() => null);
+      if (!response || !response.ok) return null;
+      const data = (await response.json()) as { results?: Record<string, unknown>[] };
+      const first = (data.results ?? [])[0];
+      return first ? mapItem(first, type) : null;
+    }),
+  );
+  const items = results.filter(Boolean) as TmdbResult[];
+  cacheSet(cacheKey, items, TTL_DAY);
+  return items;
+}
+
+// GET /tmdb/onboarding-pool — recent, mainstream discovery pool for onboarding
+router.get("/tmdb/onboarding-pool", requireAuth, async (req, res) => {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    res.status(503).json({ error: "TMDB_API_KEY not configured." });
+    return;
+  }
+
+  try {
+    res.json({ items: await getOnboardingPool(apiKey) });
+  } catch (err) {
+    req.log.error({ err }, "tmdb onboarding pool error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// GET /tmdb/top-rated — the fixed curated first screen for onboarding
 router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -326,47 +533,13 @@ router.get("/tmdb/top-rated", requireAuth, async (req, res) => {
   }
 
   const TTL_WEEK = 7 * 24 * 60 * 60 * 1000;
-  const cached = cacheGet<{ items: TmdbResult[] }>("top-rated-v3");
+  const cached = cacheGet<{ items: TmdbResult[] }>("top-rated-v5");
   if (cached) { res.json(cached); return; }
 
-  // Curated list — ordered by display preference, searched by name+type so
-  // posters are always fresh and no hard-coded TMDB IDs can go stale.
-  const PICKS: { query: string; type: "movie" | "tv" }[] = [
-    { query: "Stranger Things",        type: "tv" },
-    { query: "Wednesday",              type: "tv" },
-    { query: "The White Lotus",        type: "tv" },
-    { query: "Silo",                   type: "tv" },
-    { query: "The Last of Us",         type: "tv" },
-    { query: "Severance",              type: "tv" },
-    { query: "Nobody Wants This",      type: "tv" },
-    { query: "A Minecraft Movie",      type: "movie" },
-    { query: "Jack Ryan",              type: "tv" },
-    { query: "In the Land of Saints and Sinners", type: "movie" },
-    { query: "Apex",                   type: "movie" },
-    { query: "Toy Story 5",            type: "movie" },
-    { query: "Mobland",                type: "tv" },
-    { query: "The Devil Wears Prada 2", type: "movie" },
-    { query: "Squid Game",              type: "tv" },
-    { query: "Succession",              type: "tv" },
-  ];
-
   try {
-    const results = await Promise.all(
-      PICKS.map(async ({ query, type }) => {
-        const mediaType = type === "tv" ? "tv" : "movie";
-        const url = `${TMDB_BASE}/search/${mediaType}?api_key=${apiKey}&query=${encodeURIComponent(query)}&language=en-US&page=1&include_adult=false`;
-        const r = await fetch(url).catch(() => null);
-        if (!r || !r.ok) return null;
-        const data = (await r.json()) as { results?: Record<string, unknown>[] };
-        const first = (data.results ?? [])[0];
-        if (!first) return null;
-        return mapItem(first, type === "movie" ? "movie" : "tv");
-      })
-    );
-
-    const items = results.filter(Boolean) as TmdbResult[];
+    const items = (await getInitialOnboardingPicks(apiKey)).slice(0, 16);
     const payload = { items };
-    cacheSet("top-rated-v2", payload, TTL_WEEK);
+    cacheSet("top-rated-v5", payload, TTL_WEEK);
     res.json(payload);
   } catch (err) {
     req.log.error({ err }, "tmdb top-rated error");
@@ -435,6 +608,7 @@ interface CastMember {
   name: string;
   character: string;
   profileUrl: string | null;
+  personId: number;
   order: number;
 }
 
@@ -442,6 +616,7 @@ interface CrewMember {
   name: string;
   job: string;
   profileUrl: string | null;
+  personId: number;
 }
 
 interface TmdbDetailResponse {
@@ -465,6 +640,7 @@ function mapCredits(credits: {
       name: m.name as string,
       character: (m.character as string) ?? "",
       profileUrl: m.profile_path ? `https://image.tmdb.org/t/p/w185${m.profile_path}` : null,
+      personId: m.id as number,
       order: m.order as number ?? 99,
     }));
 
@@ -475,6 +651,7 @@ function mapCredits(credits: {
       name: m.name as string,
       job: m.job as string,
       profileUrl: m.profile_path ? `https://image.tmdb.org/t/p/w185${m.profile_path}` : null,
+      personId: m.id as number,
     }));
 
   return { cast, directors };
@@ -493,9 +670,16 @@ router.get("/tmdb/movie/:id", requireAuth, async (req, res) => {
     return;
   }
   const cacheKey = `movie:${tmdbId}`;
-  const cached = cacheGet<TmdbDetailResponse>(cacheKey);
-  if (cached) { res.json(cached); return; }
+  const bypass = req.query.refresh === "1";
 
+  if (!bypass) {
+    const cached = cacheGet<TmdbDetailResponse>(cacheKey);
+    if (cached) {
+      res.setHeader("X-Cache", "HIT");
+      res.json(cached);
+      return;
+    }
+  }
   try {
     const url = `${TMDB_BASE}/movie/${tmdbId}?api_key=${apiKey}&language=en-US&append_to_response=credits`;
     const response = await fetch(url);
@@ -532,6 +716,7 @@ router.get("/tmdb/movie/:id", requireAuth, async (req, res) => {
     };
 
     cacheSet(cacheKey, result, TTL_HOUR);
+    res.setHeader("X-Cache", "MISS");
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "tmdb movie detail error");
@@ -552,9 +737,16 @@ router.get("/tmdb/tv/:id", requireAuth, async (req, res) => {
     return;
   }
   const cacheKey = `tv:${tmdbId}`;
-  const cached = cacheGet<TmdbDetailResponse>(cacheKey);
-  if (cached) { res.json(cached); return; }
+  const bypass = req.query.refresh === "1";
 
+  if (!bypass) {
+    const cached = cacheGet<TmdbDetailResponse>(cacheKey);
+    if (cached) {
+      res.setHeader("X-Cache", "HIT");
+      res.json(cached);
+      return;
+    }
+  }
   try {
     const url = `${TMDB_BASE}/tv/${tmdbId}?api_key=${apiKey}&language=en-US&append_to_response=credits`;
     const response = await fetch(url);
@@ -583,6 +775,7 @@ router.get("/tmdb/tv/:id", requireAuth, async (req, res) => {
       name: c.name,
       job: "Creator",
       profileUrl: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : null,
+      personId: (c as { id?: number }).id as number,
     }));
 
     const year = data.first_air_date ? parseInt(data.first_air_date.split("-")[0], 10) : null;
@@ -600,6 +793,7 @@ router.get("/tmdb/tv/:id", requireAuth, async (req, res) => {
     };
 
     cacheSet(cacheKey, result, TTL_HOUR);
+    res.setHeader("X-Cache", "MISS");
     res.json(result);
   } catch (err) {
     req.log.error({ err }, "tmdb tv detail error");

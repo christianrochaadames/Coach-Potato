@@ -41,14 +41,15 @@ export default function LandingScreen() {
             <Text style={styles.bold}>watched</Text>
           </Text>
           <Text style={styles.copy}>
-            And what you'll <Text style={styles.bold}>watch</Text> next
+            And what you'll{'\n'}
+            <Text style={styles.bold}>watch next</Text>
           </Text>
           <Text style={[styles.copy, styles.bold]}>All in one place.</Text>
         </View>
 
         {/* Mascot — bottom right */}
         <Image
-          source={require('@/assets/images/spud.png')}
+          source={require('@/assets/images/spud-new-mascot.png')}
           style={styles.mascot}
           resizeMode="contain"
         />
@@ -61,14 +62,18 @@ export default function LandingScreen() {
           onPress={() => router.push('/(auth)/sign-up')}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnPrimaryText}>New to Spud? Sign Up</Text>
+          <Text style={styles.btnPrimaryText}>
+            New around here? <Text style={styles.btnActionText}>Sign Up</Text>
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.btnSecondary}
           onPress={() => router.push('/(auth)/sign-in')}
           activeOpacity={0.85}
         >
-          <Text style={styles.btnSecondaryText}>Existing User? Sign In</Text>
+          <Text style={styles.btnSecondaryText}>
+            Back to the couch? <Text style={styles.btnActionText}>Sign In</Text>
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -86,8 +91,8 @@ const styles = StyleSheet.create({
   },
 
   // Logo
-  logoWrap: { marginTop: 16, alignItems: 'flex-start' },
-  logo: { height: 130, width: 260 },
+  logoWrap: { marginTop: 24, marginLeft: -12, alignItems: 'flex-start' },
+  logo: { height: 117, width: 234 },
 
   // Hero
   hero: {
@@ -95,20 +100,22 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginTop: 8,
   },
-  copyStack: { gap: 18, maxWidth: '65%', marginTop: 12 },
+  copyStack: { gap: 18, maxWidth: '65%', marginTop: 24 },
   copy: {
-    fontSize: 26,
+    fontSize: 22.1,
     fontFamily: 'Manrope_400Regular',
     color: TEXT,
-    lineHeight: 36,
+    lineHeight: 30.6,
   },
   bold: { fontFamily: 'Manrope_700Bold', color: TEXT },
   mascot: {
     position: 'absolute',
-    right: -8,
-    bottom: 0,
-    width: 192,
-    height: 240,
+    // Position the couch body, rather than the detached remote, against the
+    // CTA pill edge. The illustration has transparent padding on the right.
+    right: -20,
+    bottom: 20,
+    width: 220,
+    height: 220,
   },
 
   // Buttons
@@ -120,8 +127,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnPrimaryText: {
-    fontSize: 16,
-    fontFamily: 'Manrope_700Bold',
+    fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     color: '#ffffff',
   },
   btnSecondary: {
@@ -133,8 +140,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   btnSecondaryText: {
-    fontSize: 16,
-    fontFamily: 'Manrope_700Bold',
+    fontSize: 14,
+    fontFamily: 'Manrope_400Regular',
     color: '#5B50D0',
   },
+  btnActionText: { fontFamily: 'Manrope_700Bold' },
 });

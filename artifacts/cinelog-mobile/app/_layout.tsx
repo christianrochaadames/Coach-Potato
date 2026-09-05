@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { StatusBar } from 'expo-status-bar';
@@ -14,6 +15,7 @@ import {
   Manrope_700Bold,
 } from '@expo-google-fonts/manrope';
 import * as SplashScreen from 'expo-splash-screen';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import * as Linking from 'expo-linking';
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
@@ -26,6 +28,11 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 // ── Configure API base URL ──────────────────────────────────────────────────
 const domain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
 setBaseUrl(`https://${domain}`);
+// Replit-managed Clerk uses the app's frontend API proxy in production. Native
+// clients do not have the browser cookie transport, so omitting this prop can
+// leave the UI signed in while every authenticated API request is 401.
+const clerkProxyUrl =
+  process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
 // ── Stable module-level token slot ──────────────────────────────────────────
 // Set up the getter ONCE at module load time so it is available before any
@@ -49,24 +56,56 @@ const queryClient = new QueryClient({
 // ── Keep splash screen visible while fonts + Clerk load ──────────────────────
 SplashScreen.preventAutoHideAsync();
 
+const splashVideo = require('../assets/videos/spud-motion-logo.mp4');
+// Measured from the actual iOS-rendered MP4 frame. Keep every exposed layer on
+// this exact value so the contained landscape video has no visible letterbox seam.
+const splashSurface = '#D3C5F8';
+
+function LaunchSplash({ onFinished }: { onFinished: () => void }) {
+  const player = useVideoPlayer(splashVideo, (videoPlayer) => {
+    videoPlayer.loop = false;
+    videoPlayer.audioMixingMode = 'mixWithOthers';
+    videoPlayer.muted = true;
+    videoPlayer.play();
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(onFinished, 5_000);
+    return () => clearTimeout(timer);
+  }, [onFinished]);
+
+  return (
+    <View style={styles.launchSplash}>
+      <VideoView
+        player={player}
+        style={styles.launchVideo}
+        contentFit="contain"
+        nativeControls={false}
+      />
+    </View>
+  );
+}
+
 // ── Auth token sync ──────────────────────────────────────────────────────────
 // Wires Clerk session token into API client. Works anywhere inside ClerkProvider
 // (does NOT need ClerkLoaded — useAuth returns isLoaded:false until ready).
 function AuthTokenSync() {
-  const { getToken, isSignedIn } = useAuth();
-
-  // Update the module-level slot at RENDER TIME (not just in an effect) so
-  // the token is available before TanStack Query fires its first fetch.
-  _clerkGetToken = () => getToken();
+  const { getToken, isSignedIn, isLoaded, userId } = useAuth();
+  const previousUserId = useRef<string | null | undefined>(undefined);
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
 
   useEffect(() => {
-    // Keep the slot current whenever getToken changes (e.g. token refresh).
-    _clerkGetToken = () => getToken();
+    // Register one stable getter. Clerk may recreate getToken on renders;
+    // replacing the module-level getter on every render creates a cleanup
+    // window where requests can leave without an Authorization header.
+    const stableGetter = () => getTokenRef.current();
+    _clerkGetToken = stableGetter;
     return () => {
       // On unmount clear the slot so stale calls don't succeed after logout.
-      _clerkGetToken = null;
+      if (_clerkGetToken === stableGetter) _clerkGetToken = null;
     };
-  }, [getToken]);
+  }, []);
 
   // After sign-up, flush any pending profile data that was saved to SecureStore
   // before the session existed.
@@ -77,7 +116,7 @@ function AuthTokenSync() {
         const pending = await SecureStore.getItemAsync('pendingProfile');
         if (!pending) return;
         const profile = JSON.parse(pending);
-        const token = await getToken();
+        const token = await getTokenRef.current();
         if (!token) return;
         const apiDomain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
         await fetch(`https://${apiDomain}/api/profile`, {
@@ -90,9 +129,60 @@ function AuthTokenSync() {
         // Non-fatal — user can update from Profile tab
       }
     })();
-  }, [isSignedIn, getToken]);
+  }, [isSignedIn]);
+
+  // Never let TanStack Query data from one Clerk account survive a logout or
+  // account switch. The same native navigation tree can remain mounted while
+  // Clerk changes sessions, so clearing only in the Profile screen is not enough.
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (previousUserId.current !== userId) {
+      queryClient.clear();
+    }
+    previousUserId.current = userId;
+  }, [isLoaded, userId]);
 
   return null;
+}
+
+function AppContent() {
+  const { isLoaded, isSignedIn } = useAuth();
+  const [showLaunchSplash, setShowLaunchSplash] = useState(false);
+  const hasShownInitialSplash = useRef(false);
+  const previousSignedIn = useRef<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const hasLoggedOut =
+      previousSignedIn.current === true && isSignedIn === false;
+
+    if (!hasShownInitialSplash.current || hasLoggedOut) {
+      void SplashScreen.hideAsync();
+      setShowLaunchSplash(true);
+      hasShownInitialSplash.current = true;
+    }
+
+    previousSignedIn.current = isSignedIn;
+  }, [isLoaded, isSignedIn]);
+
+  return (
+    <>
+      <StatusBar style="dark" />
+      <Stack>
+        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="log-entry"
+          options={{ presentation: 'modal', headerShown: false }}
+        />
+        <Stack.Screen name="entry/[id]" options={{ headerShown: false }} />
+      </Stack>
+      {showLaunchSplash ? (
+        <LaunchSplash onFinished={() => setShowLaunchSplash(false)} />
+      ) : null}
+    </>
+  );
 }
 
 // ── Deep-link handler ────────────────────────────────────────────────────────
@@ -158,7 +248,11 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+    <ClerkProvider
+      publishableKey={publishableKey}
+      tokenCache={tokenCache}
+      proxyUrl={clerkProxyUrl}
+    >
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaProvider>
           <ErrorBoundary>
@@ -166,17 +260,7 @@ export default function RootLayout() {
               <KeyboardProvider>
                 {/* AuthTokenSync needs ClerkProvider above it but nothing else */}
                 <AuthTokenSync />
-                <StatusBar style="dark" />
-                <Stack>
-                  <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="log-entry"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen name="entry/[id]" options={{ headerShown: false }} />
-                </Stack>
+                <AppContent />
               </KeyboardProvider>
             </QueryClientProvider>
           </ErrorBoundary>
@@ -185,3 +269,18 @@ export default function RootLayout() {
     </ClerkProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  launchSplash: {
+    ...StyleSheet.absoluteFill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: splashSurface,
+    zIndex: 100,
+  },
+  launchVideo: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: splashSurface,
+  },
+});
