@@ -9,6 +9,7 @@ import {
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { mergeLatestAccountSnapshot } from "../lib/latestAccountRecovery";
 
 const router = Router();
 
@@ -182,6 +183,13 @@ router.get("/profile", requireAuth, async (req, res) => {
       req.log.info(
         { userId: req.userId },
         "recovered detached account data",
+      );
+    }
+    const latestSnapshot = await mergeLatestAccountSnapshot(req.userId);
+    if (latestSnapshot) {
+      req.log.info(
+        { userId: req.userId, entryCount: latestSnapshot.entryCount },
+        "merged latest account recovery snapshot",
       );
     }
 
