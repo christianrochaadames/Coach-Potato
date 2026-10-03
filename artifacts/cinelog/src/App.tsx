@@ -22,6 +22,7 @@ import Onboarding from "@/pages/onboarding";
 import Welcome from "@/pages/welcome";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import { BuddyDirectory, BuddyEntries, BuddyProfile } from "@/pages/buddies";
 
 const queryClient = new QueryClient();
 
@@ -300,6 +301,9 @@ function Router() {
           <Route path="/watchlist" component={() => <ProtectedRoute component={Watchlist} />} />
           <Route path="/stats" component={() => <ProtectedRoute component={Stats} />} />
           <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+          <Route path="/buddies" component={() => <ProtectedRoute component={BuddyDirectory} />} />
+          <Route path="/buddies/:userId/entries" component={(props) => <ProtectedRoute component={() => <BuddyEntries params={props.params} />} />} />
+          <Route path="/buddies/:userId" component={(props) => <ProtectedRoute component={() => <BuddyProfile params={props.params} />} />} />
           <Route path="/entry/:id" component={() => <ProtectedRoute component={EntryDetail} />} />
           <Route path="/privacy" component={Privacy} />
           <Route path="/privacy-policy" component={Privacy} />

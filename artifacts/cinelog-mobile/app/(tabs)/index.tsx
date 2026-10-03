@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather, FontAwesome } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Image as ExpoImage } from 'expo-image';
 import { useAuth, useUser } from '@clerk/expo';
 import {
   useListEntries, useCreateEntry, useUpdateEntry,
@@ -15,12 +16,13 @@ import {
 } from '@workspace/api-client-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authFetch } from '@/utils/authFetch';
+import { trackEvent } from '@/utils/analytics';
 import { getMobileProfileQueryKey } from '@/utils/profile';
 import {
   resolveSpudAvatar,
   SPUD_AVATAR_BACKGROUND,
 } from '@/constants/avatars';
-import { QuickLogSheet, TmdbItem } from './search';
+import { QuickLogSheet, TmdbItem, type QuickLogSource } from './search';
 
 // Computed in the component via useWindowDimensions to avoid SSR issues
 const POSTER_GAP = 8;
@@ -56,18 +58,13 @@ function EmptyMessage({ children }: { children: string }) {
 }
 
 function useProfile() {
-  const { userId, getToken } = useAuth();
-  const getTokenRef = useRef(getToken);
-  getTokenRef.current = getToken;
+  const { userId } = useAuth();
   const profileQuery = useQuery({
     queryKey: getMobileProfileQueryKey(userId),
     enabled: Boolean(userId),
     queryFn: async () => {
       const domain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
-      const token = await getTokenRef.current();
-      const res = await authFetch(`https://${domain}/api/profile`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await authFetch(`https://${domain}/api/profile`);
       if (!res.ok) throw new Error('Could not load profile');
       return await res.json() as {
         firstName?: string; avatarId?: string | null; avatarUrl?: string | null;
@@ -94,26 +91,22 @@ function toTmdbItem(entry: any): TmdbItem {
   };
 }
 
-function useRecommendations(collectionKey: string) {
-  const { userId, getToken } = useAuth();
-  const getTokenRef = useRef(getToken);
-  getTokenRef.current = getToken;
+function useRecommendations(collectionKey: string, enabled: boolean) {
+  const { userId } = useAuth();
   const [results, setResults] = useState<RecItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [key, setKey] = useState(0);
 
   const refetch = useCallback(() => { setLoading(true); setKey(k => k + 1); }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     setLoading(true);
     (async () => {
       try {
         const domain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
-        const token = await getTokenRef.current();
-        const res = await authFetch(`https://${domain}/api/recommendations?_ts=${Date.now()}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
+        const res = await authFetch(`https://${domain}/api/recommendations?_ts=${Date.now()}`);
         if (!cancelled && res.ok) {
           const d = await res.json();
           setResults(d.results ?? []);
@@ -121,7 +114,7 @@ function useRecommendations(collectionKey: string) {
       } catch {} finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [key, userId, collectionKey]);
+  }, [enabled, key, userId, collectionKey]);
 
   return { results, loading, refetch };
 }
@@ -196,9 +189,14 @@ function PosterThumb({ entry, onPress, posterW }: { entry: any; onPress: () => v
   const queryClient = useQueryClient();
   const updateEntry = useUpdateEntry();
   const [localRating, setLocalRating] = useState<number>(entry.rating ?? 0);
+  const savedRatingRef = useRef<number>(entry.rating ?? 0);
 
   // Sync if parent entry changes
-  useEffect(() => { setLocalRating(entry.rating ?? 0); }, [entry.rating]);
+  useEffect(() => {
+    const nextRating = entry.rating ?? 0;
+    setLocalRating(nextRating);
+    savedRatingRef.current = nextRating;
+  }, [entry.rating]);
 
   const handleStarTap = (star: number) => {
     const newRating = localRating === star ? 0 : star;
@@ -206,7 +204,15 @@ function PosterThumb({ entry, onPress, posterW }: { entry: any; onPress: () => v
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateEntry.mutate(
       { id: entry.id, data: { rating: newRating > 0 ? newRating : null } as any },
-      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() }) },
+      {
+        onSuccess: () => {
+          if (savedRatingRef.current !== newRating) {
+            trackEvent('rating_saved', { rating: newRating, cleared: newRating === 0 });
+          }
+          savedRatingRef.current = newRating;
+          queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+        },
+      },
     );
   };
 
@@ -215,7 +221,7 @@ function PosterThumb({ entry, onPress, posterW }: { entry: any; onPress: () => v
       <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
         <View style={[styles.posterThumb, { width: posterW, height: posterW * 1.5 }]}>
           {entry.posterUrl ? (
-            <Image source={{ uri: entry.posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <ExpoImage source={entry.posterUrl} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={120} />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.posterPlaceholder]}>
               <Feather name="film" size={20} color="#EFE4D2" />
@@ -249,7 +255,7 @@ function HorizPoster({ entry, onPress }: { entry: any; onPress: () => void }) {
     <TouchableOpacity style={styles.horizCard} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.horizPoster}>
         {entry.posterUrl ? (
-          <Image source={{ uri: entry.posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <ExpoImage source={entry.posterUrl} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={120} />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.posterPlaceholder]}>
             <Feather name="film" size={20} color="#EFE4D2" />
@@ -272,7 +278,7 @@ function WatchingPosterThumb({
       <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
         <View style={[styles.posterThumb, { width: posterW, height: posterW * 1.5 }]}>
           {entry.posterUrl ? (
-            <Image source={{ uri: entry.posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <ExpoImage source={entry.posterUrl} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={120} />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.posterPlaceholder]}>
               <Feather name="film" size={20} color="#EFE4D2" />
@@ -293,7 +299,7 @@ function RecCard({ rec, onPress, onSkip }: { rec: RecItem; onPress: () => void; 
     <View style={styles.horizCard}>
       <TouchableOpacity style={styles.horizPoster} onPress={onPress} activeOpacity={0.8}>
         {rec.posterUrl ? (
-          <Image source={{ uri: rec.posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+          <ExpoImage source={rec.posterUrl} style={StyleSheet.absoluteFill} contentFit="cover" cachePolicy="memory-disk" transition={120} />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.posterPlaceholder]}>
             <Text style={{ color: '#116149', fontSize: 18, fontWeight: '700' }}>
@@ -347,7 +353,7 @@ function QuickAddSheet({
           {/* Header */}
           <View style={styles.sheetHeader}>
             {rec.posterUrl && (
-              <Image source={{ uri: rec.posterUrl }} style={styles.sheetPoster} />
+              <ExpoImage source={rec.posterUrl} style={styles.sheetPoster} contentFit="cover" cachePolicy="memory-disk" />
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.sheetTitle}>{rec.title}</Text>
@@ -439,11 +445,21 @@ export default function HomeScreen() {
   const watchingY = useRef(0);
   const watchedY = useRef(0);
 
-  const { data: watching } = useListEntries({ status: 'watching' } as any);
-  const { data: watchlist } = useListEntries({ status: 'plan_to_watch' } as any);
-  const { data: completed, isLoading } = useListEntries({ status: 'completed' } as any);
+  const { data: allEntries, isLoading } = useListEntries();
   const createEntry = useCreateEntry();
 
+  const watching = useMemo(
+    () => ((allEntries as any[]) ?? []).filter(entry => entry.status === 'watching'),
+    [allEntries],
+  );
+  const watchlist = useMemo(
+    () => ((allEntries as any[]) ?? []).filter(entry => entry.status === 'plan_to_watch'),
+    [allEntries],
+  );
+  const completed = useMemo(
+    () => ((allEntries as any[]) ?? []).filter(entry => entry.status === 'completed'),
+    [allEntries],
+  );
   const watchedCount  = (completed as any[])?.length ?? 0;
   const watchingCount = (watching as any[])?.length ?? 0;
   const queueCount    = (watchlist as any[])?.length ?? 0;
@@ -465,7 +481,10 @@ export default function HomeScreen() {
     () => [...collectionTmdbIds].sort((a, b) => a - b).join(','),
     [collectionTmdbIds],
   );
-  const { results: recs, loading: recsLoading, refetch: refreshRecommendations } = useRecommendations(collectionKey);
+  const { results: recs, loading: recsLoading, refetch: refreshRecommendations } = useRecommendations(
+    collectionKey,
+    allEntries !== undefined,
+  );
   const [skipped, setSkipped] = useState<Set<number>>(new Set());
   const [addingRec, setAddingRec] = useState<RecItem | null>(null);
   const [adding, setAdding] = useState(false);
@@ -475,17 +494,41 @@ export default function HomeScreen() {
   const [selectedDateWatched, setSelectedDateWatched] = useState<string | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [selectedSeasons, setSelectedSeasons] = useState<Array<Record<string, any>>>([]);
+  const [selectedSource, setSelectedSource] = useState<QuickLogSource>('home');
   const [sheetVisible, setSheetVisible] = useState(false);
   const [savedNoticeVisible, setSavedNoticeVisible] = useState(false);
 
-  const openDetailSheet = (item: TmdbItem, entry?: any) => {
+  const posterCacheKey = useMemo(
+    () => [
+      ...((allEntries as any[]) ?? []),
+      ...recs,
+    ]
+      .map(item => item.posterUrl)
+      .filter((url): url is string => typeof url === 'string' && url.length > 0)
+      .slice(0, 40)
+      .join('|'),
+    [allEntries, recs],
+  );
+
+  useEffect(() => {
+    if (!posterCacheKey) return;
+    void ExpoImage.prefetch(posterCacheKey.split('|'), 'memory-disk').catch(() => {});
+  }, [posterCacheKey]);
+
+  const openDetailSheet = (item: TmdbItem, entry?: any, source: QuickLogSource = 'home') => {
     setSelectedItem(item);
     setSelectedEntryId(entry?.id ?? null);
     setSelectedStatus(entry?.status ?? null);
     setSelectedDateWatched(entry?.dateWatched ?? null);
     setSelectedRating(entry?.rating ?? null);
     setSelectedSeasons(entry?.seasons ?? []);
+    setSelectedSource(source);
     setSheetVisible(true);
+    trackEvent('title_detail_viewed', {
+      source,
+      media_type: item.type,
+      in_collection: Boolean(entry),
+    });
   };
 
   const closeDetailSheet = () => {
@@ -497,6 +540,7 @@ export default function HomeScreen() {
       setSelectedDateWatched(null);
       setSelectedRating(null);
       setSelectedSeasons([]);
+      setSelectedSource('home');
     }, 300);
   };
 
@@ -524,6 +568,11 @@ export default function HomeScreen() {
       },
       {
         onSuccess: () => {
+          trackEvent('entry_created', {
+            status,
+            media_type: addingRec.type,
+            source: 'recommendation',
+          });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
           setSkipped(prev => new Set([...prev, addingRec.tmdbId]));
@@ -539,11 +588,14 @@ export default function HomeScreen() {
     if (addingRec?.tmdbId === tmdbId) setAddingRec(null);
     const domain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
     try {
-      await authFetch(`https://${domain}/api/recommendations/feedback`, {
+      const response = await authFetch(`https://${domain}/api/recommendations/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tmdbId, signal: 'skip' }),
       });
+      if (response.ok) {
+        trackEvent('recommendation_skipped', { signal: 'skip' });
+      }
     } finally {
       refreshRecommendations();
     }
@@ -711,7 +763,7 @@ export default function HomeScreen() {
                       year: rec.year,
                       posterUrl: rec.posterUrl,
                       overview: rec.overview ?? null,
-                    });
+                    }, undefined, 'recommendation');
                   }}
                    onSkip={() => { void handleSkip(rec.tmdbId); }}
                 />
@@ -802,6 +854,7 @@ export default function HomeScreen() {
         initialDateWatched={selectedDateWatched}
         initialRating={selectedRating}
         initialSeasons={selectedSeasons}
+        source={selectedSource}
         onDeleted={() => {
           void queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey({}) });
         }}

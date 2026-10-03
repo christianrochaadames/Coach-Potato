@@ -9,6 +9,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useListEntries } from '@workspace/api-client-react';
 import { QuickLogSheet, TmdbItem } from './search';
+import { trackEvent } from '@/utils/analytics';
 
 export default function WatchlistScreen() {
   const insets = useSafeAreaInsets();
@@ -32,6 +33,11 @@ export default function WatchlistScreen() {
     });
     setSelectedEntryId(Number(item.id));
     setSheetVisible(true);
+    trackEvent('title_detail_viewed', {
+      source: 'watchlist',
+      media_type: item.type === 'movie' ? 'movie' : 'show',
+      in_collection: true,
+    });
   };
 
   const closeDetailSheet = () => {
@@ -139,6 +145,7 @@ export default function WatchlistScreen() {
         initialStatus="plan_to_watch"
         entryId={selectedEntryId}
         canDelete
+        source="watchlist"
         onDeleted={() => { void refetch(); }}
       />
       {savedNoticeVisible ? (

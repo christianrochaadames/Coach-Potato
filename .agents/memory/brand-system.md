@@ -35,6 +35,14 @@ description: Complete brand tokens, typography, mascot, logo for the Spud app
 - Cards: background #ffffff, border 1px solid #E2D9CE, border-radius 16px (rounded-2xl)
 - FAB: #FF4BAE, fixed bottom-20 right-5
 
+## Entry detail visual direction
+- Entry detail and season-progress screens use dark purple `#4B3F78` for primary actions and bright blue `#4A78FF` with white text for Watching. User ratings use solid icon stars, with selected stars in lemon yellow.
+- These screens should stay minimal: no green success banner, notes box, delete footer, or watched-count copy; season selectors should retain visible poster art and providers should collapse to one logo per platform family.
+
+**Why:** The user explicitly chose dark purple as the direction for these reference screens and asked for less visual noise, pill controls, emoji ratings, poster-led season selection, and deduplicated streaming services.
+
+**How to apply:** Use this direction for future mobile entry-detail, season-progress, and closely related controls unless the user gives a newer visual reference.
+
 ## Emoji rules
 - Emojis ONLY in: stats page (TV/movie type icons), star ratings
 - No emojis anywhere else in the app — buttons, labels, toasts, all text-only

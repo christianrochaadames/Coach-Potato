@@ -13,7 +13,7 @@ description: How Clerk is wired into this project — proxy setup, userId patter
 **requireAuth middleware** (`artifacts/api-server/src/middlewares/requireAuth.ts`):
 - Uses `getAuth(req).userId` from `@clerk/express`
 - Sets `req.userId` on the request
-- Also fires a background `UPDATE entries SET user_id = $1 WHERE user_id = 'seed_data'` auto-claim (see migration below)
+- Must not auto-claim legacy `seed_data` rows for the first authenticated user
 
 **Why:** The `clerkMiddleware` call must use `publishableKeyFromHost(getClerkProxyHost(req) ?? "", process.env.CLERK_PUBLISHABLE_KEY)` so the same server handles any Clerk domain.
 
@@ -26,11 +26,29 @@ description: How Clerk is wired into this project — proxy setup, userId patter
 - `ClerkQueryClientCacheInvalidator` clears React Query cache on user change (placed inside ClerkProvider, inside QueryClientProvider)
 - `@layer theme, base, clerk, components, utilities;` must come BEFORE `@import 'tailwindcss'` in index.css
 
-## Data migration (seed_data auto-claim)
+## User-scoped data and native account switching
 
-Existing entries had no userId. On `push-force`, they got `user_id = 'seed_data'` (column default). The `requireAuth` middleware fires a background UPDATE on every authenticated request: `UPDATE entries SET user_id = $1 WHERE user_id = 'seed_data'`. After the first sign-in, this is a permanent no-op. Only the first user to authenticate claims the data — subsequent users get an empty collection.
+Every protected API query must use the Clerk `auth.userId` directly. The API must not auto-claim legacy `seed_data` rows for the first authenticated user: that behavior can assign a shared library to whichever account signs in first.
 
-**Why:** This avoids a one-time migration script and requires zero user action. Safe because the UPDATE targets only the literal string 'seed_data', not real Clerk userIDs.
+On native, clear the shared TanStack Query client when `useAuth().userId` changes, and make direct profile/recommendation fetches depend on that user ID. Native screens can stay mounted across logout/login, so clearing only from a sign-out button is insufficient.
+
+**Why:** A shared query client and stale native screen state can make one account’s library appear under another account even when the database rows remain correctly owned.
+
+**How to apply:** Treat Clerk user ID changes as a data-boundary event: invalidate cached queries and refetch all direct user-scoped requests before showing the next account’s content.
+
+## Native token timing
+
+Keep the module-level native token getter stable through a `useRef`; do not
+replace it from an effect whose dependency is Clerk's `getToken` function.
+Critical raw requests may also pass the current token explicitly.
+
+**Why:** Clerk can recreate `getToken` between renders, and the effect cleanup
+can briefly clear the shared getter. Native requests made during that window
+arrive at the API as 401 even though the UI still appears signed in.
+
+**How to apply:** Register one stable getter for the provider lifetime, gate
+initial requests on `isLoaded`/`isSignedIn`/`userId`, and use the current token
+for direct mobile requests such as profile and TMDB calls.
 
 ## profiles table
 

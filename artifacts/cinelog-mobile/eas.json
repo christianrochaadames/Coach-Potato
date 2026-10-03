@@ -16,13 +16,15 @@
     },
     "production": {
       "autoIncrement": true,
+      "environment": "production",
       "ios": {
         "buildConfiguration": "Release",
         "image": "sdk-57"
       },
       "env": {
         "EXPO_PUBLIC_DOMAIN": "couch-potato.replit.app",
-        "EXPO_PUBLIC_CLERK_PROXY_URL": "https://couch-potato.replit.app/api/__clerk"
+        "EXPO_PUBLIC_CLERK_PROXY_URL": "https://couch-potato.replit.app/api/__clerk",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
       }
     }
   },

@@ -13,8 +13,9 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-4 left-0 right-0 z-50 flex justify-center pointer-events-none">
       <div
-        className="flex items-center gap-1 px-3 py-3 pointer-events-auto"
+         className="flex items-center gap-1 px-[22px] pointer-events-auto"
         style={{
+           height: 62,
           background: 'rgba(255,255,255,0.18)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
@@ -34,8 +35,8 @@ export function BottomNav() {
               onClick={() => setLocation(href)}
               className="flex items-center justify-center transition-all duration-200"
               style={{
-                width: 48,
-                height: 48,
+                 width: 58,
+                 height: 58,
                 borderRadius: 999,
                 background: isActive ? '#9BD6FF' : 'transparent',
                 color: isActive ? '#111111' : '#9E9890',

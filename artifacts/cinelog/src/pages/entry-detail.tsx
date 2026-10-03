@@ -11,6 +11,7 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { StarRating } from '@/components/star-rating';
+import { trackEvent } from '@/lib/analytics';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,8 +72,8 @@ type WatchProvidersData = {
 type OmdbData = { rtScore: string | null; imdbRating: string | null };
 
 type TmdbDetailData = {
-  cast: Array<{ name: string; character: string; profileUrl: string | null }>;
-  directors: Array<{ name: string; job: string }>;
+  cast: Array<{ name: string; character: string; profileUrl: string | null; personId?: number | null }>;
+  directors: Array<{ name: string; job: string; personId?: number | null }>;
   voteAverage: number | null;
   genres: string[];
 };
@@ -122,6 +123,144 @@ function formatMonthYear(s: string | null | undefined): string {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+function RecommendationDetailSheet({
+  item,
+  onClose,
+}: {
+  item: TmdbResult;
+  onClose: () => void;
+}) {
+  const [current, setCurrent] = useState(item);
+  const [detail, setDetail] = useState<{
+    overview: string | null;
+    voteAverage: number | null;
+    cast: Array<{ name: string; character: string; profileUrl: string | null; personId?: number | null }>;
+  } | null>(null);
+  const [recommendations, setRecommendations] = useState<TmdbResult[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setDetail(null);
+    const media = current.type === 'movie' ? 'movie' : 'tv';
+    Promise.all([
+      fetch(`/api/tmdb/${media}/${current.tmdbId}`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/tmdb/${media}/${current.tmdbId}/recommendations`).then(r => r.ok ? r.json() : null),
+    ]).then(([nextDetail, nextRecommendations]) => {
+      if (cancelled) return;
+      setDetail(nextDetail ? {
+        overview: nextDetail.overview ?? null,
+        voteAverage: nextDetail.voteAverage ?? null,
+        cast: nextDetail.cast ?? [],
+      } : null);
+      setRecommendations(nextRecommendations?.results ?? []);
+    }).catch(() => {
+      if (!cancelled) setRecommendations([]);
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [current.tmdbId, current.type]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] flex items-end"
+      style={{ background: 'rgba(0,0,0,0.5)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-lg mx-auto rounded-t-3xl overflow-y-auto"
+        style={{ background: '#ffffff', maxHeight: '90vh' }}
+        onClick={event => event.stopPropagation()}
+      >
+        <div className="flex justify-end items-center px-5 pt-4">
+          <button type="button" onClick={onClose} className="p-2 rounded-full" aria-label="Close details">
+            <X className="w-5 h-5" style={{ color: '#7E7A73' }} />
+          </button>
+        </div>
+        <div className="px-5 pb-8 space-y-5">
+          <div className="flex gap-4 items-start">
+            {current.posterUrl
+              ? <img src={current.posterUrl} alt={current.title} className="w-24 h-36 object-cover rounded-2xl flex-shrink-0" />
+              : <div className="w-24 h-36 rounded-2xl flex items-center justify-center" style={{ background: '#EFE4D2', color: '#116149' }}>{current.title[0]}</div>}
+            <div className="pt-1">
+              <h2 className="text-xl font-bold" style={{ color: '#111111' }}>{current.title}</h2>
+              <p className="text-sm mt-1" style={{ color: '#7E7A73' }}>
+                {current.year ?? '—'} · {current.type === 'movie' ? 'Movie' : 'TV Show'}
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#7E7A73' }}>Public Rating</p>
+            <p className="text-xl font-bold" style={{ color: detail?.voteAverage != null ? '#111111' : '#B0A99E' }}>
+              {loading ? 'Loading…' : detail?.voteAverage != null ? `${detail.voteAverage.toFixed(1)} / 10` : 'Not rated yet'}
+            </p>
+            <p className="text-[10px] mt-0.5" style={{ color: '#7E7A73' }}>The Movie Database (TMDB)</p>
+          </div>
+
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#7E7A73' }}>About</p>
+            <p className="text-sm leading-relaxed" style={{ color: '#333333' }}>
+              {loading ? 'Loading title details…' : detail?.overview || current.title}
+            </p>
+          </div>
+
+          {detail?.cast?.length ? (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{ color: '#7E7A73' }}>Cast</p>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {detail.cast.slice(0, 10).map((actor, index) => (
+                  <a
+                    key={`${actor.name}-${index}`}
+                    href={actor.personId ? `https://www.themoviedb.org/person/${actor.personId}` : undefined}
+                    target={actor.personId ? '_blank' : undefined}
+                    rel={actor.personId ? 'noopener noreferrer' : undefined}
+                    className="flex-shrink-0 w-16 text-center"
+                    onClick={event => { if (!actor.personId) event.preventDefault(); }}
+                  >
+                    <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-1 flex items-center justify-center" style={{ background: '#EFE4D2' }}>
+                      {actor.profileUrl
+                        ? <img src={actor.profileUrl} alt={actor.name} className="w-full h-full object-cover" />
+                        : <span className="text-sm font-bold" style={{ color: '#116149' }}>{actor.name[0]}</span>}
+                    </div>
+                    <p className="text-[10px] font-bold leading-tight truncate" style={{ color: '#111111' }}>{actor.name}</p>
+                    <p className="text-[9px] leading-tight truncate" style={{ color: '#7E7A73' }}>{actor.character}</p>
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {recommendations.length > 0 ? (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{ color: '#7E7A73' }}>You May Also Like</p>
+              <div className="flex gap-3 overflow-x-auto pb-1">
+                {recommendations.slice(0, 12).map(recommendation => (
+                  <button
+                    key={recommendation.tmdbId}
+                    type="button"
+                    className="flex-shrink-0 w-24 text-left"
+                    onClick={() => {
+                      setCurrent(recommendation);
+                    }}
+                  >
+                    {recommendation.posterUrl
+                      ? <img src={recommendation.posterUrl} alt={recommendation.title} className="w-24 aspect-[2/3] object-cover rounded-xl mb-1.5" />
+                      : <div className="w-24 aspect-[2/3] rounded-xl mb-1.5" style={{ background: '#EFE4D2' }} />}
+                    <p className="text-[10px] font-bold leading-tight" style={{ color: '#111111' }}>{recommendation.title}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function EntryDetail() {
@@ -158,6 +297,7 @@ export default function EntryDetail() {
   const [watchProviders, setWatchProviders] = useState<WatchProvidersData | null>(null);
   const [watchProvidersLoading, setWatchProvidersLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<TmdbResult[]>([]);
+  const [recommendationItem, setRecommendationItem] = useState<TmdbResult | null>(null);
   const [omdbData, setOmdbData] = useState<OmdbData | null>(null);
 
   // ── API hooks ───────────────────────────────────────────────────────────────
@@ -367,6 +507,7 @@ export default function EntryDetail() {
       { id: entryId, data: { seasons: updated } as any },
       {
         onSuccess: () => {
+          trackEvent('season_progress_saved');
           showSuccess(`Season ${activeSeason} progress saved`);
           queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) });
           setEpSheet(null);
@@ -395,6 +536,7 @@ export default function EntryDetail() {
       { id: entryId, data: { seasons: updated } as any },
       {
         onSuccess: () => {
+          trackEvent('season_completed');
           showSuccess(`Season ${num} marked watched`);
           queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(entryId) });
           setSeasonRatingSheet(null);
@@ -410,6 +552,7 @@ export default function EntryDetail() {
       { id: entryId },
       {
         onSuccess: () => {
+          trackEvent('entry_deleted');
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
           setLocation('/');
@@ -528,7 +671,7 @@ export default function EntryDetail() {
         <div className="rounded-2xl p-4 mb-4" style={{ background: '#ffffff', border: '1px solid #E2D9CE' }}>
           {/* Audience score from TMDB */}
           <div className="pb-3 mb-3" style={{ borderBottom: '1px solid #EFE4D2' }}>
-            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#7E7A73' }}>Audience Rating</p>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: '#7E7A73' }}>Public Rating</p>
             <p className="text-xl font-bold" style={{ color: tmdbDetail?.voteAverage ? '#111111' : '#B0A99E' }}>
               {tmdbDetail?.voteAverage != null
                 ? `${tmdbDetail.voteAverage.toFixed(1)} / 10`
@@ -551,7 +694,14 @@ export default function EntryDetail() {
           <p className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: '#7E7A73' }}>Your Rating</p>
           <StarRating
             rating={rating}
-            onRatingChange={r => { setRating(r); autosave({ rating: r }, 'Rating saved'); }}
+             onRatingChange={r => {
+               setRating(r);
+               trackEvent('rating_saved', {
+                 rating: r ?? 0,
+                 cleared: r === null,
+               });
+               autosave({ rating: r }, 'Rating saved');
+             }}
             size="md"
           />
         </div>
@@ -727,7 +877,14 @@ export default function EntryDetail() {
                     <p className="text-[11px] font-bold mb-2" style={{ color: '#7E7A73' }}>Cast</p>
                     <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
                       {tmdbDetail.cast.slice(0, 12).map(actor => (
-                        <div key={actor.name} className="flex-shrink-0 w-14 text-center">
+                        <a
+                          key={actor.name}
+                          href={actor.personId ? `https://www.themoviedb.org/person/${actor.personId}` : undefined}
+                          target={actor.personId ? '_blank' : undefined}
+                          rel={actor.personId ? 'noopener noreferrer' : undefined}
+                          className="flex-shrink-0 w-14 text-center"
+                          onClick={event => { if (!actor.personId) event.preventDefault(); }}
+                        >
                           <div className="w-14 h-14 rounded-full overflow-hidden mb-1 mx-auto" style={{ background: '#EFE4D2' }}>
                             {actor.profileUrl
                               ? <img src={actor.profileUrl} alt={actor.name} className="w-full h-full object-cover" />
@@ -735,7 +892,7 @@ export default function EntryDetail() {
                           </div>
                           <p className="text-[9px] font-bold leading-tight" style={{ color: '#111111' }}>{actor.name}</p>
                           {actor.character && <p className="text-[9px] leading-tight" style={{ color: '#7E7A73' }}>{actor.character}</p>}
-                        </div>
+                        </a>
                       ))}
                     </div>
                   </div>
@@ -813,7 +970,12 @@ export default function EntryDetail() {
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5">
               {recommendations.slice(0, 12).map(rec => (
-                <div key={rec.tmdbId} className="flex-shrink-0 w-24">
+                <button
+                  key={rec.tmdbId}
+                  type="button"
+                  className="flex-shrink-0 w-24 text-left"
+                  onClick={() => setRecommendationItem(rec)}
+                >
                   <div className="w-24 aspect-[2/3] rounded-xl overflow-hidden mb-1.5 shadow-sm" style={{ background: '#EFE4D2' }}>
                     {rec.posterUrl
                       ? <img src={rec.posterUrl} alt={rec.title} className="w-full h-full object-cover" />
@@ -823,7 +985,7 @@ export default function EntryDetail() {
                     {rec.title.length > 16 ? rec.title.slice(0, 16) + '…' : rec.title}
                   </p>
                   {rec.year && <p className="text-[9px] text-center mt-0.5" style={{ color: '#7E7A73' }}>{rec.year}</p>}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -973,6 +1135,13 @@ export default function EntryDetail() {
             </div>
           </div>
         </>
+      )}
+
+      {recommendationItem && (
+        <RecommendationDetailSheet
+          item={recommendationItem}
+          onClose={() => setRecommendationItem(null)}
+        />
       )}
 
       {/* ── Delete dialog ── */}

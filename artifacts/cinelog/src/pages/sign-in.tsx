@@ -22,6 +22,21 @@ export default function SignInPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const setEmailPlaceholder = () => {
+      document.querySelectorAll<HTMLInputElement>("input").forEach(input => {
+        if (input.type === "email" || input.name === "identifier") {
+          input.placeholder = "you@example.com";
+        }
+      });
+    };
+
+    setEmailPlaceholder();
+    const observer = new MutationObserver(setEmailPlaceholder);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   // Read an optional ?returnTo=<path> set by the session-expiry handler so
   // we can restore the user to the page they were on before their session expired.
   const params = new URLSearchParams(window.location.search);
@@ -87,7 +102,14 @@ export default function SignInPage() {
           src="/spud-thumbsup.png"
           alt="Spud giving a thumbs up"
           draggable={false}
-          style={{ height: 124, width: "auto", objectFit: "contain" }}
+           style={{
+             height: 124,
+             width: "auto",
+             objectFit: "contain",
+             // The PNG has transparent space on the right; align its visible
+             // outline with the sign-in card edge below.
+             transform: "translateX(24px)",
+           }}
         />
       </div>
 

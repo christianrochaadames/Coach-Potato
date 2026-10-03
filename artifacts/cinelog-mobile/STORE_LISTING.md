@@ -1,4 +1,4 @@
-# CouchPotato — App Store Connect Listing Copy
+# Spud — App Store Connect Listing Copy
 
 Everything below is ready to copy-paste into App Store Connect.
 
@@ -8,7 +8,7 @@ Everything below is ready to copy-paste into App Store Connect.
 
 | Field | Value |
 |---|---|
-| **App Name** | CouchPotato |
+| **App Name** | Spud |
 | **Subtitle** | Movie & TV Show Tracker |
 | **Bundle ID** | com.couchpotato.ios |
 | **SKU** | couchpotato-ios |
@@ -24,7 +24,7 @@ Everything below is ready to copy-paste into App Store Connect.
 *(Paste into App Store Connect → Version Information → Description)*
 
 ```
-CouchPotato is your personal movie and TV show companion. Log everything you've watched, track what you're currently watching, and build a watchlist of what's coming next — all in one place.
+Spud is your personal movie and TV show companion. Log everything you've watched, track what you're currently watching, and build a watchlist of what's coming next — all in one place.
 
 🎬 LOG WHAT YOU WATCH
 • Quick-add movies and TV shows in seconds
@@ -164,7 +164,7 @@ Apple requires **at least one screenshot** for each of these two sizes before yo
 | **Phone** | *(your phone)* |
 | **Email** | *(your email)* |
 | **Demo account credentials** | Create a test account at `/sign-up` on the web app — use the same credentials to log in on the iOS app |
-| **Notes for reviewer** | "CouchPotato is a personal movie and TV show tracker. Sign in with the provided test credentials to explore the app. All data is private per user." |
+| **Notes for reviewer** | "Spud is a personal movie and TV show tracker. Sign in with the provided test credentials to explore the app. All data is private per user." |
 
 ---
 

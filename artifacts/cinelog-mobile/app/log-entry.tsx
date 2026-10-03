@@ -21,7 +21,6 @@ import {
   Image,
   ActivityIndicator,
   Platform,
-  ScrollView,
 } from 'react-native';
 import { router, Redirect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,6 +34,8 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { authFetch } from '@/utils/authFetch';
+import { trackEvent } from '@/utils/analytics';
+import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,11 @@ export default function LogEntryScreen() {
           tmdbId: selected.tmdbId,
         } as any,
       });
+      trackEvent('entry_created', {
+        status,
+        media_type: selected.type,
+        source: 'log_entry',
+      });
       await queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey({}) });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
@@ -199,9 +205,11 @@ export default function LogEntryScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScrollViewCompat
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: bottomPad + 40 }}
+        bottomOffset={20}
+        disableScrollOnKeyboardHide
         showsVerticalScrollIndicator={false}
       >
         {/* Search */}
@@ -439,7 +447,7 @@ export default function LogEntryScreen() {
             ]}
           />
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollViewCompat>
     </View>
   );
 }

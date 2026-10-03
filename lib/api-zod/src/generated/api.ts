@@ -105,6 +105,56 @@ export const CreateEntryResponse = zod.object({
 
 
 /**
+ * @summary Upsert a user's status for a TMDB title
+ */
+
+
+
+export const UpsertEntryStatusBody = zod.object({
+  "title": zod.string().min(1),
+  "type": zod.enum(['movie', 'show']),
+  "tmdbId": zod.number().int(),
+  "status": zod.enum(['watching', 'plan_to_watch', 'completed']),
+  "posterUrl": zod.string().optional(),
+  "year": zod.number().int().optional(),
+  "synopsis": zod.string().optional()
+})
+
+export const upsertEntryStatusResponseStatusDefault = `completed`;
+export const upsertEntryStatusResponseRatingMax = 5;
+
+
+
+export const UpsertEntryStatusResponse = zod.object({
+  "id": zod.number().int(),
+  "title": zod.string(),
+  "type": zod.enum(['movie', 'show']),
+  "status": zod.enum(['watching', 'plan_to_watch', 'completed']).default(upsertEntryStatusResponseStatusDefault),
+  "posterUrl": zod.string().nullish(),
+  "dateWatched": zod.coerce.date().nullish(),
+  "year": zod.number().int().nullable(),
+  "rating": zod.number().int().min(1).max(upsertEntryStatusResponseRatingMax).nullish(),
+  "notes": zod.string().nullish(),
+  "synopsis": zod.string().nullish(),
+  "tmdbId": zod.number().int().nullish(),
+  "platform": zod.string().nullish(),
+  "tags": zod.array(zod.string()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a user's status for a TMDB title
+ */
+export const DeleteEntryByTmdbIdParams = zod.object({
+  "tmdbId": zod.coerce.number().int()
+})
+
+export const DeleteEntryByTmdbIdResponse = zod.void()
+
+
+/**
  * @summary Get a single entry
  */
 export const GetEntryParams = zod.object({
@@ -287,6 +337,450 @@ export const TmdbPopularResponse = zod.object({
   "posterUrl": zod.string().nullish(),
   "overview": zod.string().nullish()
 }))
+})
+
+
+/**
+ * @summary Get movie details including cast and director from TMDB
+ */
+export const TmdbMovieDetailParams = zod.object({
+  "id": zod.coerce.number().int().describe('TMDB movie ID')
+})
+
+export const TmdbMovieDetailResponse = zod.object({
+  "title": zod.string(),
+  "overview": zod.string().nullish(),
+  "cast": zod.array(zod.object({
+  "name": zod.string(),
+  "character": zod.string(),
+  "profileUrl": zod.string().nullish(),
+  "order": zod.number().int()
+})),
+  "directors": zod.array(zod.object({
+  "name": zod.string(),
+  "job": zod.string(),
+  "profileUrl": zod.string().nullish()
+})),
+  "runtime": zod.number().int().nullish(),
+  "releaseYear": zod.number().int().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "genres": zod.array(zod.string())
+})
+
+
+/**
+ * @summary Get streaming availability for a movie
+ */
+export const TmdbMovieProvidersParams = zod.object({
+  "id": zod.coerce.number().int().describe('TMDB movie ID')
+})
+
+export const tmdbMovieProvidersQueryRegionDefault = `US`;
+
+export const TmdbMovieProvidersQueryParams = zod.object({
+  "region": zod.coerce.string().default(tmdbMovieProvidersQueryRegionDefault).describe('Two-letter ISO 3166-1 region code (e.g. US, GB)')
+})
+
+export const TmdbMovieProvidersResponse = zod.object({
+  "region": zod.string(),
+  "link": zod.string().nullish(),
+  "streaming": zod.array(zod.object({
+  "providerId": zod.number().int(),
+  "providerName": zod.string(),
+  "logoUrl": zod.string(),
+  "displayPriority": zod.number().int()
+})),
+  "rent": zod.array(zod.object({
+  "providerId": zod.number().int(),
+  "providerName": zod.string(),
+  "logoUrl": zod.string(),
+  "displayPriority": zod.number().int()
+})),
+  "buy": zod.array(zod.object({
+  "providerId": zod.number().int(),
+  "providerName": zod.string(),
+  "logoUrl": zod.string(),
+  "displayPriority": zod.number().int()
+}))
+})
+
+
+/**
+ * @summary Get streaming availability for a TV show
+ */
+export const TmdbTvProvidersParams = zod.object({
+  "id": zod.coerce.number().int().describe('TMDB TV show ID')
+})
+
+export const tmdbTvProvidersQueryRegionDefault = `US`;
+
+export const TmdbTvProvidersQueryParams = zod.object({
+  "region": zod.coerce.string().default(tmdbTvProvidersQueryRegionDefault).describe('Two-letter ISO 3166-1 region code (e.g. US, GB)')
+})
+
+export const TmdbTvProvidersResponse = zod.object({
+  "region": zod.string(),
+  "link": zod.string().nullish(),
+  "streaming": zod.array(zod.object({
+  "providerId": zod.number().int(),
+  "providerName": zod.string(),
+  "logoUrl": zod.string(),
+  "displayPriority": zod.number().int()
+})),
+  "rent": zod.array(zod.object({
+  "providerId": zod.number().int(),
+  "providerName": zod.string(),
+  "logoUrl": zod.string(),
+  "displayPriority": zod.number().int()
+})),
+  "buy": zod.array(zod.object({
+  "providerId": zod.number().int(),
+  "providerName": zod.string(),
+  "logoUrl": zod.string(),
+  "displayPriority": zod.number().int()
+}))
+})
+
+
+/**
+ * @summary Get TV show details including cast and creator from TMDB
+ */
+export const TmdbTvDetailParams = zod.object({
+  "id": zod.coerce.number().int().describe('TMDB TV show ID')
+})
+
+export const TmdbTvDetailResponse = zod.object({
+  "title": zod.string(),
+  "overview": zod.string().nullish(),
+  "cast": zod.array(zod.object({
+  "name": zod.string(),
+  "character": zod.string(),
+  "profileUrl": zod.string().nullish(),
+  "order": zod.number().int()
+})),
+  "directors": zod.array(zod.object({
+  "name": zod.string(),
+  "job": zod.string(),
+  "profileUrl": zod.string().nullish()
+})),
+  "runtime": zod.number().int().nullish(),
+  "releaseYear": zod.number().int().nullish(),
+  "voteAverage": zod.number().nullish(),
+  "genres": zod.array(zod.string())
+})
+
+
+/**
+ * Matches are members who also connected Facebook to Spud. Connecting never sends buddy requests or shares protected shelves.
+ * @summary Get optional Facebook connection and identity-only friend matches
+ */
+export const getFacebookConnectionQueryLimitDefault = 30;
+export const getFacebookConnectionQueryLimitMax = 30;
+
+export const getFacebookConnectionQueryOffsetDefault = 0;
+export const getFacebookConnectionQueryOffsetMin = 0;
+
+
+
+export const GetFacebookConnectionQueryParams = zod.object({
+  "limit": zod.coerce.number().int().min(1).max(getFacebookConnectionQueryLimitMax).default(getFacebookConnectionQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(getFacebookConnectionQueryOffsetMin).default(getFacebookConnectionQueryOffsetDefault)
+})
+
+export const getFacebookConnectionResponseResultsMax = 30;
+
+export const getFacebookConnectionResponseTotalMin = 0;
+
+
+
+export const GetFacebookConnectionResponse = zod.object({
+  "configured": zod.boolean(),
+  "connected": zod.boolean(),
+  "pending": zod.boolean(),
+  "error": zod.string().nullable(),
+  "lastSyncedAt": zod.coerce.date().nullable(),
+  "inviteUrl": zod.string().url().nullable(),
+  "results": zod.array(zod.object({
+  "userId": zod.string(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "username": zod.string().nullable(),
+  "avatarId": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable()
+}).and(zod.object({
+  "status": zod.enum(['none', 'incoming', 'outgoing', 'accepted'])
+}))).max(getFacebookConnectionResponseResultsMax),
+  "total": zod.number().int().min(getFacebookConnectionResponseTotalMin),
+  "limit": zod.number().int(),
+  "offset": zod.number().int()
+})
+
+
+/**
+ * @summary Delete Facebook connection and discovery data without removing buddies
+ */
+export const DisconnectFacebookResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Begin a consent-based Facebook OAuth connection
+ */
+export const BeginFacebookConnectionBody = zod.object({
+  "returnTo": zod.enum(['web', 'native'])
+})
+
+export const BeginFacebookConnectionResponse = zod.object({
+  "authorizationUrl": zod.string().url()
+})
+
+
+/**
+ * @summary Cancel pending Facebook authorization without disconnecting an existing link
+ */
+export const CancelFacebookConnectionResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * Authenticated case-insensitive partial search; excludes self and returns at most 20 identity-only results in a results array, each with relationship status.
+ * @summary Search profiles to invite as buddies
+ */
+export const searchBuddiesQueryQMin = 2;
+export const searchBuddiesQueryQMax = 50;
+
+
+
+export const SearchBuddiesQueryParams = zod.object({
+  "q": zod.coerce.string().min(searchBuddiesQueryQMin).max(searchBuddiesQueryQMax)
+})
+
+export const searchBuddiesResponseResultsMax = 20;
+
+
+
+export const SearchBuddiesResponse = zod.object({
+  "results": zod.array(zod.object({
+  "userId": zod.string(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "username": zod.string().nullable(),
+  "avatarId": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable()
+}).and(zod.object({
+  "status": zod.enum(['none', 'incoming', 'outgoing', 'accepted'])
+}))).max(searchBuddiesResponseResultsMax)
+})
+
+
+/**
+ * Returns separate accepted, incoming-request, and outgoing-request lists containing identity fields and relationship status only.
+ * @summary List accepted and pending buddy relationships
+ */
+export const ListBuddiesResponse = zod.object({
+  "accepted": zod.array(zod.object({
+  "userId": zod.string(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "username": zod.string().nullable(),
+  "avatarId": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable()
+}).and(zod.object({
+  "status": zod.enum(['none', 'incoming', 'outgoing', 'accepted']),
+  "bio": zod.string().nullish().describe('Present only for accepted buddies.')
+}))),
+  "incoming": zod.array(zod.object({
+  "userId": zod.string(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "username": zod.string().nullable(),
+  "avatarId": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable()
+}).and(zod.object({
+  "status": zod.enum(['none', 'incoming', 'outgoing', 'accepted']),
+  "bio": zod.string().nullish().describe('Present only for accepted buddies.')
+}))),
+  "outgoing": zod.array(zod.object({
+  "userId": zod.string(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "username": zod.string().nullable(),
+  "avatarId": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable()
+}).and(zod.object({
+  "status": zod.enum(['none', 'incoming', 'outgoing', 'accepted']),
+  "bio": zod.string().nullish().describe('Present only for accepted buddies.')
+})))
+})
+
+
+/**
+ * Accepted relationship required. Only title, type, TMDB id, status, and poster are returned.
+ * @summary List a buddy's privacy-safe entry cards
+ */
+
+
+
+export const GetBuddyEntriesParams = zod.object({
+  "userId": zod.coerce.string().min(1)
+})
+
+export const getBuddyEntriesQueryLimitDefault = 30;
+export const getBuddyEntriesQueryLimitMax = 30;
+
+export const getBuddyEntriesQueryOffsetDefault = 0;
+export const getBuddyEntriesQueryOffsetMin = 0;
+
+
+
+export const GetBuddyEntriesQueryParams = zod.object({
+  "status": zod.enum(['watching', 'plan_to_watch', 'completed']),
+  "limit": zod.coerce.number().int().min(1).max(getBuddyEntriesQueryLimitMax).default(getBuddyEntriesQueryLimitDefault),
+  "offset": zod.coerce.number().int().min(getBuddyEntriesQueryOffsetMin).default(getBuddyEntriesQueryOffsetDefault)
+})
+
+export const GetBuddyEntriesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.enum(['movie', 'show']),
+  "tmdbId": zod.number().int().nullable(),
+  "status": zod.enum(['watching', 'plan_to_watch', 'completed']),
+  "posterUrl": zod.string().nullable()
+})),
+  "total": zod.number().int(),
+  "limit": zod.number().int(),
+  "offset": zod.number().int()
+})
+
+
+/**
+ * Creates a pending request. The target must accept it before private activity is shared.
+ * @summary Send a buddy request
+ */
+
+
+
+export const RequestBuddyParams = zod.object({
+  "userId": zod.coerce.string().min(1)
+})
+
+export const RequestBuddyResponse = zod.object({
+  "userId": zod.string(),
+  "status": zod.enum(['pending', 'accepted']),
+  "direction": zod.enum(['incoming', 'outgoing', 'accepted'])
+})
+
+
+/**
+ * Only the recipient of a pending request can accept it.
+ * @summary Accept an incoming buddy request
+ */
+
+
+
+export const AcceptBuddyRequestParams = zod.object({
+  "userId": zod.coerce.string().min(1)
+})
+
+export const AcceptBuddyRequestResponse = zod.object({
+  "userId": zod.string(),
+  "status": zod.enum(['pending', 'accepted']),
+  "direction": zod.enum(['incoming', 'outgoing', 'accepted'])
+})
+
+
+/**
+ * The person and top-level status are always returned. Bio, favorites, and shelves are present only after both users accept. Each shelf contains a count and at most six privacy-safe BuddyEntry items. No entry notes, ratings, watched dates, tags, or other personal entry fields are exposed.
+ * @summary Get a profile and, for accepted buddies, favorites and shelves
+ */
+
+
+
+export const GetBuddyProfileParams = zod.object({
+  "userId": zod.coerce.string().min(1)
+})
+
+export const getBuddyProfileResponseShelvesWatchingItemsMax = 6;
+
+export const getBuddyProfileResponseShelvesPlanToWatchItemsMax = 6;
+
+export const getBuddyProfileResponseShelvesCompletedItemsMax = 6;
+
+
+
+export const GetBuddyProfileResponse = zod.object({
+  "person": zod.object({
+  "userId": zod.string(),
+  "firstName": zod.string().nullable(),
+  "lastName": zod.string().nullable(),
+  "username": zod.string().nullable(),
+  "avatarId": zod.string().nullable(),
+  "avatarUrl": zod.string().nullable()
+}).and(zod.object({
+  "status": zod.enum(['none', 'incoming', 'outgoing', 'accepted']),
+  "bio": zod.string().nullish().describe('Present only for accepted buddies.')
+})),
+  "status": zod.enum(['none', 'incoming', 'outgoing', 'accepted']),
+  "favorites": zod.object({
+  "tv": zod.array(zod.object({
+  "title": zod.string(),
+  "posterUrl": zod.string().nullable()
+})),
+  "movies": zod.array(zod.object({
+  "title": zod.string(),
+  "posterUrl": zod.string().nullable()
+}))
+}).optional(),
+  "shelves": zod.object({
+  "watching": zod.object({
+  "count": zod.number().int(),
+  "items": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.enum(['movie', 'show']),
+  "tmdbId": zod.number().int().nullable(),
+  "status": zod.enum(['watching', 'plan_to_watch', 'completed']),
+  "posterUrl": zod.string().nullable()
+})).max(getBuddyProfileResponseShelvesWatchingItemsMax)
+}),
+  "plan_to_watch": zod.object({
+  "count": zod.number().int(),
+  "items": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.enum(['movie', 'show']),
+  "tmdbId": zod.number().int().nullable(),
+  "status": zod.enum(['watching', 'plan_to_watch', 'completed']),
+  "posterUrl": zod.string().nullable()
+})).max(getBuddyProfileResponseShelvesPlanToWatchItemsMax)
+}),
+  "completed": zod.object({
+  "count": zod.number().int(),
+  "items": zod.array(zod.object({
+  "title": zod.string(),
+  "type": zod.enum(['movie', 'show']),
+  "tmdbId": zod.number().int().nullable(),
+  "status": zod.enum(['watching', 'plan_to_watch', 'completed']),
+  "posterUrl": zod.string().nullable()
+})).max(getBuddyProfileResponseShelvesCompletedItemsMax)
+})
+}).optional()
+})
+
+
+/**
+ * Either participant may remove a pending or accepted relationship.
+ * @summary Cancel, reject, or remove a buddy relationship
+ */
+
+
+
+export const RemoveBuddyParams = zod.object({
+  "userId": zod.coerce.string().min(1)
+})
+
+export const RemoveBuddyResponse = zod.object({
+  "success": zod.boolean()
 })
 
 

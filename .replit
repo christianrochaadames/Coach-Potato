@@ -1,4 +1,4 @@
-modules = ["nodejs-24", "postgresql-16", "python-base-3.13"]
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
 
 [deployment]
 router = "application"
@@ -41,4 +41,10 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
-packages = ["emacsclient-commands"]
+packages = ["emacsclient-commands", "glib", "nss", "nspr"]
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_POSTHOG_HOST = "US Cloud"
+FACEBOOK_REDIRECT_URI = "https://couch-potato.replit.app/api/facebook/callback"

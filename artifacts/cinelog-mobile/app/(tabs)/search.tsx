@@ -38,6 +38,7 @@ import {
   getListEntriesQueryKey,
 } from '@workspace/api-client-react';
 import { authFetch } from '@/utils/authFetch';
+import { trackEvent } from '@/utils/analytics';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -77,6 +78,14 @@ interface WatchProviders {
 }
 
 type Status = 'completed' | 'watching' | 'plan_to_watch';
+export type QuickLogSource =
+  | 'search'
+  | 'home'
+  | 'recommendation'
+  | 'watchlist'
+  | 'onboarding'
+  | 'stats'
+  | 'entry_detail_recommendation';
 
 interface TmdbSeason {
   number: number;
@@ -407,11 +416,11 @@ export function QuickLogSheet({
   item, visible, onClose, onSaved, insets,
   initialStatus = null, entryId = null, canDelete = false, onDeleted,
   initialDateWatched = null, initialRating = null, initialSeasons = EMPTY_SEASONS,
-  showProviders = true, showRecommendations = true,
+  showProviders = true, showRecommendations = true, source,
 }: {
   item: TmdbItem | null; visible: boolean;
   onClose: () => void; onSaved: (status?: Status, tmdbId?: number) => void;
-  insets: { bottom: number };
+  insets: { bottom: number; top?: number };
   initialStatus?: Status | null;
   entryId?: number | null;
   canDelete?: boolean;
@@ -421,6 +430,7 @@ export function QuickLogSheet({
   initialSeasons?: Array<Record<string, any>>;
   showProviders?: boolean;
   showRecommendations?: boolean;
+  source: QuickLogSource;
 }) {
   const { getToken } = useAuth();
   const getTokenRef = useRef(getToken);
@@ -448,6 +458,8 @@ export function QuickLogSheet({
   const [detailItem, setDetailItem] = useState<TmdbItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [seasonRecords, setSeasonRecords] = useState<Array<Record<string, any>>>([]);
+  const savedRatingRef = useRef(0);
+  const savedStatusRef = useRef<Status | null>(null);
   const sheetTranslateY = useRef(new Animated.Value(0)).current;
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -460,6 +472,7 @@ export function QuickLogSheet({
   const effectiveInitialDateWatched = detailItem ? (viewEntry?.dateWatched ?? null) : initialDateWatched;
   const effectiveInitialRating = detailItem ? (viewEntry?.rating ?? null) : initialRating;
   const effectiveInitialSeasons = detailItem ? (viewEntry?.seasons ?? EMPTY_SEASONS) : initialSeasons;
+  const activeSource: QuickLogSource = detailItem ? 'recommendation' : source;
 
   const handleSheetClose = useCallback(() => {
     onCloseRef.current();
@@ -512,11 +525,13 @@ export function QuickLogSheet({
   ) => {
     sheetTranslateY.setValue(0);
     setStatus(nextStatus);
+    savedStatusRef.current = nextStatus;
     const watchedDate = nextDateWatched ? new Date(`${nextDateWatched}T00:00:00`) : null;
     const hasValidDate = watchedDate && !Number.isNaN(watchedDate.getTime());
     setYear(hasValidDate ? watchedDate.getFullYear() : new Date().getFullYear());
     setMonth(hasValidDate ? watchedDate.getMonth() + 1 : new Date().getMonth() + 1);
     setRating(nextRating ?? 0);
+    savedRatingRef.current = nextRating ?? 0;
     setSaving(false);
     setTvSeasons([]);
     setActiveSeason(null);
@@ -630,6 +645,9 @@ export function QuickLogSheet({
   const handleSave = async (nextStatus?: Status) => {
     const effectiveStatus = nextStatus ?? status;
     if (!viewItem || !effectiveStatus) return;
+    const previousStatus = savedStatusRef.current;
+    const previousRating = savedRatingRef.current;
+    const savedRating = effectiveStatus === 'completed' ? rating : 0;
     setSaving(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -668,6 +686,26 @@ export function QuickLogSheet({
         } as any);
       }
       await queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+      if (effectiveEntryId) {
+        if (previousStatus === 'plan_to_watch' && effectiveStatus === 'watching') {
+          trackEvent('watchlist_item_started');
+        } else if (previousStatus !== 'completed' && effectiveStatus === 'completed') {
+          trackEvent('title_completed', { source: activeSource });
+        }
+      } else {
+        trackEvent('entry_created', {
+          status: effectiveStatus,
+          media_type: viewItem.type,
+          source: activeSource,
+        });
+      }
+      if (savedRating !== previousRating) {
+        trackEvent('rating_saved', { rating: savedRating, cleared: savedRating === 0 });
+      }
+      savedRatingRef.current = savedRating;
+      savedStatusRef.current = effectiveStatus;
+      setRating(savedRating);
+      setStatus(effectiveStatus);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSaved(effectiveStatus, viewItem.tmdbId);
     } catch {
@@ -693,6 +731,10 @@ export function QuickLogSheet({
         } as any,
       });
       await queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+      if (nextRating !== savedRatingRef.current) {
+        trackEvent('rating_saved', { rating: nextRating, cleared: nextRating === 0 });
+      }
+      savedRatingRef.current = nextRating;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -719,6 +761,7 @@ export function QuickLogSheet({
     try {
       await updateEntry.mutateAsync({ id: effectiveEntryId, data: { seasons: nextSeasons } as any });
       await queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+      trackEvent(existing?.status === 'watched' ? 'season_progress_saved' : 'season_completed');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -740,6 +783,9 @@ export function QuickLogSheet({
           try {
             await deleteEntry.mutateAsync({ id: effectiveEntryId });
             await queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+            if (status === 'plan_to_watch') {
+              trackEvent('watchlist_item_removed');
+            }
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             onDeleted?.();
             onClose();
@@ -777,6 +823,8 @@ export function QuickLogSheet({
            <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }] }]}>
           <ScrollView
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             contentContainerStyle={[styles.sheetContent, { paddingBottom: insets.bottom + 20 }]}
           >
             <View {...sheetPanResponder.panHandlers} style={styles.grabber}>
@@ -1126,6 +1174,15 @@ export function QuickLogSheet({
                     onPress={() => {
                       Haptics.selectionAsync();
                       setDetailItem(recommendation);
+                      trackEvent('title_detail_viewed', {
+                        source: 'recommendation',
+                        media_type: recommendation.type,
+                        in_collection: Boolean(
+                          (collectionData as any[] | undefined)?.some(
+                            entry => entry.tmdbId === recommendation.tmdbId,
+                          ),
+                        ),
+                      });
                     }}
                     activeOpacity={0.78}
                     accessibilityRole="button"
@@ -1151,12 +1208,25 @@ export function QuickLogSheet({
            </Animated.View>
         </KeyboardAvoidingView>
         {watchedDetailsVisible && (
-          <View style={[styles.watchedModalOverlay, StyleSheet.absoluteFill]}>
+          <KeyboardAvoidingView
+            style={[styles.watchedModalOverlay, StyleSheet.absoluteFill]}
+            behavior="padding"
+            keyboardVerticalOffset={0}
+          >
             <TouchableOpacity
               style={StyleSheet.absoluteFill}
               activeOpacity={1}
               onPress={() => setWatchedDetailsVisible(false)}
             />
+            <ScrollView
+              contentContainerStyle={[
+                styles.watchedModalScrollContent,
+                { paddingTop: (insets.top ?? 0) + 20, paddingBottom: insets.bottom + 20 },
+              ]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+            >
             <View style={styles.watchedModalCard}>
             <Text style={styles.watchedModalTitle}>When did you watch it?</Text>
             <Text style={styles.watchedModalSubtitle}>Add the year and your rating.</Text>
@@ -1216,7 +1286,8 @@ export function QuickLogSheet({
               )}
             </TouchableOpacity>
           </View>
-          </View>
+          </ScrollView>
+          </KeyboardAvoidingView>
         )}
       </View>
     </Modal>
@@ -1256,7 +1327,12 @@ export default function SearchScreen() {
     Haptics.selectionAsync();
     setSelectedItem(item);
     setSheetVisible(true);
-  }, []);
+    trackEvent('title_detail_viewed', {
+      source: 'search',
+      media_type: item.type,
+      in_collection: collectionTmdbIds.has(item.tmdbId),
+    });
+  }, [collectionTmdbIds]);
 
   const handleClose = useCallback(() => {
     setSheetVisible(false);
@@ -1440,6 +1516,7 @@ export default function SearchScreen() {
         onClose={handleClose}
         onSaved={handleSaved}
         insets={insets}
+        source="search"
       />
       {savedNoticeVisible && (
         <View style={styles.savedToast} pointerEvents="none">
@@ -1719,8 +1796,10 @@ const styles = StyleSheet.create({
   starsRow: { flexDirection: 'row', gap: 6 },
 
   watchedModalOverlay: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 24, backgroundColor: 'rgba(17,17,17,0.45)',
+    flex: 1, backgroundColor: 'rgba(17,17,17,0.45)',
+  },
+  watchedModalScrollContent: {
+    flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24,
   },
   watchedModalCard: {
     width: '100%', maxWidth: 360, borderRadius: 24, padding: 22,

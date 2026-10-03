@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
+import currentMascot from "../../../cinelog-mobile/assets/images/spud-new-mascot-transparent.png";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
@@ -46,7 +47,7 @@ export default function Landing() {
 
         {/* Spud — tucked into bottom-right corner */}
         <img
-          src="/spud.png"
+          src={currentMascot}
           alt="Spud"
           draggable={false}
           style={{

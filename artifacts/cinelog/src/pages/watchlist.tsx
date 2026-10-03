@@ -11,6 +11,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { SpudMascot } from '@/components/spud-mascot';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 
 export default function Watchlist() {
   const [, setLocation] = useLocation();
@@ -28,6 +29,7 @@ export default function Watchlist() {
       { id, data: { status: 'watching' } as any },
       {
         onSuccess: () => {
+          trackEvent('watchlist_item_started');
           toast({ title: 'Now Watching', description: title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
         },
@@ -41,6 +43,7 @@ export default function Watchlist() {
       { id, data: { status: 'completed', dateWatched: today } as any },
       {
         onSuccess: () => {
+          trackEvent('title_completed', { source: 'watchlist' });
           toast({ title: 'Marked as Watched', description: title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
@@ -54,6 +57,7 @@ export default function Watchlist() {
       { id },
       {
         onSuccess: () => {
+          trackEvent('watchlist_item_removed');
           toast({ title: 'Removed from watchlist', description: title });
           setConfirmDeleteId(null);
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });

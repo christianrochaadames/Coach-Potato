@@ -1,18 +1,19 @@
 ---
-name: Date entry UX — year-only
-description: All quick-add flows use year-only (YYYY-01-01) not a full date; full add-entry page shows year picker not a date input
+name: Date entry UX
+description: New watched saves collect year only; existing watched entries can edit month and year, while other add flows keep the year-only convention
 ---
 
-# Date entry UX — year-only
+# Date entry UX
 
 ## The rule
-When a user adds a title (quick-add sheet in Search, Recs, or Onboarding, or full Add Entry page), store the year only — never ask for the exact date up front. The API receives `dateWatched: "${year}-01-01"` as a placeholder.
+When a user adds a title, avoid asking for an exact day. The watched confirmation sheet collects the year only and stores `YYYY-01-01`. Existing watched entries can later be refined to a month and year, stored as the first day of that month (`YYYY-MM-01`).
 
-**Why:** Users can't easily remember the exact date they watched something. The year is enough for stats and grouping. The full date can be edited later from the entry detail page.
+**Why:** Adding a title should stay quick, while existing watched history benefits from an optional month for more useful stats.
 
 ## How to apply
 - `add-entry.tsx`: `watchedYear` state (default current year) → year `<select>` → `dateWatched: \`${watchedYear}-01-01\``
-- `search.tsx` quick-add: `quickAddYear` state → year picker row in bottom sheet → same pattern
+- Search detail sheet watched confirmation: year control → `dateWatched: \`${year}-01-01\``
+- Existing watched detail sheets: month/year steppers and rating stars autosave the watched metadata
 - `home.tsx` rec quick-add: `recYear` state → year picker row in rec bottom sheet → same pattern
 - `onboarding.tsx`: uses `\`${new Date().getFullYear()}-01-01\`` as a fixed placeholder (no picker — bulk select flow)
 - Entry detail edit page: still allows editing to a full date for users who want precision

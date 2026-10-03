@@ -3,7 +3,7 @@
  * Matches the web landing page: lavender card, SPUD logo, marketing copy,
  * couch Spud mascot, and two CTA pill buttons.
  */
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,12 +12,21 @@ import { useEffect } from 'react';
 export default function LandingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
+  const bottomInset = Platform.OS === 'web' ? Math.max(insets.bottom, 34) : insets.bottom;
 
   // Hide the splash screen when landing mounts (signed-out path)
   useEffect(() => { SplashScreen.hideAsync().catch(() => {}); }, []);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: topInset, paddingBottom: bottomInset },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
 
       {/* ── Logo ── */}
       <View style={styles.logoWrap}>
@@ -33,15 +42,15 @@ export default function LandingScreen() {
         {/* Marketing copy */}
         <View style={styles.copyStack}>
           <Text style={styles.copy}>
-            The TV shows and movies you're{'\n'}
+            The TV shows and movies you're{' '}
             <Text style={styles.bold}>watching</Text>
           </Text>
           <Text style={styles.copy}>
-            The ones you've already{'\n'}
+            The ones you've already{' '}
             <Text style={styles.bold}>watched</Text>
           </Text>
           <Text style={styles.copy}>
-            And what you'll{'\n'}
+            And what you'll{' '}
             <Text style={styles.bold}>watch next</Text>
           </Text>
           <Text style={[styles.copy, styles.bold]}>All in one place.</Text>
@@ -49,7 +58,7 @@ export default function LandingScreen() {
 
         {/* Mascot — bottom right */}
         <Image
-          source={require('@/assets/images/spud-new-mascot.png')}
+          source={require('@/assets/images/spud-new-mascot-transparent.png')}
           style={styles.mascot}
           resizeMode="contain"
         />
@@ -76,7 +85,7 @@ export default function LandingScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -87,6 +96,9 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: BG,
+  },
+  content: {
+    flexGrow: 1,
     paddingHorizontal: 24,
   },
 
@@ -123,7 +135,9 @@ const styles = StyleSheet.create({
   btnPrimary: {
     backgroundColor: '#5B50D0',
     borderRadius: 32,
+    minHeight: 52,
     paddingVertical: 16,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   btnPrimaryText: {
@@ -135,7 +149,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#5B50D0',
     borderRadius: 32,
+    minHeight: 52,
     paddingVertical: 14,
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
   },

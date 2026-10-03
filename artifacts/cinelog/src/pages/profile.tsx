@@ -3,6 +3,11 @@ import { useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { ChevronLeft, LogOut, Edit2, Camera, ZoomIn, ZoomOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
+import { profileQueryKey } from "@/lib/profile-cache";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
+import { trackEvent } from "@/lib/analytics";
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -230,6 +235,7 @@ export default function Profile() {
   const { signOut } = useClerk();
   const { user, isLoaded } = useUser();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -246,12 +252,14 @@ export default function Profile() {
   const [avatarUrl,   setAvatarUrl]   = useState<string | null>(null);
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [cropSrc,     setCropSrc]     = useState<string | null>(null);
+  const [legalPage,   setLegalPage]   = useState<"privacy" | "terms" | null>(null);
 
   useEffect(() => {
     fetch("/api/profile")
       .then(r => r.json())
       .then(p => {
         setProfile(p);
+        queryClient.setQueryData(profileQueryKey, p);
         setFirstNameVal(p.firstName ?? "");
         setLastNameVal(p.lastName ?? "");
         setBioVal(p.bio ?? "");
@@ -259,7 +267,7 @@ export default function Profile() {
         setAvatarUrl(p.avatarUrl ?? null);
       })
       .catch(() => {});
-  }, []);
+  }, [queryClient]);
 
   const startEdit = (field: EditField) => { setEditing(field); setFieldError(""); };
   const cancelEdit = () => {
@@ -286,8 +294,12 @@ export default function Profile() {
       }
       const updated = await res.json();
       setProfile(updated);
+      queryClient.setQueryData(profileQueryKey, updated);
       setEditing(null);
       toast({ title: "Saved ✓" });
+      trackEvent("profile_updated", {
+        field: payload.bio !== undefined ? "bio" : "name",
+      });
       // Sync name to Clerk only after a successful app DB save
       if (payload.firstName !== undefined || payload.lastName !== undefined) {
         user?.update({
@@ -336,7 +348,11 @@ export default function Profile() {
         const updated = await res.json();
         setAvatarId(updated.avatarId ?? null);
         setAvatarUrl(updated.avatarUrl ?? null);
+        queryClient.setQueryData(profileQueryKey, updated);
         toast({ title: "Photo saved ✓" });
+        trackEvent("avatar_updated", {
+          source: patch.avatarUrl ? "photo" : "preset",
+        });
         // Sync to Clerk only after the app DB save succeeded
         if (patch.avatarUrl) {
           // Custom cropped photo — convert data URL to File
@@ -437,6 +453,36 @@ export default function Profile() {
           onConfirm={handleCropConfirm}
           onCancel={() => setCropSrc(null)}
         />
+      )}
+
+      {legalPage && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end"
+          style={{ background: "rgba(0,0,0,0.58)" }}
+          onClick={() => setLegalPage(null)}
+        >
+          <div
+            className="w-full max-w-2xl mx-auto rounded-t-3xl overflow-y-auto"
+            style={{ background: "#FFF3E8", maxHeight: "92vh" }}
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-3" style={{ background: "#FFF3E8", borderBottom: "1px solid #E2D9CE" }}>
+              <p className="text-sm font-bold" style={{ color: "#111111" }}>
+                {legalPage === "privacy" ? "Privacy Policy" : "Terms of Service"}
+              </p>
+              <button
+                type="button"
+                onClick={() => setLegalPage(null)}
+                className="p-2 rounded-full"
+                style={{ background: "#EFE4D2", color: "#116149" }}
+                aria-label="Close legal information"
+              >
+                ×
+              </button>
+            </div>
+            {legalPage === "privacy" ? <Privacy embedded /> : <Terms embedded />}
+          </div>
+        </div>
       )}
 
       {/* ── Header: back button only, no logo ── */}
@@ -614,6 +660,24 @@ export default function Profile() {
         )}
       </div>
 
+      {/* ── Spud Buddies ── */}
+      <div className="mx-5 mb-5 rounded-2xl p-4" style={{ background: "#1A4A2A" }}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: "#7EDC5A" }}>Spud Buddies</p>
+            <p className="text-sm" style={{ color: "#A8D4B0" }}>Find people to share your watchlist with.</p>
+          </div>
+          <button
+            data-testid="button-open-buddies"
+            onClick={() => setLocation("/buddies")}
+            className="shrink-0 px-4 py-2.5 rounded-xl text-sm font-bold"
+            style={{ background: "#7EDC5A", color: "#0F2D1C" }}
+          >
+            Find buddies
+          </button>
+        </div>
+      </div>
+
       {/* ── Sign out ── */}
       <div className="px-5">
         <button
@@ -629,7 +693,8 @@ export default function Profile() {
       {/* ── Legal footer ── */}
       <div className="flex items-center justify-center gap-3 px-5 pb-2 pt-1">
         <a
-          href="/privacy"
+          href="#privacy"
+          onClick={event => { event.preventDefault(); setLegalPage("privacy"); }}
           className="text-xs font-medium underline underline-offset-2 active:opacity-60"
           style={{ color: '#A8D4B0' }}
         >
@@ -637,7 +702,8 @@ export default function Profile() {
         </a>
         <span className="text-xs" style={{ color: '#A8D4B0' }}>·</span>
         <a
-          href="/terms"
+          href="#terms"
+          onClick={event => { event.preventDefault(); setLegalPage("terms"); }}
           className="text-xs font-medium underline underline-offset-2 active:opacity-60"
           style={{ color: '#A8D4B0' }}
         >

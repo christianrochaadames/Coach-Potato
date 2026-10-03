@@ -16,6 +16,8 @@ tags:
     description: Viewing statistics
   - name: tmdb
     description: TMDB proxy for search and discovery
+  - name: buddies
+    description: Mutually-consented buddy relationships and privacy-safe buddy activity
 
 paths:
   /healthz:
@@ -95,6 +97,52 @@ paths:
                 $ref: "#/components/schemas/Entry"
         "400":
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /entries/status:
+    post:
+      operationId: upsertEntryStatus
+      tags: [entries]
+      summary: Upsert a user's status for a TMDB title
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EntryStatusInput"
+      responses:
+        "200":
+          description: Entry status saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entry"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /entries/by-tmdb/{tmdbId}:
+    delete:
+      operationId: deleteEntryByTmdbId
+      tags: [entries]
+      summary: Remove a user's status for a TMDB title
+      parameters:
+        - name: tmdbId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Entry status removed
+        "404":
+          description: Entry not found
           content:
             application/json:
               schema:
@@ -412,8 +460,532 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /buddies/facebook:
+    get:
+      operationId: getFacebookConnection
+      tags: [buddies]
+      summary: Get optional Facebook connection and identity-only friend matches
+      description: Matches are members who also connected Facebook to Spud. Connecting never sends buddy requests or shares protected shelves.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 30, default: 30 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+      responses:
+        "200":
+          description: Configuration, connection state, and one page of matches
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacebookConnection"
+        "401":
+          description: Authentication required
+    delete:
+      operationId: disconnectFacebook
+      tags: [buddies]
+      summary: Delete Facebook connection and discovery data without removing buddies
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Connection and discovery data deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyDeleteResult"
+        "401":
+          description: Authentication required
+
+  /buddies/facebook/connect:
+    post:
+      operationId: beginFacebookConnection
+      tags: [buddies]
+      summary: Begin a consent-based Facebook OAuth connection
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacebookConnectionInput"
+      responses:
+        "200":
+          description: Open this authorization URL in the system browser
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacebookAuthorization"
+        "401":
+          description: Authentication required
+        "503":
+          description: Facebook integration is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: cancelFacebookConnection
+      tags: [buddies]
+      summary: Cancel pending Facebook authorization without disconnecting an existing link
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Pending authorization cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyDeleteResult"
+        "401":
+          description: Authentication required
+
+  /buddies/search:
+    get:
+      operationId: searchBuddies
+      tags: [buddies]
+      summary: Search profiles to invite as buddies
+      description: Authenticated case-insensitive partial search; excludes self and returns at most 20 identity-only results in a results array, each with relationship status.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 50
+      responses:
+        "200":
+          description: Matching identities and relationship states
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddySearchResponse"
+        "400":
+          description: Invalid search query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+
+  /buddies:
+    get:
+      operationId: listBuddies
+      tags: [buddies]
+      summary: List accepted and pending buddy relationships
+      description: Returns separate accepted, incoming-request, and outgoing-request lists containing identity fields and relationship status only.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Buddy relationship lists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyLists"
+        "401":
+          description: Authentication required
+
+  /buddies/{userId}/entries:
+    get:
+      operationId: getBuddyEntries
+      tags: [buddies]
+      summary: List a buddy's privacy-safe entry cards
+      description: Accepted relationship required. Only title, type, TMDB id, status, and poster are returned.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BuddyUserId"
+        - name: status
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [watching, plan_to_watch, completed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+            default: 30
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Paginated privacy-safe entry cards
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyEntriesPage"
+        "400":
+          description: Invalid status or pagination
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+        "403":
+          description: An accepted buddy relationship is required
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /buddies/{userId}/request:
+    post:
+      operationId: requestBuddy
+      tags: [buddies]
+      summary: Send a buddy request
+      description: Creates a pending request. The target must accept it before private activity is shared.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BuddyUserId"
+      responses:
+        "201":
+          description: Buddy request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyRelationshipResult"
+        "400":
+          description: Cannot request yourself
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: A relationship or pending request already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /buddies/{userId}/accept:
+    post:
+      operationId: acceptBuddyRequest
+      tags: [buddies]
+      summary: Accept an incoming buddy request
+      description: Only the recipient of a pending request can accept it.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BuddyUserId"
+      responses:
+        "200":
+          description: Buddy relationship accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyRelationshipResult"
+        "401":
+          description: Authentication required
+        "404":
+          description: Profile or incoming request not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /buddies/{userId}:
+    get:
+      operationId: getBuddyProfile
+      tags: [buddies]
+      summary: Get a profile and, for accepted buddies, favorites and shelves
+      description: The person and top-level status are always returned. Bio, favorites, and shelves are present only after both users accept. Each shelf contains a count and at most six privacy-safe BuddyEntry items. No entry notes, ratings, watched dates, tags, or other personal entry fields are exposed.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BuddyUserId"
+      responses:
+        "200":
+          description: Person identity/status plus accepted-only bio, favorites, and shelves
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyProfileDetail"
+        "401":
+          description: Authentication required
+        "404":
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: removeBuddy
+      tags: [buddies]
+      summary: Cancel, reject, or remove a buddy relationship
+      description: Either participant may remove a pending or accepted relationship.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/BuddyUserId"
+      responses:
+        "200":
+          description: Relationship removed, if present
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuddyDeleteResult"
+        "400":
+          description: Cannot remove yourself
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Clerk session token
+  parameters:
+    BuddyUserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
   schemas:
+    FacebookConnectionInput:
+      type: object
+      required: [returnTo]
+      properties:
+        returnTo: { type: string, enum: [web, native] }
+
+    FacebookAuthorization:
+      type: object
+      required: [authorizationUrl]
+      properties:
+        authorizationUrl: { type: string, format: uri }
+
+    FacebookConnection:
+      type: object
+      required: [configured, connected, pending, error, lastSyncedAt, inviteUrl, results, total, limit, offset]
+      properties:
+        configured: { type: boolean }
+        connected: { type: boolean }
+        pending: { type: boolean }
+        error: { type: ["string", "null"] }
+        lastSyncedAt: { type: ["string", "null"], format: date-time }
+        inviteUrl: { type: ["string", "null"], format: uri }
+        results:
+          type: array
+          maxItems: 30
+          items:
+            $ref: "#/components/schemas/BuddySearchProfile"
+        total: { type: integer, minimum: 0 }
+        limit: { type: integer }
+        offset: { type: integer }
+
+    BuddyIdentity:
+      type: object
+      required: [userId, firstName, lastName, username, avatarId, avatarUrl]
+      properties:
+        userId:
+          type: string
+        firstName:
+          type: ["string", "null"]
+        lastName:
+          type: ["string", "null"]
+        username:
+          type: ["string", "null"]
+        avatarId:
+          type: ["string", "null"]
+        avatarUrl:
+          type: ["string", "null"]
+
+    BuddySearchProfile:
+      allOf:
+        - $ref: "#/components/schemas/BuddyIdentity"
+        - type: object
+          required: [status]
+          properties:
+            status:
+              $ref: "#/components/schemas/BuddyStatus"
+
+    BuddyStatus:
+      type: string
+      enum: [none, incoming, outgoing, accepted]
+
+    BuddyPerson:
+      allOf:
+        - $ref: "#/components/schemas/BuddyIdentity"
+        - type: object
+          required: [status]
+          properties:
+            status:
+              $ref: "#/components/schemas/BuddyStatus"
+            bio:
+              type: ["string", "null"]
+              description: Present only for accepted buddies.
+
+    BuddySearchResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/BuddySearchProfile"
+
+    BuddyLists:
+      type: object
+      required: [accepted, incoming, outgoing]
+      properties:
+        accepted:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuddyPerson"
+        incoming:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuddyPerson"
+        outgoing:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuddyPerson"
+
+    BuddyRelationshipResult:
+      type: object
+      required: [userId, status, direction]
+      properties:
+        userId:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted]
+        direction:
+          type: string
+          enum: [incoming, outgoing, accepted]
+
+    BuddyShelf:
+      type: object
+      required: [count, items]
+      properties:
+        count:
+          type: integer
+        items:
+          type: array
+          maxItems: 6
+          items:
+            $ref: "#/components/schemas/BuddyEntryCard"
+
+    BuddyShelves:
+      type: object
+      required: [watching, plan_to_watch, completed]
+      properties:
+        watching:
+          $ref: "#/components/schemas/BuddyShelf"
+        plan_to_watch:
+          $ref: "#/components/schemas/BuddyShelf"
+        completed:
+          $ref: "#/components/schemas/BuddyShelf"
+
+    BuddyFavorites:
+      type: object
+      required: [tv, movies]
+      properties:
+        tv:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuddyFavorite"
+        movies:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuddyFavorite"
+
+    BuddyFavorite:
+      type: object
+      required: [title, posterUrl]
+      properties:
+        title:
+          type: string
+        posterUrl:
+          type: ["string", "null"]
+
+    BuddyProfileDetail:
+      type: object
+      required: [person, status]
+      properties:
+        person:
+          $ref: "#/components/schemas/BuddyPerson"
+        status:
+          $ref: "#/components/schemas/BuddyStatus"
+        favorites:
+          $ref: "#/components/schemas/BuddyFavorites"
+        shelves:
+          $ref: "#/components/schemas/BuddyShelves"
+
+    BuddyEntryCard:
+      type: object
+      required: [title, type, tmdbId, status, posterUrl]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [movie, show]
+        tmdbId:
+          type: ["integer", "null"]
+        status:
+          type: string
+          enum: [watching, plan_to_watch, completed]
+        posterUrl:
+          type: ["string", "null"]
+
+    BuddyEntriesPage:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BuddyEntryCard"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+
+    BuddyDeleteResult:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+
     HealthStatus:
       type: object
       properties:
@@ -512,6 +1084,32 @@ components:
           type: array
           items:
             type: string
+
+    EntryStatusInput:
+      type: object
+      required:
+        - title
+        - type
+        - tmdbId
+        - status
+      properties:
+        title:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          enum: [movie, show]
+        tmdbId:
+          type: integer
+        status:
+          type: string
+          enum: [watching, plan_to_watch, completed]
+        posterUrl:
+          type: string
+        year:
+          type: integer
+        synopsis:
+          type: string
 
     EntryUpdate:
       type: object

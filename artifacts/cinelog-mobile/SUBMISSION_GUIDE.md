@@ -1,4 +1,4 @@
-# CouchPotato — App Store Submission Guide
+# Spud — App Store Submission Guide
 
 Everything here is a one-time setup. Once done, future releases are just `eas build` + `eas submit`.
 
@@ -32,7 +32,7 @@ Enter your Expo username and password when prompted.
 2. Click **+** → **New App**
 3. Fill in:
    - Platform: **iOS**
-   - Name: **CouchPotato**
+   - Name: **Spud**
    - Bundle ID: **com.couchpotato.ios** ← register this first at developer.apple.com → Identifiers
    - SKU: `couchpotato-ios` (any unique string)
 4. Save — Apple will assign an **App ID number** (you'll need it for `eas submit` later)

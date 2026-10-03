@@ -1,23 +1,29 @@
-export default function Terms() {
+import type { RouteComponentProps } from 'wouter';
+
+type TermsProps = Partial<RouteComponentProps> & { embedded?: boolean };
+
+export default function Terms({ embedded = false }: TermsProps) {
   return (
     <div className="min-h-full pb-20 px-5 pt-8 max-w-2xl mx-auto" style={{ background: '#FFF3E8', color: '#111111' }}>
 
       {/* Back button */}
-      <button
-        onClick={() => window.history.back()}
-        className="flex items-center gap-1.5 text-sm font-semibold mb-6 active:opacity-60"
-        style={{ color: '#116149' }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5M12 5l-7 7 7 7" />
-        </svg>
-        Back
-      </button>
+      {!embedded && (
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-1.5 text-sm font-semibold mb-6 active:opacity-60"
+          style={{ color: '#116149' }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 5l-7 7 7 7" />
+          </svg>
+          Back
+        </button>
+      )}
 
       <h1 className="text-2xl font-bold mb-1" style={{ fontFamily: 'Manrope, system-ui, sans-serif' }}>
         Terms of Service
       </h1>
-      <p className="text-sm mb-8" style={{ color: '#7E7A73' }}>Last updated: August 7, 2026</p>
+      <p className="text-sm mb-8" style={{ color: '#7E7A73' }}>Last updated: September 30, 2026</p>
 
       <p className="text-sm leading-relaxed mb-8" style={{ color: '#3D3A35' }}>
         These terms cover your use of Spud, a movie and TV tracking app. By creating an account or using Spud, you're agreeing to them. If something here doesn't sit right with you, the best move is not to use the app.
@@ -54,7 +60,7 @@ export default function Terms() {
       <section className="mb-7">
         <h2 className="text-base font-bold mb-2" style={{ color: '#111111' }}>4. What you log stays yours</h2>
         <p className="text-sm leading-relaxed" style={{ color: '#3D3A35' }}>
-          Everything you add to Spud — ratings, notes, watch history — belongs to you. We only use it to run the app for you. Your entries are private by default.
+          Everything you add to Spud belongs to you. Signed-in members can find your name, username and profile picture through buddy search. When you accept a buddy request, that person can see your bio, favorite movies and TV shows, and your watching, watchlist and watched titles and posters. Ratings, notes, dates and email are not shared with buddies. Remove a buddy to stop sharing your favorites and shelves with them.
         </p>
       </section>
 

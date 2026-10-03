@@ -583,17 +583,29 @@ export default function StatsScreen() {
           activeOpacity={1}
           onPress={() => setShowYearPicker(false)}
         />
-        <View style={styles.yearModalCard}>
-          <Text style={styles.yearModalTitle}>Select year</Text>
-          <TouchableOpacity
-            style={[styles.yearModalOption, selectedYear === null && styles.yearModalOptionActive]}
-            onPress={() => { setSelectedYear(null); setShowYearPicker(false); }}
-          >
-            <Text style={[styles.yearModalOptionText, selectedYear === null && styles.yearModalOptionTextActive]}>
-              All time
-            </Text>
-          </TouchableOpacity>
-          {years.map(y => (
+        <View
+          style={[
+            styles.yearModalContainer,
+            { paddingTop: topPad + 24, paddingBottom: bottomPad + 24 },
+          ]}
+          pointerEvents="box-none"
+        >
+          <View style={styles.yearModalCard}>
+            <Text style={styles.yearModalTitle}>Select year</Text>
+            <ScrollView
+              style={styles.yearModalOptions}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <TouchableOpacity
+                style={[styles.yearModalOption, selectedYear === null && styles.yearModalOptionActive]}
+                onPress={() => { setSelectedYear(null); setShowYearPicker(false); }}
+              >
+                <Text style={[styles.yearModalOptionText, selectedYear === null && styles.yearModalOptionTextActive]}>
+                  All time
+                </Text>
+              </TouchableOpacity>
+              {years.map(y => (
             <TouchableOpacity
               key={y}
               style={[styles.yearModalOption, selectedYear === y && styles.yearModalOptionActive]}
@@ -603,7 +615,9 @@ export default function StatsScreen() {
                 {y}
               </Text>
             </TouchableOpacity>
-          ))}
+              ))}
+            </ScrollView>
+          </View>
         </View>
       </Modal>
 
@@ -804,6 +818,7 @@ export default function StatsScreen() {
         initialRating={selectedTopRated?.entry.rating ?? null}
         initialSeasons={selectedTopRated?.entry.seasons ?? []}
         onDeleted={() => setSelectedTopRated(null)}
+        source="stats"
       />
     </View>
   );
@@ -865,11 +880,16 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)',
   },
   yearModalCard: {
-    position: 'absolute', top: '30%', alignSelf: 'center',
-    width: 220, backgroundColor: '#ffffff',
+    width: 220, maxHeight: '100%', alignSelf: 'center', backgroundColor: '#ffffff',
     borderRadius: 20, overflow: 'hidden',
     shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15, shadowRadius: 20, elevation: 12,
+  },
+  yearModalContainer: {
+    ...StyleSheet.absoluteFill, justifyContent: 'center',
+  },
+  yearModalOptions: {
+    flexShrink: 1,
   },
   yearModalTitle: {
     fontSize: 13, fontFamily: 'Manrope_700Bold', color: '#7E7A73',

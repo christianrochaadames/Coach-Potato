@@ -28,6 +28,7 @@ import {
 } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 import { authFetch } from '@/utils/authFetch';
+import { trackEvent } from '@/utils/analytics';
 import { QuickLogSheet, type TmdbItem } from '@/app/(tabs)/search';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -234,6 +235,7 @@ export default function EntryDetailScreen() {
   const [localRating, setLocalRating] = useState(0);
   const [localStatus, setLocalStatus] = useState<Status>('completed');
   const [localDate, setLocalDate] = useState(''); // stored YYYY-MM-01
+  const persistedStatusRef = useRef<Status>('completed');
 
   // Date picker modal
   const [dateModalOpen, setDateModalOpen] = useState(false);
@@ -249,17 +251,20 @@ export default function EntryDetailScreen() {
   useEffect(() => {
     if (entry) {
       setLocalRating(entry.rating ?? 0);
-      setLocalStatus((entry.status ?? 'completed') as Status);
+      const nextStatus = (entry.status ?? 'completed') as Status;
+      setLocalStatus(nextStatus);
+      persistedStatusRef.current = nextStatus;
       setLocalDate(entry.dateWatched ?? '');
     }
   }, [entry]);
 
   // ── Autosave ──────────────────────────────────────────────────────────────────
-  function autosave(patch: object, successText: string) {
+  function autosave(patch: object, successText: string, onSaved?: () => void) {
     updateEntry.mutate(
       { id: Number(id), data: patch as any },
       {
         onSuccess: () => {
+          onSaved?.();
           showSuccess(successText);
           queryClient.invalidateQueries({ queryKey: getGetEntryQueryKey(Number(id)) });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey({}) });
@@ -368,7 +373,9 @@ export default function EntryDetailScreen() {
       ...saved.filter(s => s.number !== activeSeason),
       { ...(saved.find(s => s.number === activeSeason) ?? { number: activeSeason }), status: autoStatus, episodes },
     ];
-    autosave({ seasons: updated }, `Season ${activeSeason} saved`);
+    autosave({ seasons: updated }, `Season ${activeSeason} saved`, () => {
+      trackEvent('season_progress_saved');
+    });
     setEpSheet(null);
   }
 
@@ -382,13 +389,19 @@ export default function EntryDetailScreen() {
       ...saved.filter(s => s.number !== num),
       { number: num, status: 'watched', dateWatched: existing?.dateWatched ?? today, rating: rating || null, notes: null, episodes: existing?.episodes },
     ];
-    autosave({ seasons: updated }, `Season ${num} rated`);
+    autosave({ seasons: updated }, `Season ${num} rated`, () => {
+      trackEvent(existing?.status === 'watched' ? 'season_progress_saved' : 'season_completed');
+    });
     setSeasonRatingModal(null);
   }
 
   async function doDelete() {
     try {
       await deleteEntry.mutateAsync({ id: Number(id) });
+      trackEvent('entry_deleted');
+      if (persistedStatusRef.current === 'plan_to_watch') {
+        trackEvent('watchlist_item_removed');
+      }
       queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey({}) });
       router.back();
     } catch { Alert.alert('Error', 'Failed to delete entry.'); }
@@ -411,8 +424,9 @@ export default function EntryDetailScreen() {
   }
 
   const topPad = insets.top + 12;
-  // Floating pill tab bar: height 48 + bottom offset (insets.bottom+4 or 12) + 8px breathing room
-  const tabBarClearance = 62 + (insets.bottom > 0 ? insets.bottom + 4 : 12) + 8;
+  // These sheets are standalone modals, so they need home-indicator clearance
+  // rather than the floating tab bar's clearance.
+  const sheetBottomPadding = (Platform.OS === 'web' ? 34 : insets.bottom) + 20;
   const savedSeasons = getSeasonsArray();
   const tmdbSeasonsList = tmdbSeasons.filter(s => s.number > 0);
   const watchedNums = new Set(savedSeasons.filter(s => s.status === 'watched').map(s => s.number));
@@ -493,7 +507,23 @@ export default function EntryDetailScreen() {
                        ? opt.value === 'watching' ? colors.brightBlue : colors.darkPurple
                        : colors.border,
                    }]}
-                  onPress={() => { Haptics.selectionAsync(); setLocalStatus(opt.value); autosave({ status: opt.value }, 'Status updated'); }}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    const previousStatus = persistedStatusRef.current;
+                    setLocalStatus(opt.value);
+                    autosave({ status: opt.value }, 'Status updated', () => {
+                      if (previousStatus === opt.value) return;
+                      if (opt.value === 'completed') {
+                        trackEvent('title_completed');
+                      } else if (
+                        previousStatus === 'plan_to_watch' &&
+                        opt.value === 'watching'
+                      ) {
+                        trackEvent('watchlist_item_started');
+                      }
+                      persistedStatusRef.current = opt.value;
+                    });
+                  }}
                 >
                    <Text style={[styles.statusChipText, { color: active ? colors.primaryForeground : colors.mutedForeground }]}>{opt.label}</Text>
                 </TouchableOpacity>
@@ -508,7 +538,14 @@ export default function EntryDetailScreen() {
           <View style={styles.starsRow}>
             {[1, 2, 3, 4, 5].map(star => (
               <TouchableOpacity key={star}
-                onPress={() => { Haptics.selectionAsync(); const r = localRating === star ? 0 : star; setLocalRating(r); autosave({ rating: r || null }, 'Rating saved'); }}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  const r = localRating === star ? 0 : star;
+                  setLocalRating(r);
+                  autosave({ rating: r || null }, 'Rating saved', () => {
+                    trackEvent('rating_saved', { rating: r, cleared: r === 0 });
+                  });
+                }}
                 hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
                 <FontAwesome
                   name="star"
@@ -754,13 +791,14 @@ export default function EntryDetailScreen() {
           onClose={() => setRecommendationItem(null)}
           onSaved={() => setRecommendationItem(null)}
           insets={{ bottom: insets.bottom }}
+          source="entry_detail_recommendation"
         />
       )}
 
       {/* ── Date picker modal ── */}
       <Modal visible={dateModalOpen} transparent animationType="slide" onRequestClose={() => setDateModalOpen(false)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setDateModalOpen(false)} />
-        <View style={[styles.modalSheet, { backgroundColor: colors.background }]}>
+        <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: sheetBottomPadding }]}>
           <View style={styles.modalHandle} />
           <Text style={[styles.modalTitle, { color: colors.foreground }]}>Date Watched</Text>
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>MONTH</Text>
@@ -800,7 +838,7 @@ export default function EntryDetailScreen() {
       <Modal visible={!!epSheet} transparent animationType="slide" onRequestClose={() => setEpSheet(null)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setEpSheet(null)} />
         {epSheet && (
-          <View style={[styles.episodeSheet, { backgroundColor: colors.background, paddingBottom: tabBarClearance }]}>
+          <View style={[styles.episodeSheet, { backgroundColor: colors.background, paddingBottom: sheetBottomPadding }]}>
             <View style={styles.modalHandle} />
 
             {/* ── Sticky header: close | title | save ── */}
@@ -903,7 +941,7 @@ export default function EntryDetailScreen() {
       <Modal visible={!!seasonRatingModal} transparent animationType="slide" onRequestClose={() => setSeasonRatingModal(null)}>
         <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setSeasonRatingModal(null)} />
         {seasonRatingModal && (
-          <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: tabBarClearance }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.background, paddingBottom: sheetBottomPadding }]}>
             <View style={styles.modalHandle} />
             <Text style={[styles.modalTitle, { color: colors.foreground }]}>Your rating · Season {seasonRatingModal.num}</Text>
             <View style={[styles.starsRow, { marginBottom: 20 }]}>
@@ -1015,7 +1053,7 @@ const styles = StyleSheet.create({
 
   // Modals
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '60%' },
+  modalSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '85%' },
   episodeSheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 32, maxHeight: '88%', flex: 1 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#D4C9BC', alignSelf: 'center', marginBottom: 16 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },

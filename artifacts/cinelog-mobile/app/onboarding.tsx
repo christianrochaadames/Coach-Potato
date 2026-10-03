@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { Redirect, useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as SecureStore from 'expo-secure-store';
 import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
+import { Image as ExpoImage } from 'expo-image';
 import { useAuth } from '@clerk/expo';
 import {
   getListEntriesQueryKey,
@@ -22,6 +24,7 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { authFetch } from '@/utils/authFetch';
+import { trackEvent } from '@/utils/analytics';
 import { QuickLogSheet, TmdbItem } from './(tabs)/search';
 
 const API = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app'}`;
@@ -71,7 +74,9 @@ function getDraftStatuses(draft: Draft): SelectedStatuses {
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
+  const bottomInset = Platform.OS === 'web' ? Math.max(insets.bottom, 34) : insets.bottom;
   const { isLoaded, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
   const { data: existingEntries } = useListEntries();
@@ -117,6 +122,7 @@ export default function OnboardingScreen() {
       await markOnboardingComplete();
       await SecureStore.deleteItemAsync(DRAFT_KEY).catch(() => {});
       queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+      trackEvent('onboarding_skipped');
       router.replace('/(tabs)' as any);
     } catch {
       setSelectionError('We could not finish setting up your library. Please try again.');
@@ -241,8 +247,12 @@ export default function OnboardingScreen() {
   };
 
   const handleContinue = async () => {
-    if (Object.keys(selectedStatuses).length < 5 || refreshing) return;
+    if (saving) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (selectedCount === 0) {
+      setSkipConfirmationVisible(true);
+      return;
+    }
     setSaving(true);
     setSelectionError(null);
     try {
@@ -250,6 +260,7 @@ export default function OnboardingScreen() {
       await SecureStore.deleteItemAsync(DRAFT_KEY).catch(() => {});
       queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
       queryClient.invalidateQueries();
+      trackEvent('onboarding_completed', { selected_count: selectedCount });
       router.replace('/(tabs)' as any);
     } catch {
       setSelectionError('We could not save your picks. Please try again.');
@@ -273,6 +284,7 @@ export default function OnboardingScreen() {
     [selectedStatuses],
   );
   const posterWidth = Math.max(1, (width - 40 - 24) / 4);
+  const compactMeet = height < 760;
   const currentSheetStatus = sheetItem ? selectedStatuses[sheetItem.tmdbId] : undefined;
   const currentSheetEntry = sheetItem
     ? (existingEntries as ExistingEntry[] | undefined)?.find(entry => entry.tmdbId === sheetItem.tmdbId)
@@ -303,28 +315,41 @@ export default function OnboardingScreen() {
 
   if (stage === 'meet') {
     return (
-      <View style={[styles.meetRoot, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.meetRoot, { paddingTop: topInset + 12, paddingBottom: bottomInset + 16 }]}>
         <View style={styles.meetCard}>
-          <View style={styles.meetHero}>
+          <ScrollView
+            style={styles.meetScroll}
+            contentContainerStyle={[
+              styles.meetScrollContent,
+              compactMeet && styles.meetScrollContentCompact,
+            ]}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
             <Image source={require('@/assets/images/spud-logo.png')} style={styles.logo} resizeMode="contain" />
-            <Image source={require('@/assets/images/spud-welcome-heart.png')} style={styles.meetMascot} resizeMode="contain" />
-          </View>
-          <View style={styles.meetCopy}>
-            <Text style={styles.meetTitle}>Welcome</Text>
-            <Text style={styles.meetSubtitle}>I’m Spud, the couch potato.</Text>
-            <Text style={styles.meetBody}>
-              Think of me as your personal TV and{'\n'}
-              movie sidekick. I’m here to help you{'\n'}
-              remember everything you have watched,{'\n'}
-              keep track of what you have been{'\n'}
-              watching, and give you some great{'\n'}
-              recommendations for what to watch next.
+            <View style={styles.meetIntroRow}>
+              <View style={styles.meetHeading}>
+                <Text style={[styles.meetTitle, compactMeet && styles.meetTitleCompact]}>Welcome</Text>
+                <Text style={[styles.meetSubtitle, compactMeet && styles.meetSubtitleCompact]}>
+                  I’m Spud, the couch potato.
+                </Text>
+              </View>
+              <Image
+                source={require('@/assets/images/spud-welcome-heart.png')}
+                style={[styles.meetMascot, compactMeet && styles.meetMascotCompact]}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={[styles.meetBody, compactMeet && styles.meetBodyCompact]}>
+              Think of me as your personal TV and movie sidekick. I’m here to help you remember everything you have watched, keep track of what you have been watching, and give you some great recommendations for what to watch next.
             </Text>
-          </View>
+          </ScrollView>
           <View style={styles.meetBottom}>
             <Pressable
               style={({ pressed }) => [styles.greenButton, pressed && styles.pressed]}
               onPress={goToPicks}
+              testID="onboarding-meet-button"
+              accessibilityRole="button"
             >
               <Text style={styles.greenButtonText}>Let’s get comfy</Text>
             </Pressable>
@@ -335,9 +360,9 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <View style={[styles.picksRoot, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.picksRoot, { paddingTop: topInset + 12 }]}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + 28 }}
+        contentContainerStyle={{ paddingBottom: bottomInset + 28 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.picksHeader}>
@@ -407,7 +432,13 @@ export default function OnboardingScreen() {
                   testID={`onboarding-title-${item.tmdbId}`}
                 >
                   {item.posterUrl ? (
-                    <Image source={{ uri: item.posterUrl }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                    <ExpoImage
+                      source={item.posterUrl}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                      transition={120}
+                    />
                   ) : (
                     <View style={styles.posterFallback}>
                       <Text style={styles.posterFallbackText}>{item.title}</Text>
@@ -433,11 +464,11 @@ export default function OnboardingScreen() {
           {selectionError ? <Text style={styles.selectionError}>{selectionError}</Text> : null}
           <Pressable
             onPress={() => void handleContinue()}
-            disabled={isBusy || Boolean(loadError) || selectedCount < 5}
+            disabled={saving}
             style={({ pressed }) => [
               styles.continueButton,
-              (isBusy || Boolean(loadError) || selectedCount < 5) && styles.disabled,
-              pressed && !isBusy && selectedCount >= 5 && styles.pressed,
+              saving && styles.disabled,
+              pressed && !saving && styles.pressed,
             ]}
             testID="onboarding-work-magic"
           >
@@ -466,6 +497,7 @@ export default function OnboardingScreen() {
          canDelete={Boolean(currentSheetEntry?.id)}
          showProviders={false}
          showRecommendations={false}
+          source="onboarding"
        />
 
       <Modal
@@ -503,25 +535,36 @@ const styles = StyleSheet.create({
   meetRoot: { flex: 1, backgroundColor: '#0F2D1C', paddingHorizontal: 12 },
   meetCard: {
     flex: 1, borderRadius: 28, overflow: 'hidden', backgroundColor: '#D4F5A0',
-    paddingHorizontal: 24, paddingTop: 24,
+    paddingHorizontal: 22, paddingTop: 18,
   },
-  meetHero: { height: 250, position: 'relative' },
-  logo: { position: 'absolute', left: 0, top: 0, width: 204, height: 108 },
-  // Keep the heart mascot in the blue-marked area to the right of the copy.
-  meetMascot: { position: 'absolute', right: -18, top: 160, width: 180, height: 246 },
-  meetCopy: { marginTop: 120, marginLeft: 18, marginRight: 8 },
-  meetTitle: { color: '#116149', fontSize: 38, lineHeight: 44, fontFamily: 'Manrope_700Bold', marginTop: 6 },
+  meetScroll: { flex: 1 },
+  meetScrollContent: { paddingBottom: 18 },
+  meetScrollContentCompact: { paddingBottom: 10 },
+  logo: { width: 178, height: 88, marginLeft: 4, marginBottom: 4 },
+  meetIntroRow: {
+    minHeight: 176, flexDirection: 'row', alignItems: 'center',
+    marginLeft: 18, marginRight: -8,
+  },
+  meetHeading: { flex: 1, zIndex: 1 },
+  meetMascot: { width: 142, height: 188, marginLeft: -12 },
+  meetMascotCompact: { width: 124, height: 158 },
+  meetTitle: { color: '#116149', fontSize: 38, lineHeight: 44, fontFamily: 'Manrope_700Bold' },
+  meetTitleCompact: { fontSize: 34, lineHeight: 40 },
   meetSubtitle: { color: '#116149', fontSize: 21, lineHeight: 28, fontFamily: 'Manrope_700Bold', marginTop: 4 },
-  meetBody: { color: '#2D6A4F', fontSize: 15, lineHeight: 22, fontFamily: 'Manrope_500Medium', marginTop: 14 },
+  meetSubtitleCompact: { fontSize: 18, lineHeight: 24 },
+  meetBody: {
+    color: '#2D6A4F', fontSize: 15, lineHeight: 22, fontFamily: 'Manrope_500Medium',
+    marginTop: 4, marginLeft: 18, marginRight: 12,
+  },
+  meetBodyCompact: { fontSize: 14, lineHeight: 20 },
   meetBottom: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-start',
-    minHeight: 180,
-    paddingBottom: 68,
+    justifyContent: 'center', alignItems: 'stretch',
+    paddingTop: 12, paddingBottom: 16,
+    backgroundColor: '#D4F5A0',
   },
   greenButton: {
     flexDirection: 'row', alignItems: 'center',
+    minHeight: 54, justifyContent: 'center',
     borderRadius: 999, backgroundColor: '#0F2D1C', paddingHorizontal: 22, paddingVertical: 13,
   },
   greenButtonText: { color: '#D4F5A0', fontSize: 14, fontFamily: 'Manrope_700Bold' },

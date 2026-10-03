@@ -7,5 +7,5 @@
   <circle cx="36" cy="26" r="2.5" fill="#FFF3E8"/>
   <circle cx="24" cy="33" r="2" fill="#FFF3E8"/>
   <!-- Wordmark -->
-  <text x="58" y="37" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="24" fill="#116149">CouchPotato</text>
+  <text x="58" y="37" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="24" fill="#116149">Spud</text>
 </svg>

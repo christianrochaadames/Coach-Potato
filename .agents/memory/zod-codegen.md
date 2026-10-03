@@ -1,20 +1,18 @@
 ---
 name: Zod codegen quirk
-description: Two recurring issues after running orval codegen
+description: Orval emits incompatible Zod syntax and appends conflicting wildcard type exports
 ---
 
-## Issue 1: zod.int() (Zod v4 syntax)
-Orval v8 generates `zod.int()` but workspace pins Zod v3 which doesn't have it.
+## Zod version compatibility
+Keep generated schemas compatible with the workspace's Zod major version. Orval 8 emits Zod 4 shorthand for integers and URI formats even when the runtime remains on Zod 3. Correct both, rather than upgrading the app's validation library as a side effect of adding an endpoint.
 
-**Fix:** After every codegen run, immediately run:
-```
-sed -i 's/zod\.int()/zod.number().int()/g' lib/api-zod/src/generated/api.ts
-```
+**Why:** Adding a URI-formatted field revealed another shorthand failure after the existing integer compatibility fix.
+**How to apply:** Use the workspace's codegen command, which applies compatibility processing before checking libraries; extend that processing if another unsupported shorthand appears.
 
 ## Issue 2: Name collision in api-zod index
 When OpenAPI has schemas that generate TypeScript interfaces AND zod schemas with the same name (e.g. TmdbPopularResponse, TmdbSearchResponse), the default `export * from "./generated/types"` in lib/api-zod/src/index.ts causes TS2308 errors.
 
-**Fix:** Change lib/api-zod/src/index.ts to use named exports from types/ instead of `export *`, listing only types that DON'T conflict with api.ts exports.
+Use selective type exports for names that do not collide with generated validation schemas. Orval can append a wildcard type export again even when the selective barrel already exists.
 
-**Why:** These two issues appear every time the OpenAPI spec adds new schemas. Must be fixed before typecheck:libs passes.
-**How to apply:** Run both fixes right after `pnpm --filter @workspace/api-spec run codegen` and before any typecheck step.
+**Why:** Manually removing the wildcard once is not durable: a later regeneration can reintroduce name collisions.
+**How to apply:** Preserve selective exports and remove the appended wildcard automatically as part of codegen, before library checking.

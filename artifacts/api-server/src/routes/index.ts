@@ -7,6 +7,8 @@ import tmdbRouter from "./tmdb";
 import recommendationsRouter from "./recommendations";
 import profileRouter from "./profile";
 import omdbRouter from "./omdb";
+import buddiesRouter from "./buddies";
+import facebookRouter from "./facebook";
 
 const router: IRouter = Router();
 
@@ -18,5 +20,7 @@ router.use(tmdbRouter);
 router.use(recommendationsRouter);
 router.use(profileRouter);
 router.use(omdbRouter);
+router.use(facebookRouter);
+router.use(buddiesRouter);
 
 export default router;

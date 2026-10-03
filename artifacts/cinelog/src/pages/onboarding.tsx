@@ -5,6 +5,7 @@ import { CouchPotatoLogo } from "@/components/couch-potato-logo";
 import { useCreateEntry, getListEntriesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { trackEvent } from "@/lib/analytics";
 
 interface TmdbItem {
   tmdbId: number;
@@ -84,6 +85,7 @@ export default function Onboarding() {
       });
 
       queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
+      trackEvent("onboarding_completed", { selected_count: toAdd.length });
 
       if (toAdd.length > 0) {
         toast({ title: `Added ${toAdd.length} titles to your collection!` });
@@ -101,6 +103,7 @@ export default function Onboarding() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ onboardingCompleted: true }),
     }).catch(() => {});
+    trackEvent("onboarding_skipped");
     setLocation("/");
   };
 

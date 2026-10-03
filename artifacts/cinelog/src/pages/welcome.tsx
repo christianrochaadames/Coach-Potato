@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { trackEvent } from "@/lib/analytics";
 
 export default function Welcome() {
   const [, setLocation] = useLocation();
@@ -52,6 +53,7 @@ export default function Welcome() {
         setApiError(data.error ?? "Something went wrong. Please try again.");
         return;
       }
+      trackEvent("profile_setup_completed");
       setLocation("/onboarding");
     } catch {
       setApiError("Network error — please check your connection and try again.");
@@ -230,7 +232,7 @@ export default function Welcome() {
                 <input
                   value={lastName}
                   onChange={e => setLastName(e.target.value)}
-                  placeholder="The Potato"
+                  placeholder="Taylor"
                   style={inputStyle()}
                   autoCapitalize="words"
                   autoCorrect="off"

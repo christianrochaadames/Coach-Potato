@@ -20,16 +20,33 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  BuddyDeleteResult,
+  BuddyEntriesPage,
+  BuddyLists,
+  BuddyProfileDetail,
+  BuddyRelationshipResult,
+  BuddySearchResponse,
   Entry,
   EntryInput,
+  EntryStatusInput,
   EntryUpdate,
   ErrorResponse,
+  FacebookAuthorization,
+  FacebookConnection,
+  FacebookConnectionInput,
+  GetBuddyEntriesParams,
+  GetFacebookConnectionParams,
   GetStatsParams,
   HealthStatus,
   ListEntriesParams,
+  SearchBuddiesParams,
+  TmdbDetail,
+  TmdbMovieProvidersParams,
   TmdbPopularResponse,
   TmdbSearchParams,
   TmdbSearchResponse,
+  TmdbTvProvidersParams,
+  WatchProviders,
   YearStats,
   YearSummary
 } from './api.schemas';
@@ -292,6 +309,148 @@ export const useCreateEntry = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateEntryMutationOptions(options));
+    }
+
+export const getUpsertEntryStatusUrl = () => {
+
+
+
+
+  return `/api/entries/status`
+}
+
+/**
+ * @summary Upsert a user's status for a TMDB title
+ */
+export const upsertEntryStatus = async (entryStatusInput: EntryStatusInput, options?: Parameters<typeof customFetch>[1]): Promise<Entry> => {
+
+  return customFetch<Entry>(getUpsertEntryStatusUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(entryStatusInput)
+  }
+);}
+
+
+
+
+
+export const getUpsertEntryStatusMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertEntryStatus>>, TError,{data: BodyType<EntryStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertEntryStatus>>, TError,{data: BodyType<EntryStatusInput>}, TContext> => {
+
+const mutationKey = ['upsertEntryStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertEntryStatus>>, {data: BodyType<EntryStatusInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertEntryStatus(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertEntryStatusMutationResult = NonNullable<Awaited<ReturnType<typeof upsertEntryStatus>>>
+    export type UpsertEntryStatusMutationBody = BodyType<EntryStatusInput>
+    export type UpsertEntryStatusMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Upsert a user's status for a TMDB title
+ */
+export const useUpsertEntryStatus = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertEntryStatus>>, TError,{data: BodyType<EntryStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertEntryStatus>>,
+        TError,
+        {data: BodyType<EntryStatusInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertEntryStatusMutationOptions(options));
+    }
+
+export const getDeleteEntryByTmdbIdUrl = (tmdbId: number,) => {
+
+
+
+
+  return `/api/entries/by-tmdb/${tmdbId}`
+}
+
+/**
+ * @summary Remove a user's status for a TMDB title
+ */
+export const deleteEntryByTmdbId = async (tmdbId: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteEntryByTmdbIdUrl(tmdbId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteEntryByTmdbIdMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEntryByTmdbId>>, TError,{tmdbId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteEntryByTmdbId>>, TError,{tmdbId: number}, TContext> => {
+
+const mutationKey = ['deleteEntryByTmdbId'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteEntryByTmdbId>>, {tmdbId: number}> = (props) => {
+          const {tmdbId} = props ?? {};
+
+          return  deleteEntryByTmdbId(tmdbId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteEntryByTmdbIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteEntryByTmdbId>>>
+
+    export type DeleteEntryByTmdbIdMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Remove a user's status for a TMDB title
+ */
+export const useDeleteEntryByTmdbId = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteEntryByTmdbId>>, TError,{tmdbId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteEntryByTmdbId>>,
+        TError,
+        {tmdbId: number},
+        TContext
+      > => {
+      return useMutation(getDeleteEntryByTmdbIdMutationOptions(options));
     }
 
 export const getGetEntryUrl = (id: number,) => {
@@ -912,4 +1071,1181 @@ export function useTmdbPopular<TData = Awaited<ReturnType<typeof tmdbPopular>>, 
 
 
 
+
+export const getTmdbMovieDetailUrl = (id: number,) => {
+
+
+
+
+  return `/api/tmdb/movie/${id}`
+}
+
+/**
+ * @summary Get movie details including cast and director from TMDB
+ */
+export const tmdbMovieDetail = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<TmdbDetail> => {
+
+  return customFetch<TmdbDetail>(getTmdbMovieDetailUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getTmdbMovieDetailQueryKey = (id: number,) => {
+    return [
+    `/api/tmdb/movie/${id}`
+    ] as const;
+    }
+
+
+export const getTmdbMovieDetailQueryOptions = <TData = Awaited<ReturnType<typeof tmdbMovieDetail>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbMovieDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getTmdbMovieDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof tmdbMovieDetail>>> = ({ signal }) => tmdbMovieDetail(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof tmdbMovieDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type TmdbMovieDetailQueryResult = NonNullable<Awaited<ReturnType<typeof tmdbMovieDetail>>>
+export type TmdbMovieDetailQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get movie details including cast and director from TMDB
+ */
+
+export function useTmdbMovieDetail<TData = Awaited<ReturnType<typeof tmdbMovieDetail>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbMovieDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getTmdbMovieDetailQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getTmdbMovieProvidersUrl = (id: number,
+    params?: TmdbMovieProvidersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tmdb/movie/${id}/providers?${stringifiedParams}` : `/api/tmdb/movie/${id}/providers`
+}
+
+/**
+ * @summary Get streaming availability for a movie
+ */
+export const tmdbMovieProviders = async (id: number,
+    params?: TmdbMovieProvidersParams, options?: Parameters<typeof customFetch>[1]): Promise<WatchProviders> => {
+
+  return customFetch<WatchProviders>(getTmdbMovieProvidersUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getTmdbMovieProvidersQueryKey = (id: number,
+    params?: TmdbMovieProvidersParams,) => {
+    return [
+    `/api/tmdb/movie/${id}/providers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getTmdbMovieProvidersQueryOptions = <TData = Awaited<ReturnType<typeof tmdbMovieProviders>>, TError = ErrorType<void>>(id: number,
+    params?: TmdbMovieProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbMovieProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getTmdbMovieProvidersQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof tmdbMovieProviders>>> = ({ signal }) => tmdbMovieProviders(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof tmdbMovieProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type TmdbMovieProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof tmdbMovieProviders>>>
+export type TmdbMovieProvidersQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get streaming availability for a movie
+ */
+
+export function useTmdbMovieProviders<TData = Awaited<ReturnType<typeof tmdbMovieProviders>>, TError = ErrorType<void>>(
+ id: number,
+    params?: TmdbMovieProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbMovieProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getTmdbMovieProvidersQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getTmdbTvProvidersUrl = (id: number,
+    params?: TmdbTvProvidersParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tmdb/tv/${id}/providers?${stringifiedParams}` : `/api/tmdb/tv/${id}/providers`
+}
+
+/**
+ * @summary Get streaming availability for a TV show
+ */
+export const tmdbTvProviders = async (id: number,
+    params?: TmdbTvProvidersParams, options?: Parameters<typeof customFetch>[1]): Promise<WatchProviders> => {
+
+  return customFetch<WatchProviders>(getTmdbTvProvidersUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getTmdbTvProvidersQueryKey = (id: number,
+    params?: TmdbTvProvidersParams,) => {
+    return [
+    `/api/tmdb/tv/${id}/providers`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getTmdbTvProvidersQueryOptions = <TData = Awaited<ReturnType<typeof tmdbTvProviders>>, TError = ErrorType<void>>(id: number,
+    params?: TmdbTvProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbTvProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getTmdbTvProvidersQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof tmdbTvProviders>>> = ({ signal }) => tmdbTvProviders(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof tmdbTvProviders>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type TmdbTvProvidersQueryResult = NonNullable<Awaited<ReturnType<typeof tmdbTvProviders>>>
+export type TmdbTvProvidersQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get streaming availability for a TV show
+ */
+
+export function useTmdbTvProviders<TData = Awaited<ReturnType<typeof tmdbTvProviders>>, TError = ErrorType<void>>(
+ id: number,
+    params?: TmdbTvProvidersParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbTvProviders>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getTmdbTvProvidersQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getTmdbTvDetailUrl = (id: number,) => {
+
+
+
+
+  return `/api/tmdb/tv/${id}`
+}
+
+/**
+ * @summary Get TV show details including cast and creator from TMDB
+ */
+export const tmdbTvDetail = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<TmdbDetail> => {
+
+  return customFetch<TmdbDetail>(getTmdbTvDetailUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getTmdbTvDetailQueryKey = (id: number,) => {
+    return [
+    `/api/tmdb/tv/${id}`
+    ] as const;
+    }
+
+
+export const getTmdbTvDetailQueryOptions = <TData = Awaited<ReturnType<typeof tmdbTvDetail>>, TError = ErrorType<ErrorResponse>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbTvDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getTmdbTvDetailQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof tmdbTvDetail>>> = ({ signal }) => tmdbTvDetail(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof tmdbTvDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type TmdbTvDetailQueryResult = NonNullable<Awaited<ReturnType<typeof tmdbTvDetail>>>
+export type TmdbTvDetailQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get TV show details including cast and creator from TMDB
+ */
+
+export function useTmdbTvDetail<TData = Awaited<ReturnType<typeof tmdbTvDetail>>, TError = ErrorType<ErrorResponse>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof tmdbTvDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getTmdbTvDetailQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFacebookConnectionUrl = (params?: GetFacebookConnectionParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/buddies/facebook?${stringifiedParams}` : `/api/buddies/facebook`
+}
+
+/**
+ * Matches are members who also connected Facebook to Spud. Connecting never sends buddy requests or shares protected shelves.
+ * @summary Get optional Facebook connection and identity-only friend matches
+ */
+export const getFacebookConnection = async (params?: GetFacebookConnectionParams, options?: Parameters<typeof customFetch>[1]): Promise<FacebookConnection> => {
+
+  return customFetch<FacebookConnection>(getGetFacebookConnectionUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFacebookConnectionQueryKey = (params?: GetFacebookConnectionParams,) => {
+    return [
+    `/api/buddies/facebook`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFacebookConnectionQueryOptions = <TData = Awaited<ReturnType<typeof getFacebookConnection>>, TError = ErrorType<void>>(params?: GetFacebookConnectionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFacebookConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFacebookConnectionQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFacebookConnection>>> = ({ signal }) => getFacebookConnection(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFacebookConnection>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFacebookConnectionQueryResult = NonNullable<Awaited<ReturnType<typeof getFacebookConnection>>>
+export type GetFacebookConnectionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get optional Facebook connection and identity-only friend matches
+ */
+
+export function useGetFacebookConnection<TData = Awaited<ReturnType<typeof getFacebookConnection>>, TError = ErrorType<void>>(
+ params?: GetFacebookConnectionParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFacebookConnection>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFacebookConnectionQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDisconnectFacebookUrl = () => {
+
+
+
+
+  return `/api/buddies/facebook`
+}
+
+/**
+ * @summary Delete Facebook connection and discovery data without removing buddies
+ */
+export const disconnectFacebook = async ( options?: Parameters<typeof customFetch>[1]): Promise<BuddyDeleteResult> => {
+
+  return customFetch<BuddyDeleteResult>(getDisconnectFacebookUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisconnectFacebookMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectFacebook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectFacebook>>, TError,void, TContext> => {
+
+const mutationKey = ['disconnectFacebook'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectFacebook>>, void> = () => {
+
+
+          return  disconnectFacebook(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectFacebookMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectFacebook>>>
+
+    export type DisconnectFacebookMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete Facebook connection and discovery data without removing buddies
+ */
+export const useDisconnectFacebook = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectFacebook>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectFacebook>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisconnectFacebookMutationOptions(options));
+    }
+
+export const getBeginFacebookConnectionUrl = () => {
+
+
+
+
+  return `/api/buddies/facebook/connect`
+}
+
+/**
+ * @summary Begin a consent-based Facebook OAuth connection
+ */
+export const beginFacebookConnection = async (facebookConnectionInput: FacebookConnectionInput, options?: Parameters<typeof customFetch>[1]): Promise<FacebookAuthorization> => {
+
+  return customFetch<FacebookAuthorization>(getBeginFacebookConnectionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(facebookConnectionInput)
+  }
+);}
+
+
+
+
+
+export const getBeginFacebookConnectionMutationOptions = <TError = ErrorType<void | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginFacebookConnection>>, TError,{data: BodyType<FacebookConnectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof beginFacebookConnection>>, TError,{data: BodyType<FacebookConnectionInput>}, TContext> => {
+
+const mutationKey = ['beginFacebookConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof beginFacebookConnection>>, {data: BodyType<FacebookConnectionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  beginFacebookConnection(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BeginFacebookConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof beginFacebookConnection>>>
+    export type BeginFacebookConnectionMutationBody = BodyType<FacebookConnectionInput>
+    export type BeginFacebookConnectionMutationError = ErrorType<void | ErrorResponse>
+
+    /**
+ * @summary Begin a consent-based Facebook OAuth connection
+ */
+export const useBeginFacebookConnection = <TError = ErrorType<void | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof beginFacebookConnection>>, TError,{data: BodyType<FacebookConnectionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof beginFacebookConnection>>,
+        TError,
+        {data: BodyType<FacebookConnectionInput>},
+        TContext
+      > => {
+      return useMutation(getBeginFacebookConnectionMutationOptions(options));
+    }
+
+export const getCancelFacebookConnectionUrl = () => {
+
+
+
+
+  return `/api/buddies/facebook/connect`
+}
+
+/**
+ * @summary Cancel pending Facebook authorization without disconnecting an existing link
+ */
+export const cancelFacebookConnection = async ( options?: Parameters<typeof customFetch>[1]): Promise<BuddyDeleteResult> => {
+
+  return customFetch<BuddyDeleteResult>(getCancelFacebookConnectionUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getCancelFacebookConnectionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelFacebookConnection>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof cancelFacebookConnection>>, TError,void, TContext> => {
+
+const mutationKey = ['cancelFacebookConnection'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof cancelFacebookConnection>>, void> = () => {
+
+
+          return  cancelFacebookConnection(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CancelFacebookConnectionMutationResult = NonNullable<Awaited<ReturnType<typeof cancelFacebookConnection>>>
+
+    export type CancelFacebookConnectionMutationError = ErrorType<void>
+
+    /**
+ * @summary Cancel pending Facebook authorization without disconnecting an existing link
+ */
+export const useCancelFacebookConnection = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof cancelFacebookConnection>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof cancelFacebookConnection>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCancelFacebookConnectionMutationOptions(options));
+    }
+
+export const getSearchBuddiesUrl = (params: SearchBuddiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/buddies/search?${stringifiedParams}` : `/api/buddies/search`
+}
+
+/**
+ * Authenticated case-insensitive partial search; excludes self and returns at most 20 identity-only results in a results array, each with relationship status.
+ * @summary Search profiles to invite as buddies
+ */
+export const searchBuddies = async (params: SearchBuddiesParams, options?: Parameters<typeof customFetch>[1]): Promise<BuddySearchResponse> => {
+
+  return customFetch<BuddySearchResponse>(getSearchBuddiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchBuddiesQueryKey = (params?: SearchBuddiesParams,) => {
+    return [
+    `/api/buddies/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchBuddiesQueryOptions = <TData = Awaited<ReturnType<typeof searchBuddies>>, TError = ErrorType<ErrorResponse | void>>(params: SearchBuddiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchBuddies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchBuddiesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchBuddies>>> = ({ signal }) => searchBuddies(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchBuddies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchBuddiesQueryResult = NonNullable<Awaited<ReturnType<typeof searchBuddies>>>
+export type SearchBuddiesQueryError = ErrorType<ErrorResponse | void>
+
+
+/**
+ * @summary Search profiles to invite as buddies
+ */
+
+export function useSearchBuddies<TData = Awaited<ReturnType<typeof searchBuddies>>, TError = ErrorType<ErrorResponse | void>>(
+ params: SearchBuddiesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchBuddies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchBuddiesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListBuddiesUrl = () => {
+
+
+
+
+  return `/api/buddies`
+}
+
+/**
+ * Returns separate accepted, incoming-request, and outgoing-request lists containing identity fields and relationship status only.
+ * @summary List accepted and pending buddy relationships
+ */
+export const listBuddies = async ( options?: Parameters<typeof customFetch>[1]): Promise<BuddyLists> => {
+
+  return customFetch<BuddyLists>(getListBuddiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBuddiesQueryKey = () => {
+    return [
+    `/api/buddies`
+    ] as const;
+    }
+
+
+export const getListBuddiesQueryOptions = <TData = Awaited<ReturnType<typeof listBuddies>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBuddies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBuddiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBuddies>>> = ({ signal }) => listBuddies({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBuddies>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBuddiesQueryResult = NonNullable<Awaited<ReturnType<typeof listBuddies>>>
+export type ListBuddiesQueryError = ErrorType<void>
+
+
+/**
+ * @summary List accepted and pending buddy relationships
+ */
+
+export function useListBuddies<TData = Awaited<ReturnType<typeof listBuddies>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBuddies>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBuddiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetBuddyEntriesUrl = (userId: string,
+    params: GetBuddyEntriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/buddies/${userId}/entries?${stringifiedParams}` : `/api/buddies/${userId}/entries`
+}
+
+/**
+ * Accepted relationship required. Only title, type, TMDB id, status, and poster are returned.
+ * @summary List a buddy's privacy-safe entry cards
+ */
+export const getBuddyEntries = async (userId: string,
+    params: GetBuddyEntriesParams, options?: Parameters<typeof customFetch>[1]): Promise<BuddyEntriesPage> => {
+
+  return customFetch<BuddyEntriesPage>(getGetBuddyEntriesUrl(userId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBuddyEntriesQueryKey = (userId: string,
+    params?: GetBuddyEntriesParams,) => {
+    return [
+    `/api/buddies/${userId}/entries`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBuddyEntriesQueryOptions = <TData = Awaited<ReturnType<typeof getBuddyEntries>>, TError = ErrorType<ErrorResponse | void>>(userId: string,
+    params: GetBuddyEntriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBuddyEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBuddyEntriesQueryKey(userId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBuddyEntries>>> = ({ signal }) => getBuddyEntries(userId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: userId !== null && userId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBuddyEntries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBuddyEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof getBuddyEntries>>>
+export type GetBuddyEntriesQueryError = ErrorType<ErrorResponse | void>
+
+
+/**
+ * @summary List a buddy's privacy-safe entry cards
+ */
+
+export function useGetBuddyEntries<TData = Awaited<ReturnType<typeof getBuddyEntries>>, TError = ErrorType<ErrorResponse | void>>(
+ userId: string,
+    params: GetBuddyEntriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBuddyEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBuddyEntriesQueryOptions(userId,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestBuddyUrl = (userId: string,) => {
+
+
+
+
+  return `/api/buddies/${userId}/request`
+}
+
+/**
+ * Creates a pending request. The target must accept it before private activity is shared.
+ * @summary Send a buddy request
+ */
+export const requestBuddy = async (userId: string, options?: Parameters<typeof customFetch>[1]): Promise<BuddyRelationshipResult> => {
+
+  return customFetch<BuddyRelationshipResult>(getRequestBuddyUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRequestBuddyMutationOptions = <TError = ErrorType<ErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestBuddy>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestBuddy>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['requestBuddy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestBuddy>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  requestBuddy(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestBuddyMutationResult = NonNullable<Awaited<ReturnType<typeof requestBuddy>>>
+
+    export type RequestBuddyMutationError = ErrorType<ErrorResponse | void>
+
+    /**
+ * @summary Send a buddy request
+ */
+export const useRequestBuddy = <TError = ErrorType<ErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestBuddy>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestBuddy>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getRequestBuddyMutationOptions(options));
+    }
+
+export const getAcceptBuddyRequestUrl = (userId: string,) => {
+
+
+
+
+  return `/api/buddies/${userId}/accept`
+}
+
+/**
+ * Only the recipient of a pending request can accept it.
+ * @summary Accept an incoming buddy request
+ */
+export const acceptBuddyRequest = async (userId: string, options?: Parameters<typeof customFetch>[1]): Promise<BuddyRelationshipResult> => {
+
+  return customFetch<BuddyRelationshipResult>(getAcceptBuddyRequestUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getAcceptBuddyRequestMutationOptions = <TError = ErrorType<void | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptBuddyRequest>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acceptBuddyRequest>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['acceptBuddyRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acceptBuddyRequest>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  acceptBuddyRequest(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcceptBuddyRequestMutationResult = NonNullable<Awaited<ReturnType<typeof acceptBuddyRequest>>>
+
+    export type AcceptBuddyRequestMutationError = ErrorType<void | ErrorResponse>
+
+    /**
+ * @summary Accept an incoming buddy request
+ */
+export const useAcceptBuddyRequest = <TError = ErrorType<void | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acceptBuddyRequest>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acceptBuddyRequest>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAcceptBuddyRequestMutationOptions(options));
+    }
+
+export const getGetBuddyProfileUrl = (userId: string,) => {
+
+
+
+
+  return `/api/buddies/${userId}`
+}
+
+/**
+ * The person and top-level status are always returned. Bio, favorites, and shelves are present only after both users accept. Each shelf contains a count and at most six privacy-safe BuddyEntry items. No entry notes, ratings, watched dates, tags, or other personal entry fields are exposed.
+ * @summary Get a profile and, for accepted buddies, favorites and shelves
+ */
+export const getBuddyProfile = async (userId: string, options?: Parameters<typeof customFetch>[1]): Promise<BuddyProfileDetail> => {
+
+  return customFetch<BuddyProfileDetail>(getGetBuddyProfileUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBuddyProfileQueryKey = (userId: string,) => {
+    return [
+    `/api/buddies/${userId}`
+    ] as const;
+    }
+
+
+export const getGetBuddyProfileQueryOptions = <TData = Awaited<ReturnType<typeof getBuddyProfile>>, TError = ErrorType<void | ErrorResponse>>(userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBuddyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBuddyProfileQueryKey(userId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBuddyProfile>>> = ({ signal }) => getBuddyProfile(userId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: userId !== null && userId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBuddyProfile>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBuddyProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getBuddyProfile>>>
+export type GetBuddyProfileQueryError = ErrorType<void | ErrorResponse>
+
+
+/**
+ * @summary Get a profile and, for accepted buddies, favorites and shelves
+ */
+
+export function useGetBuddyProfile<TData = Awaited<ReturnType<typeof getBuddyProfile>>, TError = ErrorType<void | ErrorResponse>>(
+ userId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBuddyProfile>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBuddyProfileQueryOptions(userId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRemoveBuddyUrl = (userId: string,) => {
+
+
+
+
+  return `/api/buddies/${userId}`
+}
+
+/**
+ * Either participant may remove a pending or accepted relationship.
+ * @summary Cancel, reject, or remove a buddy relationship
+ */
+export const removeBuddy = async (userId: string, options?: Parameters<typeof customFetch>[1]): Promise<BuddyDeleteResult> => {
+
+  return customFetch<BuddyDeleteResult>(getRemoveBuddyUrl(userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getRemoveBuddyMutationOptions = <TError = ErrorType<ErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBuddy>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeBuddy>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['removeBuddy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeBuddy>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  removeBuddy(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveBuddyMutationResult = NonNullable<Awaited<ReturnType<typeof removeBuddy>>>
+
+    export type RemoveBuddyMutationError = ErrorType<ErrorResponse | void>
+
+    /**
+ * @summary Cancel, reject, or remove a buddy relationship
+ */
+export const useRemoveBuddy = <TError = ErrorType<ErrorResponse | void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeBuddy>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeBuddy>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getRemoveBuddyMutationOptions(options));
+    }
 

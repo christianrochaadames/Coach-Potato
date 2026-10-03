@@ -24,6 +24,7 @@ import * as QuickActions from 'expo-quick-actions';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 import { setRawFetchTokenGetter } from '@/utils/authFetch';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { syncPendingProfile } from '@/utils/pendingProfile';
 
 // ── Configure API base URL ──────────────────────────────────────────────────
 const domain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
@@ -49,7 +50,12 @@ const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 // ── React Query client ──────────────────────────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 1, staleTime: 30_000 },
+    queries: {
+      retry: 1,
+      staleTime: 2 * 60_000,
+      gcTime: 24 * 60 * 60_000,
+      refetchOnMount: false,
+    },
   },
 });
 
@@ -70,7 +76,7 @@ function LaunchSplash({ onFinished }: { onFinished: () => void }) {
   });
 
   useEffect(() => {
-    const timer = setTimeout(onFinished, 5_000);
+    const timer = setTimeout(onFinished, 2_200);
     return () => clearTimeout(timer);
   }, [onFinished]);
 
@@ -93,7 +99,9 @@ function AuthTokenSync() {
   const { getToken, isSignedIn, isLoaded, userId } = useAuth();
   const previousUserId = useRef<string | null | undefined>(undefined);
   const getTokenRef = useRef(getToken);
+  const identityRef = useRef({ isLoaded, isSignedIn, userId });
   getTokenRef.current = getToken;
+  identityRef.current = { isLoaded, isSignedIn, userId };
 
   useEffect(() => {
     // Register one stable getter. Clerk may recreate getToken on renders;
@@ -107,29 +115,39 @@ function AuthTokenSync() {
     };
   }, []);
 
-  // After sign-up, flush any pending profile data that was saved to SecureStore
-  // before the session existed.
+  // Apply profile data only to the Clerk user created by its verified signup.
+  // Cleanup is invalidated on identity changes, so an in-flight operation can
+  // never finish against a different account.
   useEffect(() => {
-    if (!isSignedIn) return;
-    (async () => {
-      try {
-        const pending = await SecureStore.getItemAsync('pendingProfile');
-        if (!pending) return;
-        const profile = JSON.parse(pending);
-        const token = await getTokenRef.current();
-        if (!token) return;
+    if (!isLoaded) return;
+    let active = true;
+    const effectUserId = isSignedIn ? userId : null;
+    const isCurrentIdentity = () =>
+      active &&
+      identityRef.current.isLoaded &&
+      identityRef.current.isSignedIn === isSignedIn &&
+      identityRef.current.userId === userId;
+
+    void syncPendingProfile({
+      storage: SecureStore,
+      userId: effectUserId,
+      isCurrentIdentity,
+      getToken: () => getTokenRef.current(),
+      patchProfile: async (profile, token) => {
         const apiDomain = process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app';
-        await fetch(`https://${apiDomain}/api/profile`, {
+        return fetch(`https://${apiDomain}/api/profile`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(profile),
         });
-        await SecureStore.deleteItemAsync('pendingProfile');
-      } catch {
-        // Non-fatal — user can update from Profile tab
-      }
-    })();
-  }, [isSignedIn]);
+      },
+    }).catch(() => {
+      // Leave saved profile data in place; the next authenticated sync can retry.
+    });
+    return () => {
+      active = false;
+    };
+  }, [isLoaded, isSignedIn, userId]);
 
   // Never let TanStack Query data from one Clerk account survive a logout or
   // account switch. The same native navigation tree can remain mounted while
@@ -147,19 +165,20 @@ function AuthTokenSync() {
 
 function AppContent() {
   const { isLoaded, isSignedIn } = useAuth();
-  const [showLaunchSplash, setShowLaunchSplash] = useState(false);
-  const hasShownInitialSplash = useRef(false);
+  const [showLaunchSplash, setShowLaunchSplash] = useState(true);
   const previousSignedIn = useRef<boolean | undefined>(undefined);
+
+  useEffect(() => {
+    void SplashScreen.hideAsync();
+  }, []);
 
   useEffect(() => {
     if (!isLoaded) return;
     const hasLoggedOut =
       previousSignedIn.current === true && isSignedIn === false;
 
-    if (!hasShownInitialSplash.current || hasLoggedOut) {
-      void SplashScreen.hideAsync();
+    if (hasLoggedOut) {
       setShowLaunchSplash(true);
-      hasShownInitialSplash.current = true;
     }
 
     previousSignedIn.current = isSignedIn;
@@ -177,6 +196,9 @@ function AppContent() {
           options={{ presentation: 'modal', headerShown: false }}
         />
         <Stack.Screen name="entry/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="buddies/index" options={{ headerShown: false }} />
+        <Stack.Screen name="buddies/[userId]" options={{ headerShown: false }} />
+        <Stack.Screen name="buddies/[userId]/shelf" options={{ headerShown: false }} />
       </Stack>
       {showLaunchSplash ? (
         <LaunchSplash onFinished={() => setShowLaunchSplash(false)} />

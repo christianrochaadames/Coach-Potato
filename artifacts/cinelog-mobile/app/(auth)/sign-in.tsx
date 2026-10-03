@@ -204,7 +204,7 @@ export default function SignInScreen() {
                     <Text style={styles.fieldLabel}>Email address</Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="spud@couchpotato.com"
+                      placeholder="you@example.com"
                       placeholderTextColor="#A09898"
                       value={email}
                       onChangeText={setEmail}
@@ -382,7 +382,7 @@ export default function SignInScreen() {
               <Text style={styles.fieldLabel}>Email address</Text>
               <TextInput
                 style={styles.input}
-                placeholder="spud@couchpotato.com"
+                placeholder="you@example.com"
                 placeholderTextColor="#A09898"
                 value={email}
                 onChangeText={setEmail}

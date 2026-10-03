@@ -8,10 +8,13 @@ import {
   getListYearsQueryKey,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { CouchPotatoLogo } from '@/components/couch-potato-logo';
 import { SpudMascot } from '@/components/spud-mascot';
 import { PosterCard } from '@/components/poster-card';
+import { profileQueryKey } from '@/lib/profile-cache';
+import { trackEvent } from '@/lib/analytics';
 
 /** Group an entry array by year (key = year number, sorted descending) */
 function groupByYear(entries: { year?: number | null; dateWatched?: string | null; [k: string]: any }[]) {
@@ -73,9 +76,6 @@ export default function Home() {
   const [addingRec, setAddingRec] = useState<RecItem | null>(null);
   const [recYear, setRecYear] = useState(new Date().getFullYear());
   const [pickingYear, setPickingYear] = useState(false);
-  const [firstName, setFirstName] = useState<string | null>(null);
-  const [avatarId,  setAvatarId]  = useState<string | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const greeting = useGreeting();
 
   // Onboarding guard: if the user has no username yet (e.g. signed up via
@@ -83,23 +83,26 @@ export default function Home() {
   // The `cancelled` flag prevents the redirect from firing if the component
   // unmounts before the fetch resolves (e.g. a session-expiry return-to redirect
   // navigates to a different page first).
+  const { data: profile } = useQuery<{
+    firstName?: string | null;
+    avatarId?: string | null;
+    avatarUrl?: string | null;
+  } | null>({
+    queryKey: profileQueryKey,
+    queryFn: async () => {
+      const response = await fetch('/api/profile', { cache: 'no-store' });
+      if (!response.ok) return null;
+      return await response.json();
+    },
+  });
+
   useEffect(() => {
-    let cancelled = false;
-    fetch('/api/profile')
-      .then(r => r.ok ? r.json() : null)
-      .then(p => {
-        if (cancelled) return;
-        if (!p || !p.firstName) {
-          setLocation('/welcome');
-          return;
-        }
-        if (p.firstName) setFirstName(p.firstName);
-        setAvatarId(p.avatarId ?? null);
-        setAvatarUrl(p.avatarUrl ?? null);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, []);
+    if (profile && !profile.firstName) setLocation('/welcome');
+  }, [profile, setLocation]);
+
+  const firstName = profile?.firstName ?? null;
+  const avatarId = profile?.avatarId ?? null;
+  const avatarUrl = profile?.avatarUrl ?? null;
 
   const { data: watching } = useListEntries({ status: 'watching' } as any);
   const { data: watchlist } = useListEntries({ status: 'plan_to_watch' } as any);
@@ -120,6 +123,7 @@ export default function Home() {
   const [skippedIds, setSkippedIds] = useState<Set<number>>(new Set());
 
   const sendFeedback = (tmdbId: number, signal: 'skip') => {
+    trackEvent('recommendation_skipped', { signal });
     // Optimistic UI: hide skipped cards immediately
     setSkippedIds(prev => new Set([...prev, tmdbId]));
     // If the skip-target is the open sheet, close it
@@ -148,6 +152,11 @@ export default function Home() {
       },
       {
         onSuccess: () => {
+          trackEvent('entry_created', {
+            status,
+            media_type: rec.type,
+            source: 'recommendation',
+          });
           const label = status === 'completed' ? 'Logged!' : status === 'watching' ? 'Now Watching' : 'Added to Watchlist';
           toast({ title: label, description: rec.title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });

@@ -17,7 +17,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { useUser, useClerk, useAuth } from '@clerk/expo';
 import { useQueryClient } from '@tanstack/react-query';
 import { authFetch } from '@/utils/authFetch';
+import { trackEvent } from '@/utils/analytics';
 import { getMobileProfileQueryKey } from '@/utils/profile';
+import { useBuddyLists } from '@/utils/buddies';
+import { BuddyRow, buddyColors } from '@/components/BuddyUI';
 import {
   resolveSpudAvatar,
   SPUD_AVATAR_BACKGROUND,
@@ -79,15 +82,15 @@ const LEGAL_CONTENT: Record<Exclude<LegalPage, null>, {
 }> = {
   privacy: {
     title: 'Privacy Policy',
-    intro: "Spud is a movie and TV tracking app. This policy explains what information Spud collects, why, and what your options are. It only covers what Spud actually does — there's no advertising, no analytics tracking, and no data sold to anyone.",
+    intro: "Spud is a movie and TV tracking app. This policy explains what information Spud collects, why, and what your options are. It only covers what Spud actually does — there's no advertising and no data sold to anyone.",
     sections: [
       { title: '1. Who runs Spud', body: 'Spud is operated by Christian Rocha Adames, trading as an individual (sole trader) based in Australia. Contact details are at the bottom of this page.' },
-      { title: '2. Information you give us', body: "Account details. When you sign up, you create a profile with a first name, last name, username, and optional bio. You can choose an avatar from Spud's built-in character set, or upload your own photo.\n\nLogin. Spud doesn't store your password. Sign-in is handled by our authentication provider, Clerk, either by email and password or by connecting a Google, Apple, GitHub, or X account. Clerk holds your email address, your OAuth login tokens, and session information on their servers, not ours.\n\nWhat you log. Every title you add to your list — its watch status, your rating, the date, your notes, and which streaming service you watched it on — is saved to your Spud account so the app can build your history and recommendations." },
-      { title: '3. Information we collect automatically', body: "Spud's web app sets one functional cookie to remember whether your sidebar is open or closed, and briefly uses your browser's session storage to manage search focus. Neither is used for tracking or advertising. Our servers may briefly log technical request data (like IP address) as part of normal web traffic, but this isn't stored against your account or kept long-term." },
-      { title: "4. What we don't collect", body: 'Spud does not collect: your location, advertising or device identifiers, analytics on how you use the app, or any data for the purpose of showing you ads. There are no ad networks or analytics tools built into Spud at all.' },
-      { title: '5. How we use your information', body: "We use your information to run your account, save your watch history, show you personalised recommendations, verify your identity when you sign in, and provide customer support. We don't use your data for marketing, and we don't sell it to anyone." },
-      { title: '6. Services we rely on', body: "Clerk (sign-up, login, password resets), TMDB (show/movie details, posters, streaming availability), OMDB (IMDb/Rotten Tomatoes scores), Replit (hosts our servers and database), Expo/EAS (builds and distributes the mobile app, sees no personal data). None of these are ad networks, and we don't use any analytics or crash-reporting tools." },
-      { title: '7. Where your data lives', body: "Spud's servers, database, and authentication provider are all hosted in the United States. If you're using Spud from Australia or elsewhere, your information will be transferred to and stored in the US." },
+      { title: '2. Information you give us', body: "Account details. When you sign up, you create a profile with a first name, last name, username, and optional bio. You can choose an avatar from Spud's built-in character set, or upload your own photo. Signed-in users can search for your name or username and see your name, username, and avatar in results.\n\nLogin. Spud doesn't store your password. Sign-in is handled by our authentication provider, Clerk, either by email and password or by connecting a Google, Apple, GitHub, or X account. Clerk holds your email address, your OAuth login tokens, and session information on their servers, not ours.\n\nWhat you log. Every title you add to your list — its watch status, your rating, the date, your notes, and which streaming service you watched it on — is saved to your Spud account so the app can build your history and recommendations." },
+      { title: '3. Information we collect automatically', body: "Spud's web app sets one functional cookie and briefly uses browser session storage for interface preferences. The published web app uses Replit-hosted analytics to measure anonymous page views and selected product interactions. The mobile app uses PostHog only for selected product interactions such as adding a title, completing onboarding, changing a watch status, or saving a rating. Mobile events may include the app version, build number, operating system name and version, and a randomly generated analytics identifier. We do not send your name, email address, username, bio, notes, title names, search text, account identifiers, advertising identifiers, or precise location in these events. Our servers may briefly log technical request data such as an IP address as part of normal traffic, but it is not stored against your account or kept long-term." },
+      { title: "4. What we don't collect", body: "Spud does not collect your precise location or advertising device identifiers, and does not use analytics for advertising. Mobile session replay, automatic touch capture, surveys, and automatic screen capture are disabled. There are no ad networks in Spud." },
+      { title: '5. How we use and share your information', body: "We use your information to run your account, save your watch history, show you personalised recommendations, verify your identity when you sign in, provide customer support, send essential account and operational messages, and understand aggregate usage of Spud. Signed-in users can find your name, username and avatar through buddy search. Only after you accept a buddy request can that buddy see your bio, top three TV shows and movies, and the posters, titles, statuses and counts on your watching, watchlist and watched shelves. Your email, notes, dates and ratings are never shared with buddies. You can remove a buddy to stop sharing those shelves. We don't send marketing emails, use your data for marketing, or sell it to anyone." },
+      { title: '6. Services we rely on', body: "Clerk (sign-up, login, password resets, and essential account emails), TMDB (show/movie details, posters, streaming availability), OMDB (IMDb/Rotten Tomatoes scores), Replit (hosts our servers, database, and web analytics), PostHog (anonymous mobile product analytics), and Expo/EAS (builds and distributes the mobile app). None of these are ad networks." },
+      { title: '7. Where your data lives', body: "Spud's servers, database, and authentication provider are hosted in the United States. PostHog processes anonymous mobile analytics in the region configured for our PostHog project. If you're using Spud from Australia or elsewhere, some information will be transferred overseas." },
       { title: '8. How long we keep your data', body: "We keep your account and log data for as long as your account is active. If you delete your account, your profile and log entries are removed from our database." },
       { title: '9. Your rights', body: "Under Australia's Privacy Act, you can ask us to tell you what personal information we hold about you, correct anything wrong, or delete your account entirely by emailing us. If you're outside Australia, you may have additional rights under your local law (such as GDPR); we'll honour reasonable requests regardless." },
       { title: '10. Security', body: "We take reasonable steps to protect your information, including relying on Clerk's security practices. No online service can guarantee complete security." },
@@ -103,7 +106,7 @@ const LEGAL_CONTENT: Record<Exclude<LegalPage, null>, {
       { title: '1. Who we are', body: 'Spud is operated by Christian Rocha Adames as a sole trader based in Australia. You can reach us at mrspudcouchpotato@gmail.com.' },
       { title: '2. Age requirement', body: "You need to be 18 or older to use Spud. By signing up, you're confirming that's true." },
       { title: '3. Your account', body: "You'll need an account to use Spud, created either with an email and password or by signing in through Google or Apple. You're responsible for keeping your login secure and for anything that happens under your account. If you notice any unauthorised use, let us know straight away. We can suspend or close accounts that break these terms." },
-      { title: '4. What you log stays yours', body: 'Everything you add to Spud — ratings, notes, watch history — belongs to you. We only use it to run the app for you. Your entries are private by default.' },
+      { title: '4. What you log stays yours', body: 'Everything you add to Spud — ratings, notes, watch history — belongs to you. Signed-in users can search your name or username and see your name, username and avatar. If you accept a buddy request, that buddy can also see your bio, top three TV shows and movies, and the posters, titles, statuses and counts on your watching, watchlist and watched shelves. Your email, notes, dates and ratings are never shared with buddies. You can remove a buddy at any time to stop sharing those shelves.' },
       { title: '5. Using Spud fairly', body: "When using Spud, please don't: break any applicable law, pretend to be someone you're not, try to access parts of the system you're not meant to, scrape or pull data out of Spud using automated tools, upload anything harmful like malicious code, or use Spud for a commercial purpose without asking us first. We can suspend or remove access for anyone who does." },
       { title: '6. Movie and show data', body: "Titles, posters, and streaming availability shown in Spud come from The Movie Database (TMDB) and OMDB. That data belongs to those services and is subject to their own terms, not ours. We display it as-is and can't guarantee it's always accurate or current." },
       { title: '7. Ownership', body: "The Spud name, logo, and app design belong to us. Please don't copy, rebuild, or redistribute any part of it without asking first." },
@@ -162,6 +165,7 @@ export default function ProfileScreen() {
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
   const queryClient = useQueryClient();
+  const buddies = useBuddyLists();
 
   const [profile, setProfile] = useState<Record<string, any> | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -293,6 +297,7 @@ export default function ProfileScreen() {
       return;
     }
     if (await saveField({ firstName: newFirst, lastName: newLast })) {
+      trackEvent('profile_updated', { field: 'name' });
       setEditingField(null);
     }
   };
@@ -304,12 +309,14 @@ export default function ProfileScreen() {
       return;
     }
     if (await saveField({ username: next })) {
+      trackEvent('profile_updated', { field: 'username' });
       setEditingField(null);
     }
   };
 
   const saveBio = async () => {
     if (await saveField({ bio: bioVal.trim() || null })) {
+      trackEvent('profile_updated', { field: 'bio' });
       setEditingField(null);
     }
   };
@@ -479,6 +486,7 @@ export default function ProfileScreen() {
   const selectAvatar = async (id: string) => {
     Haptics.selectionAsync();
     if (await saveField({ avatarId: id, avatarUrl: null })) {
+      trackEvent('avatar_updated', { source: 'preset' });
       setAvatarPickerExpanded(false);
     }
   };
@@ -506,6 +514,7 @@ export default function ProfileScreen() {
     const mimeType = asset.mimeType ?? 'image/jpeg';
     const dataUrl = `data:${mimeType};base64,${asset.base64}`;
     if (await saveField({ avatarUrl: dataUrl, avatarId: null })) {
+      trackEvent('avatar_updated', { source: 'photo' });
       setAvatarPickerExpanded(false);
     }
     // Note: Clerk setProfileImage / File API not available in React Native —
@@ -875,6 +884,32 @@ export default function ProfileScreen() {
           </View>
         ))}
 
+        {/* ── Spud buddies ── */}
+        <View style={styles.buddiesCard}>
+          <View style={styles.buddiesHeader}>
+            <View style={styles.buddiesMark}><Feather name="users" size={19} color={buddyColors.background} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.buddiesTitle}>Spud buddies</Text>
+              <Text style={styles.buddiesSubtitle}>The people behind your next watch.</Text>
+            </View>
+          </View>
+          {buddies.data?.incoming.length ? (
+            <Text style={styles.buddiesAlert}>{buddies.data.incoming.length} {buddies.data.incoming.length === 1 ? 'person wants' : 'people want'} to connect</Text>
+          ) : null}
+          {buddies.data?.accepted.slice(0, 3).map(person => (
+            <BuddyRow key={person.userId} person={person}
+              onPress={() => router.push({ pathname: '/buddies/[userId]', params: { userId: person.userId } } as any)} />
+          ))}
+          {!buddies.data?.accepted.length && !buddies.isPending && (
+            <Text style={styles.buddiesEmpty}>Your watch circle starts here. Find a friend to share your shelves with.</Text>
+          )}
+          <TouchableOpacity style={styles.buddiesButton} onPress={() => router.push('/buddies' as any)}
+            accessibilityRole="button" accessibilityLabel="Find and manage Spud buddies" testID="open-buddies">
+            <Text style={styles.buddiesButtonText}>Find & manage buddies</Text>
+            <Feather name="arrow-up-right" size={17} color={buddyColors.background} />
+          </TouchableOpacity>
+        </View>
+
         {/* ── Legal links ── */}
         <View style={styles.legalRow}>
           <TouchableOpacity onPress={() => setLegalPage('privacy')} activeOpacity={0.7}>
@@ -902,7 +937,8 @@ export default function ProfileScreen() {
       >
         <KeyboardAvoidingView
           style={styles.favoriteModalBackdrop}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior="padding"
+          keyboardVerticalOffset={0}
         >
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
@@ -944,6 +980,7 @@ export default function ProfileScreen() {
               <ScrollView
                 style={styles.favoriteResults}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
                 showsVerticalScrollIndicator={false}
               >
                 {favoriteResults.map(item => {
@@ -1196,6 +1233,15 @@ export default function ProfileScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  buddiesCard: { marginHorizontal: 16, marginTop: 10, marginBottom: 22, backgroundColor: buddyColors.panelLight, borderRadius: 20, padding: 16 },
+  buddiesHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  buddiesMark: { width: 42, height: 42, borderRadius: 14, backgroundColor: buddyColors.soft, alignItems: 'center', justifyContent: 'center' },
+  buddiesTitle: { color: buddyColors.text, fontSize: 18, fontFamily: 'Manrope_700Bold' },
+  buddiesSubtitle: { color: buddyColors.muted, fontSize: 11, fontFamily: 'Manrope_400Regular', marginTop: 3 },
+  buddiesAlert: { color: buddyColors.background, fontFamily: 'Manrope_700Bold', fontSize: 12, backgroundColor: buddyColors.soft, overflow: 'hidden', borderRadius: 9, padding: 10, marginBottom: 12 },
+  buddiesEmpty: { color: buddyColors.muted, fontFamily: 'Manrope_400Regular', fontSize: 13, lineHeight: 19, marginBottom: 14 },
+  buddiesButton: { backgroundColor: buddyColors.lime, borderRadius: 999, minHeight: 45, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 6 },
+  buddiesButtonText: { color: buddyColors.background, fontFamily: 'Manrope_700Bold', fontSize: 13 },
   // Header
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -1427,6 +1473,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 12,
     maxHeight: '88%',
+    flexShrink: 1,
   },
   modalHandle: {
     width: 40,
@@ -1475,6 +1522,7 @@ const styles = StyleSheet.create({
   },
   favoriteResults: {
     maxHeight: 260,
+    flexShrink: 1,
     marginTop: 12,
   },
   favoriteResultItem: {

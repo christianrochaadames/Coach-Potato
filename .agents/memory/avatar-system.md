@@ -10,6 +10,12 @@ Profiles have two optional avatar fields: `avatarId` (string "2"–"15", maps to
 
 **Why:** The user wanted Spud variants as selectable avatars plus a custom photo upload option, all stored in the DB without requiring object storage.
 
+Profile changes must update the shared profile cache as well as the editing screen's local state.
+
+**Why:** Home and Profile can remain mounted across navigation, so waiting for a mount-time refetch makes a newly saved photo appear only after a later reload or sign-in.
+
+**How to apply:** After a successful profile PATCH, write the returned profile into the shared query key used by every avatar surface; keep the user ID in native cache keys.
+
 ## How to apply
 - Display: `avatarUrl ? <img cover> : avatarId ? <img contain /spud-avatar-{id}.png> : <initials span>`
 - Spud images live in `artifacts/cinelog/public/spud-avatar-2.png` through `spud-avatar-15.png`

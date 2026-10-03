@@ -5,6 +5,179 @@
  * CouchPotato - Personal movie and TV show tracker
  * OpenAPI spec version: 0.1.0
  */
+export type FacebookConnectionInputReturnTo = typeof FacebookConnectionInputReturnTo[keyof typeof FacebookConnectionInputReturnTo];
+
+
+export const FacebookConnectionInputReturnTo = {
+  web: 'web',
+  native: 'native',
+} as const;
+
+export interface FacebookConnectionInput {
+  returnTo: FacebookConnectionInputReturnTo;
+}
+
+export interface FacebookAuthorization {
+  authorizationUrl: string;
+}
+
+export interface BuddyIdentity {
+  userId: string;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  username: string | null;
+  /** @nullable */
+  avatarId: string | null;
+  /** @nullable */
+  avatarUrl: string | null;
+}
+
+export type BuddyStatus = typeof BuddyStatus[keyof typeof BuddyStatus];
+
+
+export const BuddyStatus = {
+  none: 'none',
+  incoming: 'incoming',
+  outgoing: 'outgoing',
+  accepted: 'accepted',
+} as const;
+
+export type BuddySearchProfile = BuddyIdentity & {
+  status: BuddyStatus;
+};
+
+export interface FacebookConnection {
+  configured: boolean;
+  connected: boolean;
+  pending: boolean;
+  /** @nullable */
+  error: string | null;
+  /** @nullable */
+  lastSyncedAt: string | null;
+  /** @nullable */
+  inviteUrl: string | null;
+  /** @maxItems 30 */
+  results: BuddySearchProfile[];
+  /** @minimum 0 */
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type BuddyPerson = BuddyIdentity & ({
+  status: BuddyStatus;
+  /**
+     * Present only for accepted buddies.
+     * @nullable
+     */
+  bio?: string | null;
+});
+
+export interface BuddySearchResponse {
+  /** @maxItems 20 */
+  results: BuddySearchProfile[];
+}
+
+export interface BuddyLists {
+  accepted: BuddyPerson[];
+  incoming: BuddyPerson[];
+  outgoing: BuddyPerson[];
+}
+
+export type BuddyRelationshipResultStatus = typeof BuddyRelationshipResultStatus[keyof typeof BuddyRelationshipResultStatus];
+
+
+export const BuddyRelationshipResultStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+} as const;
+
+export type BuddyRelationshipResultDirection = typeof BuddyRelationshipResultDirection[keyof typeof BuddyRelationshipResultDirection];
+
+
+export const BuddyRelationshipResultDirection = {
+  incoming: 'incoming',
+  outgoing: 'outgoing',
+  accepted: 'accepted',
+} as const;
+
+export interface BuddyRelationshipResult {
+  userId: string;
+  status: BuddyRelationshipResultStatus;
+  direction: BuddyRelationshipResultDirection;
+}
+
+export type BuddyEntryCardType = typeof BuddyEntryCardType[keyof typeof BuddyEntryCardType];
+
+
+export const BuddyEntryCardType = {
+  movie: 'movie',
+  show: 'show',
+} as const;
+
+export type BuddyEntryCardStatus = typeof BuddyEntryCardStatus[keyof typeof BuddyEntryCardStatus];
+
+
+export const BuddyEntryCardStatus = {
+  watching: 'watching',
+  plan_to_watch: 'plan_to_watch',
+  completed: 'completed',
+} as const;
+
+export interface BuddyEntryCard {
+  title: string;
+  type: BuddyEntryCardType;
+  /** @nullable */
+  tmdbId: number | null;
+  status: BuddyEntryCardStatus;
+  /** @nullable */
+  posterUrl: string | null;
+}
+
+export interface BuddyShelf {
+  count: number;
+  /** @maxItems 6 */
+  items: BuddyEntryCard[];
+}
+
+export interface BuddyShelves {
+  watching: BuddyShelf;
+  plan_to_watch: BuddyShelf;
+  completed: BuddyShelf;
+}
+
+export interface BuddyFavorite {
+  title: string;
+  /** @nullable */
+  posterUrl: string | null;
+}
+
+export interface BuddyFavorites {
+  tv: BuddyFavorite[];
+  movies: BuddyFavorite[];
+}
+
+export interface BuddyProfileDetail {
+  person: BuddyPerson;
+  status: BuddyStatus;
+  favorites?: BuddyFavorites;
+  shelves?: BuddyShelves;
+}
+
+export interface BuddyEntriesPage {
+  items: BuddyEntryCard[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface BuddyDeleteResult {
+  success: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -92,6 +265,34 @@ export interface EntryInput {
   tags?: string[];
 }
 
+export type EntryStatusInputType = typeof EntryStatusInputType[keyof typeof EntryStatusInputType];
+
+
+export const EntryStatusInputType = {
+  movie: 'movie',
+  show: 'show',
+} as const;
+
+export type EntryStatusInputStatus = typeof EntryStatusInputStatus[keyof typeof EntryStatusInputStatus];
+
+
+export const EntryStatusInputStatus = {
+  watching: 'watching',
+  plan_to_watch: 'plan_to_watch',
+  completed: 'completed',
+} as const;
+
+export interface EntryStatusInput {
+  /** @minLength 1 */
+  title: string;
+  type: EntryStatusInputType;
+  tmdbId: number;
+  status: EntryStatusInputStatus;
+  posterUrl?: string;
+  year?: number;
+  synopsis?: string;
+}
+
 export type EntryUpdateType = typeof EntryUpdateType[keyof typeof EntryUpdateType];
 
 
@@ -155,6 +356,36 @@ export interface TmdbResult {
   overview?: string | null;
 }
 
+export interface TmdbCastMember {
+  name: string;
+  character: string;
+  /** @nullable */
+  profileUrl?: string | null;
+  order: number;
+}
+
+export interface TmdbCrewMember {
+  name: string;
+  job: string;
+  /** @nullable */
+  profileUrl?: string | null;
+}
+
+export interface TmdbDetail {
+  title: string;
+  /** @nullable */
+  overview?: string | null;
+  cast: TmdbCastMember[];
+  directors: TmdbCrewMember[];
+  /** @nullable */
+  runtime?: number | null;
+  /** @nullable */
+  releaseYear?: number | null;
+  /** @nullable */
+  voteAverage?: number | null;
+  genres: string[];
+}
+
 export interface TmdbSearchResponse {
   results: TmdbResult[];
 }
@@ -193,6 +424,22 @@ export interface YearSummary {
   /** @nullable */
   year: number | null;
   count: number;
+}
+
+export interface WatchProvider {
+  providerId: number;
+  providerName: string;
+  logoUrl: string;
+  displayPriority: number;
+}
+
+export interface WatchProviders {
+  region: string;
+  /** @nullable */
+  link?: string | null;
+  streaming: WatchProvider[];
+  rent: WatchProvider[];
+  buy: WatchProvider[];
 }
 
 export interface ErrorResponse {
@@ -254,4 +501,60 @@ export type TmdbSearchParams = {
  */
 q: string;
 };
+
+export type TmdbMovieProvidersParams = {
+/**
+ * Two-letter ISO 3166-1 region code (e.g. US, GB)
+ */
+region?: string;
+};
+
+export type TmdbTvProvidersParams = {
+/**
+ * Two-letter ISO 3166-1 region code (e.g. US, GB)
+ */
+region?: string;
+};
+
+export type GetFacebookConnectionParams = {
+/**
+ * @minimum 1
+ * @maximum 30
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type SearchBuddiesParams = {
+/**
+ * @minLength 2
+ * @maxLength 50
+ */
+q: string;
+};
+
+export type GetBuddyEntriesParams = {
+status: GetBuddyEntriesStatus;
+/**
+ * @minimum 1
+ * @maximum 30
+ */
+limit?: number;
+/**
+ * @minimum 0
+ */
+offset?: number;
+};
+
+export type GetBuddyEntriesStatus = typeof GetBuddyEntriesStatus[keyof typeof GetBuddyEntriesStatus];
+
+
+export const GetBuddyEntriesStatus = {
+  watching: 'watching',
+  plan_to_watch: 'plan_to_watch',
+  completed: 'completed',
+} as const;
 

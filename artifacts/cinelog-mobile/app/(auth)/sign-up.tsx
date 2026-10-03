@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  Platform, ActivityIndicator, KeyboardAvoidingView, ScrollView, Image,
+  Platform, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import * as SecureStore from 'expo-secure-store';
 import { useSignUp } from '@clerk/expo';
 import { Link, useRouter } from 'expo-router';
@@ -10,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { ControlledPlaceholderInput as TextInput } from '@/components/ControlledPlaceholderInput';
+import { savePendingProfile } from '@/utils/pendingProfile';
 
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? 'couch-potato.replit.app'}`;
 
@@ -29,6 +31,8 @@ export default function SignUpScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signUp, errors, fetchStatus } = useSignUp();
+  const topInset = Platform.OS === 'web' ? Math.max(insets.top, 67) : insets.top;
+  const bottomInset = Platform.OS === 'web' ? Math.max(insets.bottom, 34) : insets.bottom;
 
   const [firstName, setFirstName]       = useState('');
   const [lastName, setLastName]         = useState('');
@@ -79,11 +83,16 @@ export default function SignUpScreen() {
     if (firstName.trim()) profileData.firstName = firstName.trim();
     if (lastName.trim()) profileData.lastName = lastName.trim();
     if (username.trim() && usernameStatus !== 'taken') profileData.username = username.trim();
-    if (Object.keys(profileData).length > 0) {
-      await SecureStore.setItemAsync('pendingProfile', JSON.stringify(profileData));
-    }
     await signUp.verifications.verifyEmailCode({ code });
     if (signUp.status === 'complete') {
+      const createdUserId = signUp.createdUserId;
+      if (createdUserId && Object.keys(profileData).length > 0) {
+        try {
+          await savePendingProfile(SecureStore, createdUserId, profileData);
+        } catch {
+          // Profile setup is best-effort; do not block account creation.
+        }
+      }
       await signUp.finalize({
         navigate: ({ decorateUrl }) => {
           const url = decorateUrl('/onboarding');
@@ -101,49 +110,61 @@ export default function SignUpScreen() {
   // ── Email verification step ────────────────────────────────────────────────
   if (needsVerification) {
     return (
-      <View style={[styles.verifyRoot, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 20 }]}>
-        <View style={styles.brand}>
-          <Image source={require('@/assets/images/spud-logo-verification.png')} style={styles.verifyLogo} resizeMode="contain" />
-        </View>
-        <Text style={styles.verifyTitle}>Check your email</Text>
-        <Text style={styles.verifySubtitle}>We sent a 6-digit code to {email}</Text>
-        <TextInput
-          value={code}
-          onChangeText={setCode}
-          placeholder="000000"
-          placeholderTextColor="#A09898"
-          placeholderStyle={{
-            fontSize: 28,
-            fontFamily: 'Manrope_700Bold',
-            textAlign: 'center',
-            letterSpacing: 8,
-          }}
-          keyboardType="numeric"
-          style={styles.codeInput}
-          maxLength={6}
-          autoFocus
-        />
-        {errors?.fields?.code && (
-          <Text style={styles.error}>{errors.fields.code.message}</Text>
-        )}
-        <TouchableOpacity
-          style={styles.primaryBtn}
-          onPress={handleVerify}
-          disabled={isFetching || code.length !== 6}
-          activeOpacity={0.8}
+      <KeyboardAvoidingView style={styles.verifyKeyboard} behavior="padding" keyboardVerticalOffset={0}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.verifyScrollContent,
+            { paddingTop: topInset + 40, paddingBottom: bottomInset + 20 },
+          ]}
+          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {isFetching ? <ActivityIndicator color="#fff" /> : (
-            <Text style={styles.primaryBtnText}>Verify email</Text>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => signUp.verifications.sendEmailCode()}
-          activeOpacity={0.7}
-          style={{ alignItems: 'center', marginTop: 8 }}
-        >
-          <Text style={styles.linkText}>Resend code</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.verifyRoot}>
+            <View style={styles.brand}>
+              <Image source={require('@/assets/images/spud-logo-verification.png')} style={styles.verifyLogo} resizeMode="contain" />
+            </View>
+            <Text style={styles.verifyTitle}>Check your email</Text>
+            <Text style={styles.verifySubtitle}>We sent a 6-digit code to {email}</Text>
+            <TextInput
+              value={code}
+              onChangeText={setCode}
+              placeholder="000000"
+              placeholderTextColor="#A09898"
+              placeholderStyle={{
+                fontSize: 28,
+                fontFamily: 'Manrope_700Bold',
+                textAlign: 'center',
+                letterSpacing: 8,
+              }}
+              keyboardType="numeric"
+              style={styles.codeInput}
+              maxLength={6}
+              autoFocus
+            />
+            {errors?.fields?.code && (
+              <Text style={styles.error}>{errors.fields.code.message}</Text>
+            )}
+            <TouchableOpacity
+              style={styles.primaryBtn}
+              onPress={handleVerify}
+              disabled={isFetching || code.length !== 6}
+              activeOpacity={0.8}
+            >
+              {isFetching ? <ActivityIndicator color="#fff" /> : (
+                <Text style={styles.primaryBtnText}>Verify email</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => signUp.verifications.sendEmailCode()}
+              activeOpacity={0.7}
+              style={{ alignItems: 'center', marginTop: 8 }}
+            >
+              <Text style={styles.linkText}>Resend code</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     );
   }
 
@@ -151,12 +172,12 @@ export default function SignUpScreen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: '#C5B8FF' }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 },
+          { paddingTop: topInset + 16, paddingBottom: bottomInset + 24 },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -178,7 +199,7 @@ export default function SignUpScreen() {
               <Text style={styles.fieldLabel}>First name</Text>
               <TextInput
                 value={firstName} onChangeText={setFirstName}
-                placeholder="Couch" placeholderTextColor="#A09898"
+                placeholder="Sam" placeholderTextColor="#A09898"
                 autoCorrect={false} style={styles.input}
               />
               {formErrors.firstName ? <Text style={styles.error}>{formErrors.firstName}</Text> : null}
@@ -187,7 +208,7 @@ export default function SignUpScreen() {
               <Text style={styles.fieldLabel}>Last name</Text>
               <TextInput
                 value={lastName} onChangeText={setLastName}
-                placeholder="Potato" placeholderTextColor="#A09898"
+                placeholder="Taylor" placeholderTextColor="#A09898"
                 autoCorrect={false} style={styles.input}
               />
               {formErrors.lastName ? <Text style={styles.error}>{formErrors.lastName}</Text> : null}
@@ -201,7 +222,7 @@ export default function SignUpScreen() {
             <TextInput
               value={username}
               onChangeText={handleUsernameChange}
-              placeholder="spud_couchpotato"
+              placeholder="spud_fan"
               placeholderTextColor="#A09898"
               autoCapitalize="none"
               autoCorrect={false}
@@ -229,7 +250,7 @@ export default function SignUpScreen() {
           <Text style={styles.fieldLabel}>Email</Text>
           <TextInput
             value={email} onChangeText={setEmail}
-            placeholder="spud@couchpotato.com" placeholderTextColor="#A09898"
+            placeholder="you@example.com" placeholderTextColor="#A09898"
             autoCapitalize="none" keyboardType="email-address" autoCorrect={false}
             style={styles.input}
           />
@@ -289,9 +310,11 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   // Verify screen
   verifyRoot: {
-    flex: 1, backgroundColor: '#C5B8FF',
+    backgroundColor: '#C5B8FF',
     paddingHorizontal: 24, gap: 12,
   },
+  verifyKeyboard: { flex: 1, backgroundColor: '#C5B8FF' },
+  verifyScrollContent: { flexGrow: 1 },
   verifyLogo: { width: 200, height: 110, alignSelf: 'center' },
   verifyTitle: { fontSize: 24, fontFamily: 'Manrope_700Bold', color: '#111111', textAlign: 'center' },
   verifySubtitle: { fontSize: 14, fontFamily: 'Manrope_400Regular', color: '#111111', textAlign: 'center', opacity: 0.7 },

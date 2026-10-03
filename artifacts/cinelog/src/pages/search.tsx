@@ -9,6 +9,7 @@ import {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { trackEvent } from '@/lib/analytics';
 
 interface TmdbItem {
   tmdbId: number;
@@ -50,12 +51,25 @@ function useTmdbPopular(page: number) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/tmdb/popular?page=${page}`)
-      .then(r => {
-        if (r.status === 503) { setNoKey(true); setLoading(false); return null; }
+    const pages = Array.from({ length: 5 }, (_, index) => ((page - 1 + index) % 5) + 1);
+    Promise.all(pages.map(nextPage =>
+      fetch(`/api/tmdb/popular?page=${nextPage}`).then(r => {
+        if (r.status === 503) { setNoKey(true); throw new Error('TMDB key missing'); }
         return r.json();
+      }),
+    ))
+      .then(payloads => {
+        const unique = (key: 'movies' | 'shows') => {
+          const seen = new Set<number>();
+          return payloads.flatMap(payload => payload[key] ?? []).filter((item: TmdbItem) => {
+            if (seen.has(item.tmdbId)) return false;
+            seen.add(item.tmdbId);
+            return true;
+          });
+        };
+        setData({ movies: unique('movies'), shows: unique('shows') });
+        setLoading(false);
       })
-      .then(d => { if (d) { setData(d); } setLoading(false); })
       .catch(() => setLoading(false));
   }, [page]);
 
@@ -140,7 +154,7 @@ export default function SearchPage() {
   }, [addingItem?.tmdbId]);
 
   // Full detail view state
-  type CastMember = { name: string; character: string; profileUrl: string | null };
+  type CastMember = { name: string; character: string; profileUrl: string | null; personId?: number | null };
   const [detailItem, setDetailItem] = useState<TmdbItem | null>(null);
   const [detailCast, setDetailCast] = useState<CastMember[]>([]);
   const [detailProviders, setDetailProviders] = useState<{ providerId: number; providerName: string; logoUrl: string }[]>([]);
@@ -213,6 +227,11 @@ export default function SearchPage() {
       },
       {
         onSuccess: () => {
+          trackEvent('entry_created', {
+            status: 'watching',
+            media_type: item.type,
+            source: 'search',
+          });
           toast({ title: 'Now Watching', description: item.title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           closeSheet();
@@ -237,6 +256,11 @@ export default function SearchPage() {
       },
       {
         onSuccess: () => {
+          trackEvent('entry_created', {
+            status: 'plan_to_watch',
+            media_type: item.type,
+            source: 'search',
+          });
           toast({ title: 'Added to Watchlist', description: item.title });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           closeSheet();
@@ -262,6 +286,11 @@ export default function SearchPage() {
       },
       {
         onSuccess: () => {
+          trackEvent('entry_created', {
+            status: 'completed',
+            media_type: item.type,
+            source: 'search',
+          });
           toast({ title: 'Logged!', description: `${item.title} added to collection` });
           queryClient.invalidateQueries({ queryKey: getListEntriesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListYearsQueryKey() });
@@ -281,7 +310,14 @@ export default function SearchPage() {
       key={item.tmdbId}
       className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer active:opacity-70 transition-opacity"
       style={{ background: cardBg, border: cardBorder }}
-      onClick={() => setDetailItem(item)}
+       onClick={() => {
+         trackEvent('title_detail_viewed', {
+           source: 'search',
+           media_type: item.type,
+           in_collection: alreadyAdded,
+         });
+         setDetailItem(item);
+       }}
     >
       {/* Poster */}
       <div
@@ -339,7 +375,7 @@ export default function SearchPage() {
           <input
             ref={searchInputRef}
             type="search"
-            placeholder="Search Movies & TV Shows..."
+            placeholder="Search TV shows and movies."
             value={query}
             onChange={e => setQuery(e.target.value)}
             className="w-full pl-10 pr-10 py-3.5 rounded-full font-semibold focus:outline-none"
@@ -383,15 +419,15 @@ export default function SearchPage() {
             {results.map((item, i) => renderItem(item, i))}
             {!searchLoading && results.length === 0 && (
               <p className="text-center py-10 text-sm" style={{ color: '#7E7A73' }}>
-                No results for &ldquo;{query}&rdquo;
+                No results for &ldquo;{query}&rdquo;. Try a title, actor, or director name.
               </p>
             )}
           </>
         ) : popular ? (
           <>
             {(() => {
-              const freshShows = popular.shows.filter(item => !inCollection.has(item.tmdbId));
-              const freshMovies = popular.movies.filter(item => !inCollection.has(item.tmdbId));
+               const freshShows = popular.shows.filter(item => !inCollection.has(item.tmdbId)).slice(0, 10);
+               const freshMovies = popular.movies.filter(item => !inCollection.has(item.tmdbId)).slice(0, 10);
               return (
                 <>
                   {freshShows.length > 0 && (
@@ -497,7 +533,16 @@ export default function SearchPage() {
                 </div>
               </div>
 
-              {/* Overview */}
+               {/* Public rating */}
+               <div>
+                 <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#7E7A73' }}>Public Rating</p>
+                 <p className="text-xl font-bold" style={{ color: detailScore != null ? '#111111' : '#B0A99E' }}>
+                   {detailLoading ? 'Loading…' : detailScore != null ? `${detailScore.toFixed(1)} / 10` : 'Not rated yet'}
+                 </p>
+                 <p className="text-[10px] mt-0.5" style={{ color: '#7E7A73' }}>The Movie Database (TMDB)</p>
+               </div>
+
+               {/* Overview */}
               {detailItem.overview && (
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider mb-1.5" style={{ color: '#7E7A73' }}>About</p>
@@ -518,7 +563,15 @@ export default function SearchPage() {
                   <p className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{ color: '#7E7A73' }}>Cast</p>
                   <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
                     {detailCast.map((member, i) => (
-                      <div key={i} className="flex-shrink-0 w-16 text-center">
+                       <a
+                         key={i}
+                         href={member.personId ? `https://www.themoviedb.org/person/${member.personId}` : undefined}
+                         target={member.personId ? '_blank' : undefined}
+                         rel={member.personId ? 'noopener noreferrer' : undefined}
+                         className="flex-shrink-0 w-16 text-center"
+                         onClick={event => { if (!member.personId) event.preventDefault(); }}
+                         aria-label={member.personId ? `Open ${member.name}'s profile` : member.name}
+                       >
                         <div
                           className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-1 flex items-center justify-center"
                           style={{ background: '#EFE4D2' }}
@@ -528,10 +581,10 @@ export default function SearchPage() {
                           ) : (
                             <span className="text-sm font-bold" style={{ color: '#116149' }}>{member.name[0]}</span>
                           )}
-                        </div>
+                         </div>
                         <p className="text-[10px] font-bold leading-tight truncate" style={{ color: '#111111' }}>{member.name}</p>
                         <p className="text-[9px] leading-tight truncate" style={{ color: '#7E7A73' }}>{member.character}</p>
-                      </div>
+                       </a>
                     ))}
                   </div>
                 </div>
@@ -631,7 +684,7 @@ export default function SearchPage() {
                 {/* TMDB community score */}
                 {sheetTmdbScore != null && (
                   <div className="mt-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>TMDB Rating</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#7E7A73' }}>Public Rating</p>
                     <p className="text-sm font-bold" style={{ color: '#111111' }}>{sheetTmdbScore.toFixed(1)} / 10</p>
                   </div>
                 )}
