@@ -4,8 +4,6 @@ jobs:
   submit_ios:
     name: Upload existing iOS build for TestFlight
     type: submit
-    env:
-      EXPO_DEBUG: "1"
     params:
       build_id: 1e8bdf82-83a2-4f36-b738-209621b70f21
       profile: production
