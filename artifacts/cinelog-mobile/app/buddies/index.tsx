@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TextInput, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Platform } from 'react-native';
+import { View, Text, Image, TextInput, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,9 +31,11 @@ export default function BuddiesScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + (Platform.OS === 'web' ? 67 : 12), paddingBottom: insets.bottom + 40 }]}
       refreshControl={<RefreshControl refreshing={lists.isRefetching} onRefresh={() => { void lists.refetch(); if (searching) void search.refetch(); }} tintColor={c.lime} />}>
       <TouchableOpacity onPress={() => router.back()} style={styles.back} accessibilityLabel="Back to profile"><Feather name="arrow-left" size={22} color={c.lime} /></TouchableOpacity>
-      <Text style={styles.kicker}>GOOD COMPANY, GOOD STORIES</Text>
-      <Text style={styles.title}>Spud buddies</Text>
-      <Text style={styles.intro}>Find your people. See what’s on their screen once you’re connected.</Text>
+      <Image source={require('../../assets/images/spud-buddies.png')} style={styles.illustration}
+        resizeMode="contain" accessible={false} />
+      <Text style={styles.kicker}>In good company</Text>
+      <Text style={styles.title}>Your Spud Buddies</Text>
+      <Text style={styles.intro}>Find your people. See what’s on the screen, and what has been on the screen.</Text>
       <View style={styles.searchBox}>
         <Feather name="search" size={19} color={c.muted} />
         <TextInput style={styles.input} placeholder="Name or username" placeholderTextColor={c.muted}
@@ -63,10 +65,11 @@ export default function BuddiesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: c.background },
   content: { paddingHorizontal: 20 },
-  back: { alignSelf: 'flex-start', paddingVertical: 12, paddingRight: 20, marginBottom: 17 },
-  kicker: { color: c.lime, fontSize: 10, letterSpacing: 1.8, fontFamily: 'Manrope_700Bold', marginBottom: 5 },
-  title: { color: c.text, fontSize: 36, lineHeight: 43, fontFamily: 'Manrope_700Bold', letterSpacing: -1.3 },
-  intro: { color: c.muted, fontSize: 14, lineHeight: 21, fontFamily: 'Manrope_400Regular', maxWidth: 310, marginTop: 7, marginBottom: 25 },
+  back: { alignSelf: 'flex-start', minWidth: 44, minHeight: 44, justifyContent: 'center', paddingVertical: 12, paddingRight: 20, marginBottom: 8 },
+  illustration: { width: '100%', maxWidth: 280, aspectRatio: 1100 / 786, alignSelf: 'center', marginBottom: 24 },
+  kicker: { color: c.lime, fontSize: 13, fontFamily: 'Manrope_700Bold', marginBottom: 5 },
+  title: { color: c.text, fontSize: 32, lineHeight: 40, fontFamily: 'Manrope_700Bold', letterSpacing: -1 },
+  intro: { color: c.muted, fontSize: 14, lineHeight: 21, fontFamily: 'Manrope_400Regular', marginTop: 7, marginBottom: 25 },
   searchBox: { backgroundColor: c.panel, borderRadius: 15, height: 54, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 11, borderWidth: 1, borderColor: c.panelLight },
   input: { flex: 1, color: c.text, fontFamily: 'Manrope_500Medium', fontSize: 15, paddingVertical: 10 },
   hint: { color: c.muted, fontSize: 12, fontFamily: 'Manrope_400Regular', marginTop: 10 },

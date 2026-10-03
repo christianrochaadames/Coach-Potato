@@ -812,6 +812,37 @@ export default function ProfileScreen() {
           {editingField === 'bio' && fieldError ? <Text style={styles.fieldError}>{fieldError}</Text> : null}
         </View>
 
+        {/* ── Spud Buddies ── */}
+        <View style={styles.buddiesCard}>
+          <View style={styles.buddiesHeader}>
+            <Image
+              source={require('../../assets/images/spud-buddies.png')}
+              style={styles.buddiesIllustration}
+              resizeMode="contain"
+              accessible={false}
+            />
+            <View style={styles.buddiesCopy}>
+              <Text style={styles.buddiesTitle}>Spud Buddies</Text>
+              <Text style={styles.buddiesSubtitle}>Connect with your fellow couch potatoes.</Text>
+              <Text style={styles.buddiesDescription}>
+                Find your fellow couch potato buddies and share what you have watched, what you're watching, and what you plan to watch next.
+              </Text>
+            </View>
+          </View>
+          {buddies.data?.incoming.length ? (
+            <Text style={styles.buddiesAlert}>{buddies.data.incoming.length} {buddies.data.incoming.length === 1 ? 'person wants' : 'people want'} to connect</Text>
+          ) : null}
+          {buddies.data?.accepted.slice(0, 3).map(person => (
+            <BuddyRow key={person.userId} person={person}
+              onPress={() => router.push({ pathname: '/buddies/[userId]', params: { userId: person.userId } } as any)} />
+          ))}
+          <TouchableOpacity style={styles.buddiesButton} onPress={() => router.push('/buddies' as any)}
+            accessibilityRole="button" accessibilityLabel="Find and manage Spud buddies" testID="open-buddies">
+            <Text style={styles.buddiesButtonText}>Find & manage buddies</Text>
+            <Feather name="arrow-up-right" size={17} color={buddyColors.background} />
+          </TouchableOpacity>
+        </View>
+
         {/* ── Favourite titles ── */}
         {([
           {
@@ -883,32 +914,6 @@ export default function ProfileScreen() {
             )}
           </View>
         ))}
-
-        {/* ── Spud buddies ── */}
-        <View style={styles.buddiesCard}>
-          <View style={styles.buddiesHeader}>
-            <View style={styles.buddiesMark}><Feather name="users" size={19} color={buddyColors.background} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.buddiesTitle}>Spud buddies</Text>
-              <Text style={styles.buddiesSubtitle}>The people behind your next watch.</Text>
-            </View>
-          </View>
-          {buddies.data?.incoming.length ? (
-            <Text style={styles.buddiesAlert}>{buddies.data.incoming.length} {buddies.data.incoming.length === 1 ? 'person wants' : 'people want'} to connect</Text>
-          ) : null}
-          {buddies.data?.accepted.slice(0, 3).map(person => (
-            <BuddyRow key={person.userId} person={person}
-              onPress={() => router.push({ pathname: '/buddies/[userId]', params: { userId: person.userId } } as any)} />
-          ))}
-          {!buddies.data?.accepted.length && !buddies.isPending && (
-            <Text style={styles.buddiesEmpty}>Your watch circle starts here. Find a friend to share your shelves with.</Text>
-          )}
-          <TouchableOpacity style={styles.buddiesButton} onPress={() => router.push('/buddies' as any)}
-            accessibilityRole="button" accessibilityLabel="Find and manage Spud buddies" testID="open-buddies">
-            <Text style={styles.buddiesButtonText}>Find & manage buddies</Text>
-            <Feather name="arrow-up-right" size={17} color={buddyColors.background} />
-          </TouchableOpacity>
-        </View>
 
         {/* ── Legal links ── */}
         <View style={styles.legalRow}>
@@ -1235,11 +1240,12 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   buddiesCard: { marginHorizontal: 16, marginTop: 10, marginBottom: 22, backgroundColor: buddyColors.panelLight, borderRadius: 20, padding: 16 },
   buddiesHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  buddiesMark: { width: 42, height: 42, borderRadius: 14, backgroundColor: buddyColors.soft, alignItems: 'center', justifyContent: 'center' },
+  buddiesIllustration: { width: 104, height: 130, flexShrink: 0 },
+  buddiesCopy: { flex: 1, minWidth: 0 },
   buddiesTitle: { color: buddyColors.text, fontSize: 18, fontFamily: 'Manrope_700Bold' },
-  buddiesSubtitle: { color: buddyColors.muted, fontSize: 11, fontFamily: 'Manrope_400Regular', marginTop: 3 },
+  buddiesSubtitle: { color: buddyColors.text, fontSize: 13, lineHeight: 19, fontFamily: 'Manrope_500Medium', marginTop: 5 },
+  buddiesDescription: { color: buddyColors.muted, fontFamily: 'Manrope_400Regular', fontSize: 13, lineHeight: 19, marginTop: 10 },
   buddiesAlert: { color: buddyColors.background, fontFamily: 'Manrope_700Bold', fontSize: 12, backgroundColor: buddyColors.soft, overflow: 'hidden', borderRadius: 9, padding: 10, marginBottom: 12 },
-  buddiesEmpty: { color: buddyColors.muted, fontFamily: 'Manrope_400Regular', fontSize: 13, lineHeight: 19, marginBottom: 14 },
   buddiesButton: { backgroundColor: buddyColors.lime, borderRadius: 999, minHeight: 45, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 6 },
   buddiesButtonText: { color: buddyColors.background, fontFamily: 'Manrope_700Bold', fontSize: 13 },
   // Header
