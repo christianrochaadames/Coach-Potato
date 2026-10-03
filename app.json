@@ -2,78 +2,15 @@
   "expo": {
     "name": "Spud",
     "slug": "coach-potato",
+    "owner": "chrisrianrochaadames",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "couchpotato",
-    "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.couchpotato.ios",
-      "buildNumber": "29",
-      "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "LSApplicationQueriesSchemes": [
-          "instagram",
-          "instagram-stories"
-        ],
-        "NSPrivacyAccessedAPITypes": [],
-        "UIApplicationShortcutItems": [
-          {
-            "UIApplicationShortcutItemTitle": "Log Entry",
-            "UIApplicationShortcutItemSubtitle": "Log a movie or show",
-            "UIApplicationShortcutItemType": "com.couchpotato.ios.logentry",
-            "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeAdd"
-          },
-          {
-            "UIApplicationShortcutItemTitle": "My Watchlist",
-            "UIApplicationShortcutItemSubtitle": "View your watchlist",
-            "UIApplicationShortcutItemType": "com.couchpotato.ios.watchlist",
-            "UIApplicationShortcutItemIconType": "UIApplicationShortcutIconTypeBookmark"
-          }
-        ]
-      }
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#116149"
-      },
-      "package": "com.couchpotato.ios",
-      "versionCode": 1
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "backgroundColor": "#D3C5F8"
-        }
-      ],
-      "expo-quick-actions",
-      "./plugins/with-spm-fix",
-      "expo-font",
-      "expo-secure-store",
-      "expo-video",
-      "expo-web-browser",
-      "expo-localization",
-      "expo-image",
-      "expo-sharing"
-    ],
-    "experiments": {
-      "typedRoutes": true
+      "bundleIdentifier": "com.couchpotato.ios"
     },
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "bc31d5b4-2663-48ac-8ba0-1dc22c618d1f"
       }
-    },
-    "owner": "chrisrianrochaadames"
+    }
   }
 }
