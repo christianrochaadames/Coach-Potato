@@ -1,0 +1,121 @@
+import { Router } from "express";
+import { db, profilesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+import { requireAuth } from "../middlewares/requireAuth";
+
+const router = Router();
+
+// GET /check-username?username=xxx — public, no auth required
+// Returns { available: true } if the username is free to use.
+router.get('/check-username', async (req, res) => {
+  const username = (req.query.username as string | undefined)?.trim();
+  if (!username || username.length < 2) {
+    res.json({ available: false });
+    return;
+  }
+  try {
+    const [existing] = await db
+      .select({ id: profilesTable.userId })
+      .from(profilesTable)
+      .where(eq(profilesTable.username, username))
+      .limit(1);
+    res.json({ available: !existing });
+  } catch {
+    res.json({ available: true }); // optimistic fallback
+  }
+});
+
+const profileUpdateSchema = z.object({
+  firstName: z.string().min(1).max(50).optional(),
+  lastName: z.string().max(50).optional().nullable(),
+  username: z
+    .string()
+    .min(2)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores — no spaces")
+    .optional(),
+  bio: z.string().max(200).optional().nullable(),
+  topTvShows: z.array(z.string().trim().min(1).max(100)).max(3).optional(),
+  topMovies: z.array(z.string().trim().min(1).max(100)).max(3).optional(),
+  topTvShowPosters: z.array(z.string().max(500).nullable()).max(3).optional(),
+  topMoviePosters: z.array(z.string().max(500).nullable()).max(3).optional(),
+  /** Spud variant id ("2"–"15"). null clears the selection. */
+  avatarId: z.string().max(10).optional().nullable(),
+  /** base64 data-URL for a custom uploaded photo. */
+  avatarUrl: z.string().max(4000000).optional().nullable(),
+  onboardingCompleted: z.boolean().optional(),
+});
+
+// GET /profile — get or create profile for the current user
+router.get("/profile", requireAuth, async (req, res) => {
+  try {
+    let [profile] = await db
+      .select()
+      .from(profilesTable)
+      .where(eq(profilesTable.userId, req.userId));
+
+    if (!profile) {
+      [profile] = await db
+        .insert(profilesTable)
+        .values({ userId: req.userId })
+        .onConflictDoNothing()
+        .returning();
+
+      if (!profile) {
+        [profile] = await db
+          .select()
+          .from(profilesTable)
+          .where(eq(profilesTable.userId, req.userId));
+      }
+    }
+
+    res.json(profile);
+  } catch (err) {
+    req.log.error({ err }, "getProfile error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PATCH /profile — update profile fields
+router.patch("/profile", requireAuth, async (req, res) => {
+  const parsed = profileUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    // Return the first human-readable error message
+    const firstError = parsed.error.errors[0];
+    res.status(400).json({ error: firstError?.message ?? "Invalid input" });
+    return;
+  }
+
+  try {
+    const normalizedData = {
+      ...parsed.data,
+      ...(parsed.data.topTvShows
+        ? { topTvShows: [...new Set(parsed.data.topTvShows)].slice(0, 3) }
+        : {}),
+      ...(parsed.data.topMovies
+        ? { topMovies: [...new Set(parsed.data.topMovies)].slice(0, 3) }
+        : {}),
+    };
+    const [profile] = await db
+      .insert(profilesTable)
+      .values({ userId: req.userId, ...normalizedData, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: profilesTable.userId,
+        set: { ...normalizedData, updatedAt: new Date() },
+      })
+      .returning();
+
+    res.json(profile);
+  } catch (err: any) {
+    // Unique constraint violation on username
+    if (err?.code === "23505" || err?.message?.includes("unique")) {
+      res.status(400).json({ error: "That username is already taken — try another one" });
+      return;
+    }
+    req.log.error({ err }, "updateProfile error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+export default router;
