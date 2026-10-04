@@ -1,0 +1,39 @@
+{
+  "cli": {
+    "version": ">= 10.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "environment": "production",
+      "ios": {
+        "buildConfiguration": "Release",
+        "image": "sdk-57"
+      },
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "couch-potato.replit.app",
+        "EXPO_PUBLIC_CLERK_PROXY_URL": "https://couch-potato.replit.app/api/__clerk",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6799059190",
+        "appleId": "christian.rocha.adames@outlook.com"
+      }
+    }
+  }
+}

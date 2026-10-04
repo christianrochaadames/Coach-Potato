@@ -1,0 +1,48 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "qhBginZFGzv4InbqMYtVV"
+uri = "file://screenshots/spud-welcome-screen.jpg"
+type = "image"
+title = "Spud welcome screen preview"
+description = "Mobile preview captured from the onboarding route."
+logical_id = "da9f9cfc-0a58-4d0c-8085-1646929721fe"
+
+[[outputs]]
+id = "qcIjmV-ihRWH9wx4L7qQf"
+uri = "file://screenshots/spud-welcome-meet-preview.png"
+type = "image"
+title = "Spud welcome — Let’s get comfy"
+description = "Faithful static preview of the mobile onboarding welcome stage using the existing Spud logo, mascot, copy, colors, and button layout."
+logical_id = "e8bf84c0-303b-49a1-aedd-70646871c67f"
+
+[[outputs]]
+id = "mp985n1pCcW0ggjLPK0uk"
+uri = "file://screenshots/spud-welcome-meet-updated.png"
+type = "image"
+title = "Updated Spud welcome screen"
+description = "Updated static preview: mascot moved right and enlarged 15%, copy lowered and shortened, and the button arrow removed."
+logical_id = "32c2dacd-de68-44e5-84b4-efe77ead8b61"
+
+[[outputs]]
+id = "KP52bs5HnJ3GvHQRKns_T"
+uri = "file://screenshots/spud-welcome-meet-final.png"
+type = "image"
+title = "Final Spud welcome screen preview"
+description = "Updated preview with neatly wrapped copy, centered lower text block, larger right-positioned mascot, and a wider Let’s get comfy pill."
+logical_id = "400a091b-c762-486b-a0ca-f9d7c8df3073"
+
+[[outputs]]
+id = "PU9L1MvegzT1v4yYNptcD"
+uri = "file://artifacts/cinelog-mobile/assets/images/icon.png"
+type = "image"
+title = "Spud Meta app icon"
+description = "Existing 1024 × 1024 Spud app icon, ready to upload to the App icon field in Meta Basic Settings."
+logical_id = "0c185401-618c-42fb-ab1f-21046ae60034"
+content_hash = "sha256:e169c7f4138b85abcfb1d519d06704fbd12102d5477f1ddf4a6f8cd0565ba7b9"
+size = 1124653
+mtime_ms = 1786164293229
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:6dd878d4-0ec4-4756-9db6-30d8c9acfee9/0c185401-618c-42fb-ab1f-21046ae60034/44a5baa4-862b-4e3f-ba1c-0a47ca825091"
+storage_version_token = "1791022603433909"
+content_type = "image/png"
