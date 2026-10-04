@@ -1,0 +1,9 @@
+name: Upload completed Spud iOS build
+
+jobs:
+  submit_ios:
+    name: Upload existing iOS build for TestFlight
+    type: submit
+    params:
+      build_id: c3f203a7-dd31-4eee-aea0-b4a187388092
+      profile: production

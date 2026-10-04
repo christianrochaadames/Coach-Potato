@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Spud",
+    "slug": "coach-potato",
+    "owner": "chrisrianrochaadames",
+    "version": "1.0.0",
+    "ios": {
+      "bundleIdentifier": "com.couchpotato.ios"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bc31d5b4-2663-48ac-8ba0-1dc22c618d1f"
+      }
+    }
+  }
+}

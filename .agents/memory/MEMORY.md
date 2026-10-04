@@ -1,0 +1,27 @@
+- [Clerk Auth integration](clerk-auth.md) — Clerk proxy/user scoping, native token handling, cache isolation, App.tsx wiring, and onboarding flow.
+- [Managed Clerk secret refresh](clerk-secret-refresh.md) — If the managed server key returns 401, refresh provisioned vars through setup and restart workflows; never hand-edit them.
+- [Native Clerk proxy](clerk-native-proxy.md) — Expo production builds need the Clerk proxy URL passed to ClerkProvider; otherwise TestFlight API calls can all return 401.
+- [Date entry UX](date-entry-ux.md) — All quick-add flows use year-only (YYYY-01-01); full add-entry shows year picker not a date input.
+- [Brand system](brand-system.md) — App renamed to **Spud** (was CouchPotato); /spud-logo.png with multiply blend; emoji-free UI except stats+stars; RT shown as text card.
+- [DB schema additions](db-schema.md) — entries table has status (watching/plan_to_watch/completed), synopsis, tmdbId, nullable dateWatched/year added via drizzle push-force.
+- [Zod codegen compatibility](zod-codegen.md) — Orval emits Zod 4 shorthand and re-appends conflicting wildcard exports; compatibility processing must run before library checks.
+- [TMDB proxy](tmdb-proxy.md) — /api/tmdb/search, /api/tmdb/trending, /api/tmdb/popular proxy routes in api-server. Requires TMDB_API_KEY env secret. Returns 503 if key missing.
+- [App structure](app-structure.md) — Bottom nav (4 tabs: Home/Search/Watchlist/Stats). Routes: /, /my-shows, /search, /watchlist, /stats, /profile, /entry/:id, /add. No top navbar.
+- [Seed script](seed-script.md) — scripts/seed-2026.ts seeds 63 titles via TMDB; run after TMDB_API_KEY is set.
+- [Avatar system](avatar-system.md) — avatarId ("2"–"15" Spud variants) + avatarUrl (base64 photo); both nullable on profiles table; avatarUrl wins; initials fallback.
+- [TestFlight build numbering](testflight-builds.md) — Keep the local iOS buildNumber at the latest uploaded number so EAS autoIncrement produces the next unique TestFlight build.
+- [Mobile auth onboarding](mobile-auth-onboarding.md) — Clerk readiness plus server onboarding state must gate native routes; persist incomplete poster-pick progress locally.
+- [Animated launch splash](splash-launch.md) — Native launch background is static lavender; the five-second centered runtime video can be replaced with the transparent logo asset later.
+- [Expo phone preview](expo-phone-preview.md) — Remote Replit phone testing uses Expo tunnel mode on a free forwarded port; LAN mode and API port 8080 are not reliable here.
+- [Floating tab web scene](floating-tab-web-scene.md) — Custom floating tabs need a transparent web scene and an 84px web host to avoid the default opaque strip.
+- [Search and favorites behavior](search-and-favorites.md) — Popular discovery excludes collection titles; Search shows all matches; Profile favorites stay simple without ranks or recommendations.
+- [Mobile rating style](mobile-rating-style.md) — Use small yellow star icons, never star emoji; keep Search Watch confirmation inside the parent sheet modal.
+- [Expo browser preview routing](expo-browser-preview-routing.md) — Browser screenshots may render the web client; validate native UI through Expo Go.
+- [Expo Go 57 tunnel auth](expo-go-57-tunnel-auth.md) — Signed Replit sessions must ignore EXPO_TOKEN and use a short ngrok subdomain to avoid login and DNS failures.
+- [EAS clean-build dependencies](eas-clean-builds.md) — Babel presets/plugins referenced by mobile config must be direct app dependencies; diagnose Metro errors from the first missing module.
+- [Cross-environment account recovery](account-recovery.md) — Move detached user data through private storage, exact-ID auth guards, atomic merges, and verified cleanup.
+- [PostHog mobile analytics](posthog-mobile-analytics.md) — Manual anonymous events only; secure host input may return a region label that must map to the PostHog endpoint.
+- [Buddy sharing boundary](buddy-sharing.md) — Searchable identity is separate from accepted-only favorites and watch shelves; private entry metadata stays owner-only.
+- [Facebook discovery consent](facebook-discovery.md) — Optional mutual-consent discovery for growth, separate from sign-in; browser OAuth avoids adding a tracking SDK.
+- [Workspace environment label](workspace-environment-label.md) — Verify ambiguous database targets; the workspace has reported a production label while connected to development.
+- [Publish uniqueness safety](publish-schema-safety.md) — A uniqueness change may offer truncation despite no duplicate values; verify conflicts and preserve production data.
