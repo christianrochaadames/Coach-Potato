@@ -1,0 +1,94 @@
+@layer theme, base, clerk, components, utilities;
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: #FFF3E8;
+  --color-foreground: #111111;
+  --color-border: #E2D9CE;
+  --color-input: #D5C9BC;
+  --color-ring: #116149;
+  --color-card: #ffffff;
+  --color-card-foreground: #111111;
+  --color-card-border: #E2D9CE;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #111111;
+  --color-primary: #116149;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #9BD6FF;
+  --color-secondary-foreground: #111111;
+  --color-muted: #EFE4D2;
+  --color-muted-foreground: #7E7A73;
+  --color-accent: #FF4BAE;
+  --color-accent-foreground: #ffffff;
+  --color-destructive: #e53e3e;
+  --color-destructive-foreground: #ffffff;
+  --color-chart-1: #116149;
+  --color-chart-2: #BDECC8;
+  --color-chart-3: #FFD34D;
+  --color-chart-4: #9BD6FF;
+  --color-chart-5: #FF4BAE;
+  --font-sans: 'Manrope', sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius: 12px;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Manrope', sans-serif;
+    background-color: #FFF3E8;
+    color: #111111;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer clerk {
+  /* Suppress Clerk dev-mode orange notice — targets v5/v6 element keys */
+  .cl-devModeNotice,
+  [class*="devMode"],
+  [data-localization-key="badge__devMode"],
+  [data-localization-key*="devMode"],
+  .cl-badge[data-localization-key] {
+    background-color: #F3F4F6 !important;
+    color: #9CA3AF !important;
+    border-color: #E5E7EB !important;
+  }
+  /* Also soften the dots flanking the badge */
+  .cl-devModeNotice__dots,
+  [class*="devModeNotice"] {
+    color: #D1D5DB !important;
+    background-color: transparent !important;
+  }
+}
+
+@layer utilities {
+  input[type='search']::-webkit-search-cancel-button { display: none; }
+  
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: #7E7A73;
+    pointer-events: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-stagger-in { animation: stagger-in 0.35s ease-out forwards; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: fade-in 0.25s ease-out forwards; }
