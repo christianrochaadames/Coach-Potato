@@ -1,0 +1,1 @@
+export const profileQueryKey = ["profile"] as const;

@@ -1,0 +1,58 @@
+modules = ["nodejs-24", "python-base-3.13", "postgresql-16"]
+
+[deployment]
+router = "application"
+deploymentTarget = "autoscale"
+
+[deployment.postBuild]
+args = ["pnpm", "store", "prune"]
+env = { "CI" = "true" }
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/cinelog-mobile: Expo"
+
+[[workflows.workflow]]
+name = "artifacts/cinelog-mobile: Expo"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/cinelog-mobile run dev"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[agent]
+stack = "PNPM_WORKSPACE"
+expertMode = true
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000
+
+[nix]
+channel = "stable-25_05"
+packages = ["emacsclient-commands", "glib", "nss", "nspr"]
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_POSTHOG_HOST = "US Cloud"
+
+[userenv.production]
+FACEBOOK_REDIRECT_URI = "https://couch-potato.replit.app/api/facebook/callback"
+
+[userenv.development]
+FACEBOOK_REDIRECT_URI = "https://6dd878d4-0ec4-4756-9db6-30d8c9acfee9-00-3otsns33nmksj.kirk.replit.dev/api/facebook/callback"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-e77678f6-a838-493a-99f3-c480f6282341"
