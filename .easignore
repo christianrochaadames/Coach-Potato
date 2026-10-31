@@ -1,0 +1,20 @@
+# EAS needs source and runtime assets, not local history, private uploads or caches.
+**/node_modules/**
+**/.expo/**
+**/.expo-shared/**
+.git/**
+.agents/**
+.local/**
+.cache/**
+attached_assets/**
+generated-artifacts/**
+**/dist/**
+**/coverage/**
+**/*.tsbuildinfo
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/*.ipa
+**/*.p12
+**/*.mobileprovision

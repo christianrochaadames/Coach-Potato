@@ -1,0 +1,4 @@
+artifacts/cinelog-mobile/assets/videos/spud-motion-logo.mov filter=lfs diff=lfs merge=lfs -text
+attached_assets/1ead8159-55e6-4718-8a8e-a8bbbcb72669_1080p_prores_30_16-9_1787636470170.mov filter=lfs diff=lfs merge=lfs -text
+attached_assets/1ead8159-55e6-4718-8a8e-a8bbbcb72669_1080p_prores_30_16-9_1787637679194.mov filter=lfs diff=lfs merge=lfs -text
+attached_assets/5aea1a38-b6a0-424b-a8c1-2f20a48f73c7_1080p_prores_30_16-9_1787639562859.mov filter=lfs diff=lfs merge=lfs -text

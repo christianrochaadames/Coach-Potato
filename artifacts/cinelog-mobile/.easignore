@@ -1,0 +1,14 @@
+# Retain mobile assets/ and app source; exclude local-only files.
+node_modules/**
+.expo/**
+.expo-shared/**
+dist/**
+coverage/**
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+*.ipa
+*.p12
+*.mobileprovision
