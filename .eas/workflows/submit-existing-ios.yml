@@ -5,5 +5,5 @@ jobs:
     name: Upload existing iOS build for TestFlight
     type: submit
     params:
-      build_id: 4d9b9826-1a8e-4a24-b8b0-a354989c9d52
+      build_id: 93f8f2fa-0e1a-47cd-8ec3-c15e8819e8e6
       profile: production
